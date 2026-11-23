@@ -10,7 +10,7 @@ const DEFAULT_KEYS = Object.freeze({Up:'up arrow',Down:'down arrow',Left:'left a
 const DEFAULT_SETTINGS={core:'desmume',layout:'classic',frameskip:0,volume:65,persist:true,keys:{...DEFAULT_KEYS}};
 function readSettings(){try{const data=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');return {...DEFAULT_SETTINGS,...data,keys:{...DEFAULT_KEYS,...(data?.keys||{})}}}catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
 const settings=readSettings();
-const state={games:[],volatile:new Map(),selected:null,playerUrl:null,playerReady:false,coreReady:false,view:'library',playing:null,menuWasPaused:false};
+const state={games:[],volatile:new Map(),selected:null,playerUrl:null,playerReady:false,coreReady:false,view:'library',playing:null,menuWasPaused:false,saveWaiters:[],closing:false};
 const formatBytes=n=>n>1024*1024?`${(n/1048576).toFixed(1)} MiB`:`${(n/1024).toFixed(0)} KiB`;
 const safeName=s=>String(s||'Untitled').replace(/[\x00-\x1f<>]/g,'').slice(0,90);
 let toastTimeout;
@@ -71,7 +71,7 @@ async function importROM(file){
 function refreshPad(){try{const connected=Array.from(navigator.getGamepads?.()||[]).some(Boolean);const target=$('#gamepad-status');target.classList.toggle('online',connected);target.title=connected?'Wykryto kontroler':'Nie wykryto kontrolera';target.lastElementChild.textContent=connected?'Pad ✓':'Pad';}catch{}}
 function activeBlob(item){return state.volatile.get(item.id)?.blob||item.blob}
 function launch(item){
- if(state.playing)exitToLibrary(false);
+ if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
  state.playing=item;state.playerUrl=URL.createObjectURL(blob);state.playerReady=false;state.coreReady=false;
  const frame=$('#player-frame');frame.src='./player.html';$('#playing-title').textContent=safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
@@ -80,17 +80,31 @@ function launch(item){
  if(settings.persist&&!state.volatile.has(item.id))dbPut(item).catch(()=>{});
  renderLibrary();
 }
-function exitToLibrary(notify=true){
- if(state.playing){post('save');post('pause')}
- const frame=$('#player-frame');frame.removeAttribute('src');$('#pause-overlay').hidden=true;$('#player-loading').hidden=true;
- if(state.playerUrl){URL.revokeObjectURL(state.playerUrl);state.playerUrl=null}
- state.playerReady=false;state.playing=null;show('library');if(notify)toast('Powrót do biblioteki. Zapis gry pozostaje w pamięci emulatora.');
+function requestSaveBeforeExit(timeout=1800){
+ if(!state.playing||!state.playerReady||!state.coreReady)return Promise.resolve(false);
+ return new Promise(resolve=>{
+   const timer=setTimeout(()=>{state.saveWaiters=state.saveWaiters.filter(x=>x!==done);resolve(false)},timeout);
+   const done=success=>{clearTimeout(timer);resolve(success)};
+   state.saveWaiters.push(done);post('save');
+ });
 }
+async function exitToLibrary(notify=true){
+ if(state.closing)return;
+ state.closing=true;
+ try{
+   if(state.playing){post('pause');await requestSaveBeforeExit()}
+   const frame=$('#player-frame');frame.removeAttribute('src');$('#pause-overlay').hidden=true;$('#player-loading').hidden=true;
+   if(state.playerUrl){URL.revokeObjectURL(state.playerUrl);state.playerUrl=null}
+   state.playerReady=false;state.coreReady=false;state.playing=null;show('library');
+   if(notify)toast('Powrót do biblioteki. Zapis w grze: użyj menu EmulatorJS do kontroli danych.');
+ }finally{state.closing=false}
+}
+
 function pauseMenu(open){$('#pause-overlay').hidden=!open;if(state.playing){post(open?'pause':'resume');state.menuWasPaused=open}}
 function changeLayout(){const values=['classic','side','focus'];settings.layout=values[(values.indexOf(settings.layout)+1)%3];saveSettings();post('layout',{layout:settings.layout});$('#layout-select').value=settings.layout;toast('Układ: '+({classic:'Classic',side:'Side by Side',focus:'Focus'}[settings.layout]))}
 function openSettings(){displaySettings();$('#pause-overlay').hidden=true;show('settings')}
 function exitSettings(){show(state.playing?'play':'library');if(state.playing&&state.menuWasPaused)pauseMenu(true)}
-function quitOS(){if(state.playing)exitToLibrary(false);if(parent!==window)parent.postMessage({source:'astation-retro8',event:'exit'},location.origin);else location.href='../index.html'}
+async function quitOS(){if(state.playing)await exitToLibrary(false);if(parent!==window)parent.postMessage({source:'astation-retro8',event:'exit'},location.origin);else location.href='../index.html'}
 const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
@@ -98,8 +112,11 @@ window.addEventListener('message',event=>{
  if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{url:state.playerUrl,profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:settings.frameskip,keys:settings.keys});}
  if(d.event==='core-ready'){state.coreReady=true;$('#player-loading').hidden=true;$('#playing-status').textContent='Rdzeń emulatora gotowy · gra uruchamiana';toast('Rdzeń Nintendo DS gotowy. Jeśli pojawi się ekran startowy, wybierz Play.');}
  if(d.event==='core-error'){$('#player-loading').hidden=true;$('#playing-status').textContent='Błąd rdzenia';toast('Błąd: '+d.message,true)}
- if(d.event==='save-ok')toast('Zlecono zapis danych gry w EmulatorJS.');
- if(d.event==='save-error')toast('Zapis nieudany: '+d.message,true);
+ if(d.event==='save-ok'||d.event==='save-error'){
+   state.saveWaiters.splice(0).forEach(done=>done(d.event==='save-ok'));
+   if(d.event==='save-ok')toast('Zlecono zapis danych gry w EmulatorJS.');
+   else toast('Zapis nieudany: '+d.message,true);
+ }
  if(d.event==='layout-unsupported')toast(d.message||'Układ zmień w ustawieniach EmulatorJS.',true);
  if(d.event==='exited')exitToLibrary(false);
 });

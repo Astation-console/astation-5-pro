@@ -82,7 +82,7 @@ export async function extractZipNDS(file) {
 }
 export async function unpackLocalFile(file) {
   if (!file) throw new Error('Nie wybrano pliku.');
-  if (file.size > MAX_ARCHIVE_BYTES) throw new Error('Archiwum jest zbyt duże (limit 96 MiB).');
+  if (file.size > (/\.nds$/i.test(file.name)?MAX_ROM_BYTES:MAX_ARCHIVE_BYTES)) throw new Error('Plik przekracza limit rozmiaru dla tego formatu.');
   let bytes, filename = file.name;
   if (/\.nds$/i.test(filename)) bytes = new Uint8Array(await file.arrayBuffer());
   else if (/\.zip$/i.test(filename)) {
