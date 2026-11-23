@@ -1,0 +1,29 @@
+name: ASTATION Engine 6 - Build and Unit QA
+on:
+  push:
+    branches: [engine-6-dreambound-preview, main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Check dist structure
+        run: |
+          test -f dist/index.html
+          test -f dist/games/world/index.html
+          test -f dist/models/pix.glb
+          test -f dist/games/world/classic.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astation-engine-6-dist
+          path: dist
