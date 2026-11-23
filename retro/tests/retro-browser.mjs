@@ -38,7 +38,7 @@ try {
   // Verify OS bridge without touching existing system internals.
   await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
   await page.addScriptTag({url:origin+'/retro/bridge.js'});
-  await page.locator('#retro-nav').waitFor({timeout:10000});
+  await page.locator('#retro-nav').waitFor({state:'attached',timeout:10000});
   await page.locator('#retro-nav').evaluate(el=>el.click());
   await page.locator('#ast-retro-shell iframe').waitFor();
   assert.equal(await page.locator('#ast-retro-shell').count(),1);
