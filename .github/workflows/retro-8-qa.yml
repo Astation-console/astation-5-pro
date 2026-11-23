@@ -1,0 +1,32 @@
+name: ASTATION RETRO 8 — browser integration QA
+on:
+  push:
+    branches: [retro-8-integration]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate NDS file format and ZIP decoder
+        run: node --test retro/tests/retro-unit.test.mjs
+      - name: Install Playwright test runner
+        run: npm install --no-audit --no-fund --no-save --no-package-lock playwright@1.58.2
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: ASTATION RETRO integration in browser (mock loader — no commercial ROM)
+        run: node retro/tests/retro-browser.mjs
+      - name: Run actual DeSmuME WebAssembly core on MIT homebrew ROM (no commercial files)
+        env:
+          ASTATION_TEST_NDS: /tmp/astation-nds-homebrew.nds
+        run: |
+          curl --fail --location --retry 2 --max-time 60 \
+            https://github.com/dmang-dev/hash-bench-nds/releases/download/v1.0.0/hash-bench-nds.nds \
+            --output "$ASTATION_TEST_NDS"
+          node retro/tests/retro-real-core.mjs

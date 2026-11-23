@@ -1,0 +1,55 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>ASTATION RETRO — DS Core</title>
+<style>html,body{height:100%;margin:0;background:#030a15;overflow:hidden;color:#ddeeff;font-family:system-ui}#game{height:100%;width:100%;min-height:260px}#waiting{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;background:linear-gradient(120deg,#08152d,#0b1c35)}#waiting small{color:#8eaac9;display:block;margin-top:12px;font-size:13px}.hide{display:none!important}</style></head><body>
+<div id="game" aria-label="Silnik emulacji Nintendo DS"></div><div id="waiting"><div><b>ASTATION RETRO</b><small>Wczytywanie rdzenia Nintendo DS…</small></div></div>
+<script>
+'use strict';
+let launched=false;
+const layoutValues={classic:'top/bottom',side:'left/right',focus:'hybrid/top'};
+const post=(event,details={})=>parent.postMessage({source:'astation-retro-player',event,...details},location.origin);
+function mapControls(keys={}){
+  const vals={0:['z','BUTTON_2'],1:['a','BUTTON_4'],2:['shift','SELECT'],3:['enter','START'],4:['up arrow','DPAD_UP'],5:['down arrow','DPAD_DOWN'],6:['left arrow','DPAD_LEFT'],7:['right arrow','DPAD_RIGHT'],8:['x','BUTTON_1'],9:['s','BUTTON_3'],10:['q','LEFT_TOP_SHOULDER'],11:['e','RIGHT_TOP_SHOULDER']};
+  const n=['B','Y','Select','Start','Up','Down','Left','Right','A','X','L','R'];
+  const d={};Object.entries(vals).forEach(([id,[key,pad]],i)=>d[id]={value:String(keys[n[i]]||key).toLowerCase(),value2:pad});
+  return {0:d,1:{},2:{},3:{}};
+}
+function updateLayout(mode){
+ const value=layoutValues[mode]||layoutValues.classic;
+ try {const em=window.EJS_emulator; if(!em?.gameManager?.setVariable)return post('layout-unsupported',{message:'Zmień układ w ustawieniach rdzenia EmulatorJS.'});
+ em.gameManager.setVariable('desmume_screens_layout',value);post('layout-ok',{mode});
+ }catch(e){post('layout-unsupported',{message:e.message||'Opcja układu niedostępna'});}
+}
+async function sendSave(){
+ try {const gm=window.EJS_emulator?.gameManager; if(!gm?.saveSaveFiles)throw Error('Rdzeń nie jest gotowy.');await Promise.resolve(gm.saveSaveFiles());post('save-ok');}
+ catch(e){post('save-error',{message:String(e.message||e)});}
+}
+function start(cfg){
+ if(launched)return;launched=true;
+ window.EJS_player='#game';
+ window.EJS_core=cfg.core==='desmume2015'?'desmume2015':'desmume';
+ window.EJS_gameUrl=cfg.url;
+ window.EJS_gameName='ASTATION_RETRO_'+cfg.profile+'_'+cfg.sha.slice(0,16);
+ window.EJS_gameID=parseInt(cfg.sha.slice(0,7),16);
+ window.EJS_pathtodata='https://cdn.emulatorjs.org/stable/data/';
+ window.EJS_startOnLoaded=true;
+ window.EJS_controlScheme='nds';
+ window.EJS_volume=Math.max(0,Math.min(1,Number.isFinite(Number(cfg.volume))?Number(cfg.volume):0.55));
+ window.EJS_color='#56b9ff';
+ window.EJS_AdMode=0;
+ window.EJS_threads=false;
+ window.EJS_defaultControls=mapControls(cfg.keys);
+ window.EJS_defaultOptions={'desmume_screens_layout':layoutValues[cfg.layout]||'top/bottom','desmume_pointer_mouse':'enabled','desmume_pointer_type':'touch','desmume_frameskip':Number(cfg.frameskip||0)};
+ window.EJS_fixedSaveInterval=10000;
+ window.EJS_ready=()=>{document.getElementById('waiting').classList.add('hide');post('core-ready');setTimeout(()=>updateLayout(cfg.layout),1500)};
+ window.EJS_onExit=()=>post('exited');
+ const loader=document.createElement('script');loader.src='https://cdn.emulatorjs.org/stable/data/loader.js';loader.async=true;
+ loader.onerror=()=>{document.getElementById('waiting').querySelector('small').textContent='Nie udało się pobrać rdzenia EmulatorJS. Sprawdź połączenie.';post('core-error',{message:'Nie można pobrać EmulatorJS z CDN. Sprawdź połączenie internetowe.'})};
+ document.head.append(loader);
+}
+window.addEventListener('message',event=>{
+ if(event.origin!==location.origin||event.source!==parent||event.data?.source!=='astation-retro-host')return;
+ const d=event.data;
+ switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout);break;case 'pause':window.EJS_emulator?.pause?.();break;case 'resume':window.EJS_emulator?.play?.();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
+});
+window.addEventListener('error',e=>{if(launched)post('core-error',{message:(e.message||'Błąd emulacji').slice(0,300)})});
+post('player-ready');
+</script></body></html>
