@@ -10,6 +10,7 @@ test('Green Valley loads its real 3D renderer and animated GLB, then starts game
   await expect(page.locator('#overlay')).toHaveClass(/hidden/);
   await page.keyboard.down('KeyW');await page.waitForTimeout(500);await page.keyboard.up('KeyW');
   await page.keyboard.press('Space');await page.waitForTimeout(300);
+  await page.screenshot({path:'test-results/dreambound-green-valley.png'});
   await page.keyboard.press('Escape');
   await expect(page.getByText('PAUSED',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'RESUME'}).click();
@@ -31,4 +32,22 @@ test('Initial v6 save is in IndexedDB and classic five-world game is still avail
   await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
   await page.getByRole('button',{name:'CLASSIC WORLDS (1–5)'}).click();
   await expect(page).toHaveURL(/\/games\/world\/classic\.html/);
+});
+
+test('mobile touch controls are present and interactive',async({browser})=>{
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:3});
+  const page=await context.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(url);
+  await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
+  await expect(page.locator('#stick')).toBeVisible();
+  await expect(page.locator('[data-input="jump"]')).toBeVisible();
+  await page.getByRole('button',{name:'NEW GAME'}).click();
+  await page.locator('[data-input="jump"]').tap();
+  await page.locator('[data-input="pause"]').tap();
+  await expect(page.getByText('PAUSED',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'RESUME'}).tap();
+  await expect(page.locator('#overlay')).toHaveClass(/hidden/);
+  expect(errors).toEqual([]);
+  await context.close();
 });
