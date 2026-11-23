@@ -1,5 +1,5 @@
 <!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>ASTATION RETRO — DS Core</title>
-<style>html,body{height:100%;margin:0;background:#030a15;overflow:hidden;color:#ddeeff;font-family:system-ui}#game{height:100%;width:100%;min-height:260px}#waiting{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;background:linear-gradient(120deg,#08152d,#0b1c35)}#waiting small{color:#8eaac9;display:block;margin-top:12px;font-size:13px}.hide{display:none!important}</style></head><body>
+<style>html,body{height:100%;margin:0;background:#030a15;overflow:hidden;color:#ddeeff;font-family:system-ui}#game{height:100%;width:100%;min-height:260px;contain:layout paint size}#game canvas{image-rendering:auto}#waiting{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;background:linear-gradient(120deg,#08152d,#0b1c35)}#waiting small{color:#8eaac9;display:block;margin-top:12px;font-size:13px}.hide{display:none!important}</style></head><body>
 <div id="game" aria-label="Silnik emulacji Nintendo DS"></div><div id="waiting"><div><b>ASTATION RETRO</b><small>Wczytywanie rdzenia Nintendo DS…</small></div></div>
 <script>
 'use strict';
@@ -54,7 +54,7 @@ function start(cfg){
  window.EJS_AdMode=0;
  window.EJS_threads=false;
  window.EJS_defaultControls=mapControls(cfg.keys);
- window.EJS_defaultOptions={'desmume_screens_layout':layoutValues[cfg.layout]||'top/bottom','desmume_pointer_mouse':'enabled','desmume_pointer_type':'touch','desmume_frameskip':Number(cfg.frameskip||0)};
+ window.EJS_defaultOptions={'desmume_screens_layout':layoutValues[cfg.layout]||'top/bottom','desmume_pointer_mouse':'enabled','desmume_pointer_type':'touch','desmume_frameskip':String(Math.max(0,Math.min(4,Number(cfg.frameskip)||0))),'desmume_internal_resolution':cfg.performance==='quality'?'512x384':'256x192','desmume_advanced_timing':'disabled','desmume_gfx_texture_deposterize':'disabled'};
  window.EJS_fixedSaveInterval=10000;
  window.EJS_ready=()=>{
    document.getElementById('waiting').classList.add('hide');

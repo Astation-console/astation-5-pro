@@ -12,3 +12,6 @@
 .recovery-actions button{background:#2773ab;padding:12px 14px;border-radius:11px;font-size:13px;font-weight:700}
 .recovery-actions button:last-child{background:#294054}
 @media(max-width:600px){.recovery-panel{padding:18px}.recovery-actions{flex-direction:column}.recovery-actions button{width:100%}}
+
+/* Performance guard for phones: no backdrop blur/animated decoration while emulation runs. */
+@media(pointer:coarse){.play-view .player-wrap{isolation:isolate;contain:layout paint}.play-view .player-loading{backdrop-filter:none}.play-view .halo,.play-view .float-chip{display:none}}

@@ -7,8 +7,16 @@ const parsedProfile = new URLSearchParams(location.search).get('profile') || 'le
 const profile = /^[\w-]{1,40}$/.test(parsedProfile) ? parsedProfile : 'legacy';
 const SETTINGS_KEY = 'astation_retro_settings_v8_' + profile;
 const DEFAULT_KEYS = Object.freeze({Up:'up arrow',Down:'down arrow',Left:'left arrow',Right:'right arrow',B:'z',A:'x',Y:'a',X:'s',Start:'enter',Select:'shift',L:'q',R:'e'});
-const DEFAULT_SETTINGS={core:'desmume',layout:'classic',frameskip:0,volume:65,persist:true,keys:{...DEFAULT_KEYS}};
-function readSettings(){try{const data=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');return {...DEFAULT_SETTINGS,...data,keys:{...DEFAULT_KEYS,...(data?.keys||{})}}}catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
+const mobileDevice=/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&innerWidth<800);
+const PERF_PRESETS={performance:{core:'desmume2015',frameskip:2},balanced:{core:mobileDevice?'desmume2015':'desmume',frameskip:mobileDevice?1:0},quality:{core:'desmume',frameskip:0}};
+const DEFAULT_SETTINGS={...PERF_PRESETS.balanced,performance:'balanced',layout:'classic',volume:65,persist:true,keys:{...DEFAULT_KEYS}};
+function readSettings(){try{
+ const data=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');
+ const current={...DEFAULT_SETTINGS,...data,keys:{...DEFAULT_KEYS,...(data?.keys||{})}};
+ // Upgrade untouched v8 mobile defaults once without overwriting custom settings.
+ if(mobileDevice&&data&&!Object.hasOwn(data,'performance')&&data.core==='desmume'&&Number(data.frameskip)===0){current.core='desmume2015';current.frameskip=1;current.performance='balanced'}
+ return current;
+}catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
 const settings=readSettings();
 const state={games:[],volatile:new Map(),selected:null,playerUrl:null,playerReady:false,coreReady:false,view:'library',playing:null,menuWasPaused:false,saveWaiters:[],closing:false,gameStarted:false,startupTimer:null};
 const formatBytes=n=>n>1024*1024?`${(n/1048576).toFixed(1)} MiB`:`${(n/1024).toFixed(0)} KiB`;
@@ -22,7 +30,7 @@ function profileSwitch(){// Prevent accidental cross-profile ROM access when the
  if(window.parent===window)return;
 }
 function displaySettings(){
- $('#core-select').value=settings.core;$('#frameskip-select').value=String(settings.frameskip);$('#layout-select').value=settings.layout;$('#volume-range').value=settings.volume;$('#volume-value').textContent=settings.volume+'%';$('#persist-rom').checked=settings.persist;
+ $('#core-select').value=settings.core;$('#frameskip-select').value=String(settings.frameskip);$('#performance-select').value=settings.performance||'custom';$('#layout-select').value=settings.layout;$('#volume-range').value=settings.volume;$('#volume-value').textContent=settings.volume+'%';$('#persist-rom').checked=settings.persist;
  const area=$('#key-mappings');area.replaceChildren();
  for(const name of ['Up','Down','Left','Right','B','A','Y','X','Start','Select','L','R']){
    const wrap=document.createElement('div');wrap.className='key-assign';const label=document.createElement('span');label.textContent=name;
@@ -128,7 +136,7 @@ const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
  const d=event.data;
- if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{url:state.playerUrl,profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:settings.frameskip,keys:settings.keys});}
+ if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{url:state.playerUrl,profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:settings.frameskip,keys:settings.keys,performance:settings.performance});}
  if(d.event==='core-ready'){
    state.coreReady=true;
    $('#player-loading').hidden=true;
@@ -141,7 +149,7 @@ window.addEventListener('message',event=>{
  if(d.event==='game-started'){
    state.gameStarted=true;clearStartupTimer();
    $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
-   $('#playing-status').textContent='Gra uruchomiona · DeSmuME WebAssembly';
+   $('#playing-status').textContent='Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki');
  }
  if(d.event==='startup-slow')recovery(d.message||'Próba uruchomienia trwa zbyt długo.');
  if(d.event==='core-error'){
@@ -171,8 +179,9 @@ $('#settings-open').addEventListener('click',openSettings);$('#settings-close').
 $('#controls-open').addEventListener('click',()=>$('#controls-overlay').hidden=false);$('#controls-close').addEventListener('click',()=>$('#controls-overlay').hidden=true);
 $('#gamepad-status').addEventListener('click',()=>toast(navigator.getGamepads?.()?.filter(Boolean).length?'Kontroler został wykryty.':'Nie podłączono kontrolera.'));
 $('#keys-reset').addEventListener('click',()=>{settings.keys={...DEFAULT_KEYS};saveSettings();displaySettings();toast('Przywrócono domyślną klawiaturę.')});
-for(const [selector,key,fn] of [['#core-select','core',v=>v],['#frameskip-select','frameskip',v=>Number(v)],['#layout-select','layout',v=>v],['#volume-range','volume',v=>Number(v)]])$(selector).addEventListener('change',e=>{settings[key]=fn(e.target.value);saveSettings();if(key==='volume'){post('volume',{value:settings.volume/100});$('#volume-value').textContent=settings.volume+'%'}if(key==='layout')post('layout',{layout:settings.layout})});
+for(const [selector,key,fn] of [['#core-select','core',v=>v],['#frameskip-select','frameskip',v=>Number(v)],['#layout-select','layout',v=>v],['#volume-range','volume',v=>Number(v)]])$(selector).addEventListener('change',e=>{settings[key]=fn(e.target.value);if(key==='core'||key==='frameskip'){settings.performance='custom';$('#performance-select').value='custom'}saveSettings();if(key==='volume'){post('volume',{value:settings.volume/100});$('#volume-value').textContent=settings.volume+'%'}if(key==='layout')post('layout',{layout:settings.layout})});
 $('#volume-range').addEventListener('input',e=>$('#volume-value').textContent=e.target.value+'%');
+$('#performance-select').addEventListener('change',e=>{const mode=e.target.value;if(!PERF_PRESETS[mode])return;Object.assign(settings,PERF_PRESETS[mode],{performance:mode});saveSettings();displaySettings();toast('Tryb '+mode+' zapisany. Zastosowanie przy następnym uruchomieniu gry.')});
 $('#persist-rom').addEventListener('change',e=>{settings.persist=e.target.checked;saveSettings();toast(settings.persist?'Nowe ROM-y będą zapisane lokalnie.':'Nowe ROM-y będą tylko w bieżącej sesji.')});
 $$('[data-pause]').forEach(btn=>btn.addEventListener('click',()=>{
  const action=btn.dataset.pause;

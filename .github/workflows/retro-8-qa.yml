@@ -1,7 +1,7 @@
 name: ASTATION RETRO 8 — browser integration QA
 on:
   push:
-    branches: [retro-8-integration, retro-8-ios-fix]
+    branches: [retro-8-integration, retro-8-ios-fix, retro-8-2-store-fps]
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,13 +15,15 @@ jobs:
         with:
           node-version: 22
       - name: Validate NDS file format and ZIP decoder
-        run: node --test retro/tests/retro-unit.test.mjs
+        run: node --test retro/tests/retro-unit.test.mjs retro/tests/store-integration.test.mjs
       - name: Install Playwright test runner
         run: npm install --no-audit --no-fund --no-save --no-package-lock playwright@1.58.2
       - name: Install Chromium browser
         run: npx playwright install --with-deps chromium
       - name: ASTATION RETRO integration in browser (mock loader — no commercial ROM)
         run: node retro/tests/retro-browser.mjs
+      - name: ASTATION Store install and RETRO app integration (desktop/mobile)
+        run: node retro/tests/store-browser.mjs
       - name: Run actual DeSmuME WebAssembly core on MIT homebrew ROM (no commercial files)
         env:
           ASTATION_TEST_NDS: /tmp/astation-nds-homebrew.nds

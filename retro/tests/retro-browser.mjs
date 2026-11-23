@@ -40,10 +40,10 @@ try {
   console.log('PASS: real browser DOM, ROM import, local blob handoff, pause, layouts, save API, IndexedDB persistence');
   // Verify OS bridge without touching existing system internals.
   await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
-  await page.addScriptTag({url:origin+'/retro/bridge.js'});
-  await page.locator('#retro-nav').waitFor({state:'attached',timeout:10000});
-  await page.locator('#retro-nav').evaluate(el=>el.click());
+  await page.waitForFunction(()=>!!window.AstationRetro?.open);
+  assert.equal(await page.locator('#retro-nav').count(),0,'no uninstalled RETRO shortcut');
+  await page.evaluate(()=>window.AstationRetro.open());
   await page.locator('#ast-retro-shell iframe').waitFor();
   assert.equal(await page.locator('#ast-retro-shell').count(),1);
-  console.log('PASS: ASTATION OS 7 navigation bridge and non-destructive overlay');
+  console.log('PASS: ASTATION OS 7 on-demand system-app overlay (not an auto-inserted shortcut)');
 } finally {await browser?.close();await new Promise(resolve=>server.close(resolve))}

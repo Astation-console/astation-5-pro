@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const os=readFileSync('index.html','utf8');
+const bridge=readFileSync('retro/bridge.js','utf8');
+const player=readFileSync('retro/player.html','utf8');
+const app=readFileSync('retro/app.js','utf8');
+test('store catalog has free installable RETRO system app',()=>{assert.match(os,/games\.push\(\{id:'retro'/);assert.match(os,/window\.AstationRetro/);assert.match(os,/if\(id==='retro'\)/);assert.match(os,/symulacja dodania aplikacji/)});
+test('retro app only opens from installed console, not always in menu',()=>{assert.match(bridge,/window\.AstationRetro=Object\.freeze/);assert.doesNotMatch(bridge,/retro-nav|retro-tile/)});
+test('mobile performance settings use real DeSmuME options',()=>{assert.match(app,/desmume2015/);assert.match(app,/performance-select/);assert.match(player,/desmume_frameskip/);assert.match(player,/desmume_internal_resolution/)});
+test('ROM bytes never appear in public catalog',()=>{assert.doesNotMatch(os,/New Super Mario Bros\.\.zip/);assert.doesNotMatch(bridge,/new mario.*\.nds/i)});
