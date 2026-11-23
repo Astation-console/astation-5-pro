@@ -1,52 +1,40 @@
-# ASTATION 5 PRO — ULTRA UPDATE 3.0 · ETAP 1
+# ASTATION 5 PRO — Game Revolution 4.0 · World Alpha
 
 **Graj:** https://astation-console.github.io/astation-5-pro/
 
-Autorski, przeglądarkowy symulator konsoli ASTATION 5 PRO. Nie jest emulatorem PlayStation 5 ani produktem Sony. Zachowuje dotychczasowe gry i zapisuje postępy lokalnie.
+Pierwszy etap całkowitej przebudowy gier. Zachowuje dotychczasowy **ASTATION OS 3.0** (profile, sklep, pobieranie, trofea, zapis, powiadomienia, znajomi NPC, imprezy, galerię, SSD i ustawienia), ale zastępuje aktywną bibliotekę gier.
 
-## Co jest nowe w tym etapie
+## Kopia bezpieczeństwa
 
-- **ASTATION OS 3.0 — podstawa systemu:** nowe panelowe ekrany Friends, Parties, Capture Gallery, SSD, Wishlist, Game Hub i Controller Tester; brak przeładowań strony między ekranami.
-- **Quick Resume:** bieżące sesje gier można zachować i wznowić. Dla gier 2D zapisywany jest stan rozgrywki. Dla WebGL 3D pełna sesja jest zachowywana w otwartej stronie; po odświeżeniu używany jest ostatni checkpoint (a nie obietnica wznowienia każdej klatki 3D).
-- **Nowe menu startowe gry:** oddzielne przyciski „Nowa gra” i „Kontynuuj”, z opcją Quick Resume tam, gdzie stan jest dostępny.
-- **Trofea 3.0:** każda z pięciu dotychczasowych gier ma teraz 10 osiągnięć, własne grafiki i konkretne warunki zdobycia. Stare trofea pozostają odblokowane. Poziom i postęp profilu, historia, możliwość przypięcia zdobytego trofeum.
-- **Galeria:** zrzuty ekranu zapisane lokalnie w IndexedDB, przeglądanie, powiększanie, usuwanie i eksport. Dostępność zależy od obsługi IndexedDB i Canvas w przeglądarce.
-- **Eksport/import zapisów:** plik JSON; przy imporcie zachowywana jest kopia poprzedniego zapisu w localStorage.
-- **Wirtualne SSD:** pojemność 825 GB; odinstalowanie gry zwalnia symulowane GB, ale nie usuwa jej statystyk. Postępy można wyczyścić osobną świadomą akcją.
-- **Lokalni znajomi NPC i Parties:** lista, zaproszenia, wybór gry, gotowość i opuszczanie grup. Są wyraźnie oznaczone jako lokalna symulacja — bez realnego multiplayera.
-- **Sterowanie:** tester Gamepad API, ustawiana martwa strefa analoga, skalowanie interfejsu, jasność, kontrast, intensywność animacji i tryb jakości/wydajności 3D.
-- **Sklep i biblioteka:** lepsze bannery, kategorie, zrzuty, lista życzeń, Game Hub, symulowane pobieranie w tle z paskiem postępu widocznym także w menu.
-- **Dźwięk:** własne syntetyczne efekty ASTATION, bez plików dźwiękowych Sony. Oddzielna kontrola muzyki i efektów.
-- **Powiadomienia:** historia, pojedyncze usuwanie i czyszczenie listy.
-- **Pełny ekran:** opcja w Centrum sterowania, zależna od wsparcia przeglądarki.
+Wersja sprzed przebudowy jest zachowana w gałęzi: [`backup-astation-os-3-before-game-revolution-4`](https://github.com/Astation-console/astation-5-pro/tree/backup-astation-os-3-before-game-revolution-4).
 
-## Zachowane gry
+Podczas pierwszego wejścia do 4.0 aplikacja zapisuje **jednorazową kopię starego stanu** w `localStorage` pod nazwą `astation_legacy_backup_v4`, a historię/stare statystyki/trofea w archiwum systemu. Pięć dawnych gier znika z instalacji i aktywnego sklepu. Trofea i ich historia **nie są kasowane**. Nowe gry nie wczytują ich niezgodnych zapisów.
 
-1. Eclipse Zero — akcja (WebGL 3D + grywalny tryb 2D)
-2. Velocity Nights — wyścigi (WebGL 3D + grywalny tryb 2D)
-3. Astrobound Worlds — platformówka (WebGL 3D + grywalny tryb 2D)
-4. Lost Signal — przygoda 2D, trzy misje
-5. Afterlight Survival — survival 2D, trzy noce
+## Dostępna gra: ASTATION WORLD — DREAMBOUND
 
-## Sterowanie
+**Grywalna wersja Alpha:** powstała odrębna produkcja z własnym kodem w `games/world/world.js` oraz silnikiem Three.js. Obejmuje:
 
-- PC: WASD lub strzałki, Spacja/A (akcja), B/Ctrl (unik), Esc (pauza), P (centrum), F8 (zrzut ekranu).
-- Telefon: przyciski ekranowe i joystick w trybie 3D.
-- Kontroler: Gamepad API, lewy analog/D-pad, A, B, spusty, Start; dostępność przycisku PS i wibracji zależy od przeglądarki.
+- Bohater PIX — animowany, składający się z wielu elementów model robota 3D.
+- Pięć światów: Green Valley, Candy Galaxy, Frozen Kingdom, Mechanical Factory i Sky Islands.
+- Sterowanie 3D, kamera zza bohatera, skok i podwójny skok, dash.
+- Ruchome platformy, zagrożenia, obiekty kolekcjonerskie, 2 interaktywne terminale na poziom, checkpointy i finałowy strażnik.
+- Stopniowe odblokowywanie światów, automatyczne zapisywanie, ekrany Nowa gra / Kontynuuj / Pauza / Zwycięstwo.
+- Dziesięć trofeów powiązanych z faktycznymi wydarzeniami w grze.
 
-## Stan zapisów
+Sterowanie na komputerze: **WASD / strzałki** ruch, **Spacja** skok i podwójny skok, **Q** dash, **E** aktywacja terminalu, **Shift** sprint, **Esc** pauza. Na telefonie: joystick i przyciski Skok / Dash / E / Pauza. Podstawowe sterowanie padem opiera się na Gamepad API.
 
-- Podstawowy klucz: `astation_pro_v2` (zachowany, aby nie stracić wcześniejszych postępów).
-- Kopia rezerwowa: `astation_pro_v2_backup`.
-- Zrzuty ekranów: IndexedDB `ASTATION_OS3_MEDIA`.
-- Zapisy i trofea zachowują się tylko w tej samej przeglądarce, chyba że użytkownik wyeksportuje zapis.
+## Instalowanie i zapisy
 
-## Rzeczy jeszcze NIEzaimplementowane
+Wszystkie transfery GB są **symulowane**. Rzeczywisty kod gry jest częścią strony, a nie pobieranym produktem konsolowym. Po ukończeniu symulacji instalacji gra pojawia się w menu i bibliotece.
 
-Nowe gry **ASTATION SPEED, HERO, WORLD, FOOTBALL, ADVENTURE** nie są jeszcze dostępne jako grywalne produkty. Nie dodajemy pustych atrap. Niezależny, prawdziwy multiplayer i czat głosowy wymagają backendu, a nagrywanie wideo wymaga dodatkowej pracy. Pełnej zgodności WebGL 3D z fizycznymi urządzeniami nie potwierdzono w tym etapie. Zobacz [ROADMAP.md](ROADMAP.md).
+System zapisuje do `astation_pro_v2` (ustawienia, profil, osiągnięcia, biblioteka, kopia punktów kontrolnych). Sama gra zapisuje dodatkowo do `ASTATION_WORLD_DREAMBOUND_v4`. Panel eksportu ASTATION OS zawiera też `worldSave` z ostatnim zapisanym stanem. Wyczyść dane strony tylko wtedy, gdy nie potrzebujesz lokalnych postępów.
 
-## Testy
+## Ważne ograniczenia wersji Alpha
 
-Automatycznie sprawdzono uruchamianie wszystkich pięciu gier w trybie 2D, pauzę, powrót do menu, zachowanie zapisów, bibliotekę/sklep, pasek pobierania w menu, 50 kart trofeów, Quick Resume 2D, lokalne grupy NPC, listę życzeń, eksport zapisów, reakcje Gamepad API z kontrolerem symulowanym oraz układ desktopowy i mobilny. Testy nie zastępują sprawdzenia rzeczywistych iPhone'ów/padów ani renderera WebGL na urządzeniu z GPU.
+- To **nie jest emulator PS5**, ani gra o skali komercyjnego AAA.
+- Postacie i dekoracje są proceduralnymi modelami 3D. Animowane modele GLB/GLTF, dopracowane tekstury i szczegółowe poziomy pozostają do zrobienia.
+- Do załadowania Three.js jest potrzebne połączenie z CDN. Bez Three.js/WebGL pojawia się wyraźny komunikat zamiast udawanej rozgrywki.
+- Testy automatyczne sprawdziły menu desktop/mobile, migrację archiwum, sklep, symulowane pobieranie oraz logikę pięciu światów w symulowanym środowisku Three.js. Nie był możliwy pełny test renderera WebGL na iPhonie ani fizycznego kontrolera.
+- Pozostałe pięć nowych gier nie jest jeszcze dostępnych. Ich plan znajduje się w `ROADMAP.md`. Nie dodajemy pustych kafelków.
 
-© ASTATION — niezależny projekt demonstracyjny.
+Kod własny ASTATION. Three.js autorstwa Three.js Authors, licencja MIT, importowany z jsDelivr. Projekt nie jest powiązany z Sony.
