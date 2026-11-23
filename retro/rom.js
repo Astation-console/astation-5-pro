@@ -23,7 +23,7 @@ export function inspectNDS(bytes) {
   const maker = Array.from(header.subarray(16, 18)).map(v => String.fromCharCode(v)).join('');
   const storedLogo = header[0x15c] | header[0x15d] << 8;
   const storedHeader = header[0x15e] | header[0x15f] << 8;
-  if (!title || !/^[A-Z0-9]{4}$/.test(code)) throw new Error('Nieprawidłowy nagłówek NDS (tytuł lub kod gry).');
+  if (!title || !(/^[A-Z0-9]{4}$/.test(code) || code === '####')) throw new Error('Nieprawidłowy nagłówek NDS (tytuł lub kod gry).');
   if (ndsCRC16(header.subarray(0xc0, 0x15c)) !== storedLogo) throw new Error('Nagłówek NDS ma niepoprawne dane logo (CRC16).');
   if (ndsCRC16(header.subarray(0, 0x15e)) !== storedHeader) throw new Error('Uszkodzony nagłówek NDS (CRC16).');
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
