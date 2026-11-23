@@ -120,6 +120,6 @@ test('Story scenes survive reload and appear in the chapter journal',async({page
   await page.reload();await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
   await page.getByRole('button',{name:'FABUŁA / STORY JOURNAL'}).click();
   await expect(page.getByText('KRONIKA SNÓW')).toBeVisible();
-  await expect(page.getByText('Przebudzenie')).toBeVisible();
+  await expect(page.getByText('Przebudzenie',{exact:true})).toBeVisible();
   await expect(page.getByText('Fabuła w przygotowaniu').first()).toBeVisible();
 });
