@@ -43,3 +43,12 @@ https://astation-console.github.io/astation-5-pro/
 ## Bezpieczeństwo
 
 Poprzedni commit jest zachowany w gałęzi GitHub `backup-revolution-5-before-5-1`. Lokalnych zapisów przeglądarki nie nadpisujemy przy wdrożeniu.
+
+
+## Engine 6.0 preview (tested)
+
+Play the new Green Valley prototype safely alongside the current 5.1 console: https://astation-console.github.io/astation-5-pro/preview-6/
+
+Source and tests: https://github.com/Astation-console/astation-5-pro/tree/engine-6-dreambound-preview
+
+The main ASTATION 5.1 console is not replaced by this preview. Deployment to the site root will follow only after further device testing.
