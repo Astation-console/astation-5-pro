@@ -1,6 +1,11 @@
-# ASTATION 5 PRO — Beta 1.0
+# ASTATION 5 PRO — Beta 1.1
 
 Przeglądarkowy symulator autorskiej konsoli ASTATION 5 PRO, inspirowany doświadczeniem korzystania z nowoczesnej konsoli.
+
+## Nowe w Beta 1.1
+- Pusta biblioteka po pierwszym uruchomieniu
+- Gry na ekranie głównym pojawiają się dopiero po ukończonej instalacji
+- Migracja zapisów z Beta 1.0 bez usuwania rzeczywistych postępów
 
 ## Co jest w becie
 - Animowany ekran startowy i logo ASTATION 5
