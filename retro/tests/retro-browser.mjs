@@ -31,7 +31,7 @@ try {
   assert.equal(await page.frameLocator('#player-frame').locator('body').evaluate(()=>window.EJS_gameUrl.startsWith('blob:')),true);
   await page.locator('#play-menu').click();assert.equal(await page.locator('#pause-overlay').isVisible(),true);
   await page.locator('[data-pause=save]').click();await page.locator('[data-pause=layout]').click();await page.locator('[data-pause=resume]').click();
-  await page.locator('#play-exit').click();assert.equal(await page.locator('#library-view').isVisible(),true);
+  await page.locator('#play-exit').click();await page.locator('#library-view').waitFor({state:'visible',timeout:10000});
   await page.reload();await page.locator('#library-grid .game-card').first().waitFor({timeout:10000});
   assert.equal(errors.length,0,'browser errors: '+errors.join(';'));
   console.log('PASS: real browser DOM, ROM import, local blob handoff, pause, layouts, save API, IndexedDB persistence');
