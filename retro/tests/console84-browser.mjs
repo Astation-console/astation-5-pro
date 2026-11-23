@@ -73,7 +73,7 @@ try{
     await page.locator('#ast-retro-shell iframe').waitFor({timeout:10000});
     assert.match(await page.locator('#ast-retro-shell iframe').getAttribute('src'),new RegExp('game='+game));
     const frame=page.frameLocator('#ast-retro-shell iframe');
-    await frame.locator('#rom-input').waitFor({timeout:14000});
+    await frame.locator('#rom-input').waitFor({state:'attached',timeout:14000});
     await frame.locator('#rom-input').setInputFiles({name:`synthetic-${game}.nds`,mimeType:'application/octet-stream',buffer:syntheticNDS(title,code)});
     await frame.locator('#playing-title').waitFor({state:'visible',timeout:16000});
     await page.waitForFunction(code=>{const retro=document.querySelector('#ast-retro-shell iframe')?.contentWindow;const child=retro?.document.querySelector('#player-frame')?.contentWindow;return child?.__actualReceivedROM?.code===code},code,{timeout:25000});
