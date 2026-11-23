@@ -1,74 +1,51 @@
-# ASTATION 5 PRO — PIX Story Edition 6.5
+# ASTATION 5 PRO — Ultimate 7.0 Foundation (etap 1)
 
-**Graj w konsolę:** https://astation-console.github.io/astation-5-pro/
+**Status:** jedna pełna, grywalna przygoda 3D *ASTATION WORLD: Dreambound / Serce Doliny* (Chapter I) z GLB PIX, 11 klipami AnimationMixer, fizyką Rapier, misjami, checkpointami, fabułą, VFX, zapisem IndexedDB, trofeami i trybem Classic Worlds. Konsola pozostaje na **GitHub Pages**. **To nie jest jeszcze kompletna wersja 7.0 ani sześć gotowych gier.**
 
-ASTATION OS uruchamia teraz **ASTATION WORLD: DREAMBOUND 6.5 — Serce Doliny** bezpośrednio wewnątrz konsoli, zamiast starszego modułu gry. Dotychczasowa biblioteka zainstalowanych gier, profil, trofea i lokalne zapisy nie są kasowane.
+## Co rzeczywiście dodaje etap 7.0
 
-## Fabularny Rozdział I — Serce Doliny
+- Lokalny wybór maksymalnie ośmiu profili; nazwa, awatar, trofea, biblioteka, postępy, ustawienia i historia rozdzielone. Pierwszy profil **legacy** przejmuje dotychczasowe dane z `astation_pro_v2`, bez kasowania archiwów.
+- Zapisy **IndexedDB** gry i starszych Classic Worlds dostają odrębne klucze profili; `legacy` zachowuje poprzedni klucz. Zrzuty ekranu są filtrowane według profilu.
+- Działający przycisk zmiany użytkownika w profilu i szybkim centrum sterowania. Centrum sterowania wysyła pauzę do aktywnej gry, a po zamknięciu przywraca jej symulację.
+- Postęp kolejki oznaczony **SYMULOWANA INSTALACJA** — bez udawania rzeczywistych szybkości internetu. Dysk 825 GB jest wirtualny.
+- Istniejące funkcje ASTATION OS: ekran zasilania, menu, sklep, pobieranie, awatary z gier, archiwum, osiągnięcia, galerie, ustawienia, lokalni znajomi NPC, parties demo, odtwarzanie sesji i tryb uśpienia.
 
-PIX budzi się w zagrożonej krainie Green Valley. Przewodniczka LUMA pomaga mu odnaleźć sześć iskier pamięci, aktywować dwa przekaźniki i odkryć tajemnicę tajemniczego ECHO. **Osiem autorskich scen** uruchamia się przy wydarzeniach w grze, a Kronika Snów zapamiętuje odkryte dialogi. Gra jest w pełni 3D z oryginalnym modelem GLB, 11 klipami animacji, skakaniem, dash, Strażnikiem, checkpointem i zapisywaniem postępów.
-
-**Ważne:** Nową fabułę ma obecnie tylko pierwszy rozdział Green Valley. Kolejne fabularne rozdziały są planowane; starsze światy pozostają dostępne jako Classic Worlds. „Pobieranie” w ASTATION OS jest symulowane, a dane zapisu pozostają w przeglądarce.
-
-**Testy:** 23 testy jednostkowe i 8 testów przeglądarkowych przeszły w GitHub Actions na gałęzi testowej przed integracją.
-
-**Kod silnika:** [engine-6-dreambound-preview](https://github.com/Astation-console/astation-5-pro/tree/engine-6-dreambound-preview)
-
-**Kopia bezpieczeństwa konsoli przed aktualizacją:** [backup-before-pix-story-6-5-console-update](https://github.com/Astation-console/astation-5-pro/tree/backup-before-pix-story-6-5-console-update)
-
----
-
-# ASTATION 5 PRO — Update 5.1: Power, Avatars & Collision Fix
-
-Oficjalna przeglądarkowa konsola ASTATION, hostowana na GitHub Pages:
-
-https://astation-console.github.io/astation-5-pro/
-
-## Nowe w wersji 5.1
-
-- **Nowy ekran zasilania:** przed uruchomieniem systemu gracz musi nacisnąć wirtualny przycisk Power. Następują animacja startowa, wybór profilu i ekran konsoli. Wyłączanie konsoli wraca na ekran zasilania.
-- **Profilowe z naszych gier:** 12 oryginalnych awatarów SVG, m.in. PIX, Green Valley, Candy Galaxy, Frozen Kingdom, Mechanical Factory, Sky Islands, Crystal Collector i Dream Guardian. Niektóre są dostępne od początku; pozostałe odblokowują się wraz z postępami, zdobywaniem kryształów i trofeów. Można wybrać awatar na ekranie użytkownika i w panelu profilu.
-- **Zachowanie konta:** wybrany awatar zapisuje się w dotychczasowym `astation_pro_v2` bez usuwania statystyk, biblioteki, historii ani trofeów.
-- **Kolizje Dreambound 5.1:** osobny moduł `games/world/collision.js` obsługujący pionowe zderzenia przez wykrycie przekroczenia powierzchni między klatkami, blokowanie wejścia w boki platform, podtrzymywanie postaci na ruchomej platformie i korektę małych penetracji ze starszych wersji.
-- **Stabilny checkpoint i portal:** dodatkowe stałe platformy na trasie przy punkcie zapisu i końcowym portalu.
-- **Wiadomość o odblokowaniu nowego awatara**, gdy postęp z rozgrywki spełni jego warunek.
-
-## Co pozostaje bez zmian
-
-- ASTATION OS, logo, profil użytkownika, trofea i historia, sklep, kolejka symulowanych instalacji, centrum sterowania, ustawienia, galerie, Game Hub oraz archiwalne dane poprzednich gier.
-- Dreambound: model PIX GLB (Idle, Walk, Jump), pięć światów, zadania, kryształy, terminale, przeciwnicy, boss, gamepad/touch, zapisy i pauza.
-
-## Pliki
-
-- `index.html` — system ASTATION OS, zasilanie, profile, sklep i integracja gry
-- `games/world/index.html` — ekran i HUD Dreambound
-- `games/world/world.js` — silnik rozgrywki
-- `games/world/collision.js` — logika kolizji platform
-- `games/world/assets/pix.glb` — autorski model 3D z animacjami
-
-## Sterowanie
-
-**System:** wciśnij Power, wybierz profil. W menu wybierz profil, żeby zmienić awatar. Możesz też otworzyć jego kolekcję na ekranie logowania.
-
-**Dreambound:** WASD lub analog — ruch, Spacja/A — skok i podwójny skok, Q/B — dash, E/X — terminal, Esc — pauza. Na telefonie korzystaj z joysticka i przycisków dotykowych.
+**Ograniczenia:** profile są lokalne, bez haseł i synchronizacji; nie zastępują kont online. Pozostałe 5 gier z dokumentu produkcyjnego to plan, a nie aktywne produkty. PIX jest detalicznym GLB z animacjami transformacji obiektów, nie zawiera szkieletu z riggingiem Blendera; nie deklarujemy inaczej. Figma pozostaje projektem UI, a GSAP i Howler.js są opcjonalne, nie wdrożone w tym etapie. Pełnych testów fizycznego kontrolera i iPhone'a nie wykonano.
 
 ## Testy
 
-- Osiem deterministycznych testów modułu kolizji platform w Node.js.
-- Test integracyjny logiki Dreambound w przeglądarce z symulowanym rendererem: pięć światów, ruch, skok, zbiory, boss, brak błędów JS.
-- Testy interfejsu w Chromium desktop i układzie mobilnym: power, boot, wybór awatara, profil, sklep, pobieranie, centrum sterowania, wyłączenie i zapisy po re-inicjalizacji.
+`npm install --no-audit --no-fund && npm run test && npm run build && npx playwright install chromium && npm run test:e2e`
 
-> Renderowanie WebGL na fizycznym iPhonie i fizycznym kontrolerze wymaga osobnego testu. Pojemności pobierania w konsoli są symulowane; nie pobieramy rzeczywistych gier PS5. ASTATION 5 PRO nie jest produktem Sony.
+GitHub Actions publikuje podgląd `/preview-6/` z gałęzi `engine-6-dreambound-preview` **dopiero po testach**. Publiczny adres konsoli i poprzednia wersja są chronione gałęziami `backup-astation-6-5-before-ultimate-7` i `backup-engine-6-5-before-ultimate-7`. Publikacja głównego ASTATION 7.0 wymaga promocji potwierdzonego wydania, nie oznacza automatycznie ukończenia kolejnych etapów.
 
-## Bezpieczeństwo
+---
 
-Poprzedni commit jest zachowany w gałęzi GitHub `backup-revolution-5-before-5-1`. Lokalnych zapisów przeglądarki nie nadpisujemy przy wdrożeniu.
+# ASTATION WORLD: Dreambound — Story Edition 6.5
 
+**Podgląd gry:** https://astation-console.github.io/astation-5-pro/preview-6/games/world/index.html
 
-## Engine 6.0 preview (tested)
+Pierwsza grywalna odsłona oryginalnej, fabularnej platformówki 3D, uruchamianej w przeglądarce. Prace nad tym wydaniem prowadzimy na gałęzi `engine-6-dreambound-preview`, z zachowaniem gałęzi zapasowych poprzednich wydań.
 
-Play the new Green Valley prototype safely alongside the current 5.1 console: https://astation-console.github.io/astation-5-pro/preview-6/
+## Rozdział I: Serce Doliny
 
-Source and tests: https://github.com/Astation-console/astation-5-pro/tree/engine-6-dreambound-preview
+PIX budzi się w rozpadającym się Green Valley, a przewodniczka LUMA pomaga mu odnaleźć sześć iskier pamięci i uruchomić dwa przekaźniki. Poznaje organizację ECHO, historię Strażnika i tajemnicę Dream Core. Finał prowadzi do bramy i zapowiada **Candy Galaxy**. Rozdział I zawiera osiem scen (Przebudzenie, Pierwsza iskra, Zapis ECHO, Pamięć Strażnika, Utracona prawda, Ocalony Strażnik — opcjonalne, Próba przy bramie i Pierwszy świt).
 
-The main ASTATION 5.1 console is not replaced by this preview. Deployment to the site root will follow only after further device testing.
+- Dialogi po polsku i angielsku, uruchamiane przez rzeczywiste wydarzenia w grze, z przyciskami Dalej/Pomiń i obsługą klawiatury.
+- **Kronika Snów** z odkrytymi scenami, stanem rozdziałów i oznaczeniem kolejnych części jako *w przygotowaniu*.
+- Obejrzenie sceny zapisuje się w istniejącym stanie misji (`storySeen`) w IndexedDB i w stanie konsoli ASTATION OS; starsze zapisy pozostają kompatybilne.
+- Grywalne wcześniej: kryształy, trampoliny, ruchome platformy, uniki, Strażnik, checkpointy, sterowanie dotykiem i padem, tryb fotograficzny, grafika Three.js, fizyka Rapier.
+- Oryginalny model PIX (GLB) z 11 klipami animacji i AnimationMixer oraz szczegółowe modele strażnika, drzew i ruin.
+
+**Granice wydania:** fabułę i osiem scen ma wyłącznie Green Valley. Candy Galaxy, Frozen Kingdom, Mechanical Factory i Sky Islands są w planie nowej historii, a ich poprzednie wersje zachowano jako *Classic Worlds*. Nie ma prawdziwego multiplayera ani backendu.
+
+## Integracja z konsolą
+
+Po pomyślnym przejściu testów, ASTATION OS uruchamia grę bezpośrednio pod własnym adresem `/astation-5-pro/preview-6/games/world/index.html` w bezpiecznym oknie osadzonym w konsoli. Gra komunikuje się z systemem przez `postMessage` z kontrolą pochodzenia: zapisy, zdarzenia znajdziek, trofea, status, zakończenie rozdziału. Wcześniejsze instalacje zachowują swoją bibliotekę — nie jest potrzebne ponowne pobieranie gry. 
+
+## Testy
+
+`npm install && npm run test && npm run build && npx playwright install chromium && npm run test:e2e`
+
+GitHub Actions uruchamia kompilację oraz testy Chrome na osobnej gałęzi, a dopiero po ich przejściu publikuje przetestowane zasoby w `/preview-6/`.
+
+> Game assets and narrative are original ASTATION work. Blender authoring was not used for this specific narrative update.
