@@ -8,7 +8,7 @@ export function profileSaveKey(id='legacy'){
 export class SaveManager {
   constructor() {
     this.db=null;
-    this.profileId=new URLSearchParams(location.search).get('profile')||'legacy';
+    this.profileId=new URLSearchParams(globalThis.location?.search||'').get('profile')||'legacy';
     this.key=profileSaveKey(this.profileId);
   }
   async init(){
