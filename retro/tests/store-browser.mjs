@@ -4,6 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {join,extname,normalize} from 'node:path';
 import {chromium} from 'playwright';
 import {sampleROM} from './retro-unit.test.mjs';
+import {ndsCRC16} from '../rom.js';
 
 const root=process.cwd(), mime={'.html':'text/html','.js':'text/javascript','.css':'text/css'};
 const server=createServer(async(req,res)=>{
@@ -18,6 +19,7 @@ try{
   const page=await context.newPage(), errors=[];page.on('pageerror',e=>errors.push(e.message));
   const origin=`http://127.0.0.1:${server.address().port}`;
   await page.route('https://cdnjs.cloudflare.com/**',route=>route.abort());
+  await page.route('https://cdn.emulatorjs.org/**',route=>route.abort());
   await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
   assert.equal(await page.locator('#choose').isVisible(),false,'profile picker must stay hidden until boot completes');
   await page.locator('#power-button').click();
@@ -28,6 +30,7 @@ try{
   assert.equal(await page.locator('#retro-tile').count(),0,'old hardcoded RETRO tile must be gone');
   await page.locator('#nav-media').click();
   await page.locator('button.product[data-id=retro]').waitFor({timeout:10000});
+  assert.match(await page.locator('button.product[data-id=retro]').innerText(),/NEW SUPER MARIO BROS/);
   await page.locator('button.product[data-id=retro]').click();
   assert.match(await page.locator('#panel').innerText(),/ROM|Nintendo DS/);
   await page.locator('button[data-action=install][data-id=retro]').click();
@@ -36,14 +39,18 @@ try{
   await page.locator('button[data-pick=retro]').click();
   await page.locator('#hero-copy button[data-action=launch][data-id=retro]').click();
   await page.locator('#ast-retro-shell iframe').waitFor({timeout:10000});
+  assert.match(await page.locator('#ast-retro-shell iframe').getAttribute('src'),/game=mario/);
   const frame=page.frameLocator('#ast-retro-shell iframe');await frame.locator('#import-btn').waitFor({timeout:15000});
   await frame.locator('#settings-open').click();
   const core=await frame.locator('#core-select').inputValue();
   assert.equal(core,mobile?'desmume2015':'desmume','mobile defaults to lighter core');
   await frame.locator('#settings-close').click();
-  const data=sampleROM();
-  await frame.locator('#rom-input').setInputFiles({name:'homebrew.nds',mimeType:'application/octet-stream',buffer:Buffer.from(data)});
-  await frame.locator('#library-grid .game-card').waitFor({timeout:15000});
+  // In-memory synthetic test header only. No copyrighted commercial ROM is used.
+  const data=sampleROM();data.fill(0,0,12);data.set(new TextEncoder().encode('NEW MARIO'),0);data.set(new TextEncoder().encode('A2DE'),12);
+  new DataView(data.buffer).setUint16(0x15e,ndsCRC16(data.subarray(0,0x15e)),true);
+  await frame.locator('#rom-input').setInputFiles({name:'local-test.nds',mimeType:'application/octet-stream',buffer:Buffer.from(data)});
+  await frame.locator('#playing-title').waitFor({state:'visible',timeout:15000});
+  assert.match(await frame.locator('#playing-title').innerText(),/New Super Mario Bros/);
   await frame.locator('#os-back').click();
   await page.locator('#ast-retro-shell').waitFor({state:'detached',timeout:12000});
   await page.reload();
@@ -52,8 +59,13 @@ try{
   await page.locator('#enter-profile').click();
   await page.locator('#console.active').waitFor({timeout:12000});
   assert.equal(await page.locator('button[data-pick=retro]').count(),1,'install persists after refresh');
+  await page.locator('button[data-pick=retro]').click();
+  await page.locator('#hero-copy button[data-action=launch][data-id=retro]').click();
+  const restored=page.frameLocator('#ast-retro-shell iframe');
+  await restored.locator('#playing-title').waitFor({state:'visible',timeout:15000});
+  assert.match(await restored.locator('#playing-title').innerText(),/New Super Mario Bros/);
   assert.deepEqual(errors,[],'no browser JS errors');
   await context.close();
-  console.log(`PASS: ASTATION OS Store -> simulated install -> RETRO -> ROM import -> OS -> persist (${mobile?'mobile':'desktop'})`);
+  console.log(`PASS: ASTATION OS Store -> simulated install -> Mario direct -> local ROM import -> OS -> auto-resume on next launch (${mobile?'mobile':'desktop'})`);
  }
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve))}

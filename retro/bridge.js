@@ -2,11 +2,11 @@
 (()=>{'use strict';
   let shell=null;
   function profile(){try{const v=JSON.parse(localStorage.getItem('astation_profiles_v7')||'{}');return /^[\w-]{1,40}$/.test(v.active||'')?v.active:'legacy'}catch{return 'legacy'}}
-  function open(){
+  function open(options={}){
     if(shell)return;
-    shell=document.createElement('section');shell.id='ast-retro-shell';shell.setAttribute('aria-label','ASTATION RETRO — emulator Nintendo DS');
+    shell=document.createElement('section');shell.id='ast-retro-shell';shell.setAttribute('aria-label',options.game==='mario'?'New Super Mario Bros. — Nintendo DS':'ASTATION RETRO — emulator Nintendo DS');
     shell.style.cssText='position:fixed;inset:0;z-index:8000;background:#030a15;display:flex;flex-direction:column;animation:retroOpen .24s ease-out';
-    const frame=document.createElement('iframe');frame.title='ASTATION RETRO — Nintendo DS';frame.src='./retro/index.html?profile='+encodeURIComponent(profile());frame.allow='fullscreen;autoplay;gamepad';frame.style.cssText='border:0;flex:1;width:100%;min-height:0';
+    const frame=document.createElement('iframe');frame.title=options.game==='mario'?'New Super Mario Bros. — Nintendo DS':'ASTATION RETRO — Nintendo DS';frame.src='./retro/index.html?profile='+encodeURIComponent(profile())+(options.game==='mario'?'&game=mario':'');frame.allow='fullscreen;autoplay;gamepad';frame.style.cssText='border:0;flex:1;width:100%;min-height:0';
     shell.append(frame);document.body.append(shell);
     document.documentElement.classList.add('retro-is-open');
   }
