@@ -5,7 +5,8 @@ test('Green Valley loads its real 3D renderer and animated GLB, then starts game
   await page.goto(url);
   await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
   await expect(page.locator('#render canvas')).toBeVisible();
-  await expect(page.locator('html')).toHaveAttribute('data-pix-model','mk2');
+  await expect(page.locator('html')).toHaveAttribute('data-pix-model','cinematic');
+  await expect(page.locator('html')).toHaveAttribute('data-pix-animation-clips','11');
   await expect(page.locator('html')).toHaveAttribute('data-guardian-model','mk2');
   await expect(page.getByText('WORLD', {exact:false}).first()).toBeVisible();
   await page.getByRole('button',{name:'NEW GAME'}).click();
@@ -69,4 +70,18 @@ test('PIX 6.1 shows live HUD, dash cooldown and allows changing graphics while p
   await page.getByRole('button',{name:'RESUME'}).click();
   await expect(page.locator('#overlay')).toHaveClass(/hidden/);
   expect(errors).toEqual([]);
+});
+
+test('PIX Pro Animation 6.4 offers actual 3D motion clips and switches to Run/Dash',async({page})=>{
+  await page.goto(url);
+  await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
+  await expect(page.locator('html')).toHaveAttribute('data-pix-model','cinematic');
+  await page.getByRole('button',{name:'NEW GAME'}).click();
+  await page.keyboard.down('KeyW');await page.keyboard.down('ShiftLeft');
+  await expect.poll(()=>page.locator('html').getAttribute('data-pix-animation')).toBe('run');
+  await page.keyboard.up('ShiftLeft');await page.keyboard.up('KeyW');
+  await page.keyboard.press('KeyQ');
+  await expect.poll(()=>page.locator('html').getAttribute('data-pix-animation')).toBe('dash');
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('PAUSED',{exact:true})).toBeVisible();
 });

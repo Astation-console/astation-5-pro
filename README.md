@@ -1,3 +1,13 @@
+# ASTATION PIX Pro Animations 6.4 — staging preview
+
+Professional-style authored glTF transform-keyframe animation upgrade for PIX (not motion capture, not a Blender file). Existing detailed 6.3 model and its three original clips are preserved as fallback.
+
+**11 animation clips:** Idle, Walk, Run, Jump, DoubleJump, Fall, Land, Dash, Interact, Victory, Stumble. Smooth blending with action lock durations; leaning into turns and speed. The character still uses a transform hierarchy, not a skinned skeleton.
+
+**Gameplay remains unchanged:** Green Valley, physics/collisions, 3D Guardian, checkpoints, saves, and ASTATION OS integrations. No browser storage migrations.
+
+**Testing:** `npm test`; `npm run build`; `npm run test:e2e`. Preview is published to `/astation-5-pro/preview-6/` only after GitHub Actions checks pass; main ASTATION console remains separate.
+
 # ASTATION 5 PRO — PIX ADVENTURE UPDATE 6.3 — MODEL FIX (PREVIEW)
 
 **Status: test branch, not production.** The public ASTATION OS 5.1 homepage stays live until CI + browser testing confirms this engine is ready.

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Engine } from '../../core/Engine.js';
 import { Physics } from '../../core/Physics.js';
 import { AnimationController } from '../../core/AnimationController.js';
+import { selectPixLocomotion, pixLean } from '../../core/AnimationState.js';
 import { CameraRig } from '../../core/CameraRig.js';
 import { InputManager } from '../../input/InputManager.js';
 import { AudioManager } from '../../audio/AudioManager.js';
@@ -31,6 +32,7 @@ export class WorldGame {
     this.ready = false;this.completedShown = false;
     this.jumpAssist = new JumpAssist();this.effects = null;this.trailTimer = 0;
     this.record = null; this.landTimer = 0; this.lastGrounded = false;
+    this.turnLean=0;this.forwardLean=0;
   }
   async boot() {
     this.ui.status('Loading graphics engine...',12);
@@ -42,15 +44,21 @@ export class WorldGame {
     this.physics = await Physics.create();
     this.cameraRig = new CameraRig(this.engine.camera);
     this.input = new InputManager(this.engine.renderer.domElement, document.getElementById('stick'), document.getElementById('touchbuttons'));
-    this.ui.status('Loading PIX repaired MK III model...',40);
+    this.ui.status('Loading PIX Pro Animation Rig...',40);
     let gltf;
-    try{gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix_mk2.glb')}
-    catch(error){console.warn('PIX MK II unavailable, restoring original PIX GLB',error);gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix.glb');}
+    try{gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix_cinematic_6_4.glb')}
+    catch(error){
+      console.warn('PIX 6.4 rig unavailable; using detailed 6.3 model',error);
+      try{gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix_mk2.glb')}
+      catch(err){console.warn('PIX detailed GLB unavailable; original fallback',err);gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix.glb')}
+    }
     this.model = gltf.scene;
     this.model.scale.setScalar(.83);
+    this.model.rotation.order='YXZ';
     this.engine.scene.add(this.model);
     this.anim = new AnimationController(this.model, gltf.animations);
-    document.documentElement.dataset.pixModel=gltf.parser.json?.asset?.extras?.revision==='6.3.0'?'mk2':'classic';
+    document.documentElement.dataset.pixModel=gltf.parser.json?.asset?.extras?.animationRevision==='6.4.0'?'cinematic':gltf.parser.json?.asset?.extras?.revision==='6.3.0'?'mk2':'classic';
+    document.documentElement.dataset.pixAnimationClips=String(gltf.animations.length);
     this.modelEmissive=[];
     this.model.traverse(obj=>{if(!obj.isMesh)return;const materials=Array.isArray(obj.material)?obj.material:[obj.material];for(const mat of materials){if(mat?.emissive && mat.emissive.r+mat.emissive.g+mat.emissive.b>.15)this.modelEmissive.push({mat,baseline:mat.emissiveIntensity??1});}});
     this.effects = new ImpactEffects(this.engine.scene, this.engine.quality);
@@ -69,7 +77,7 @@ export class WorldGame {
     this.engine.onFrame = dt => this.frame(dt);
     this.engine.start();this.engine.pause(true);
     this.ready=true;this.ui.status('READY',100);
-    this.ui.menu(this.progress.played>0?'Continue PIX MK III’s adventure':'Welcome to PIX MK III' ,{
+    this.ui.menu(this.progress.played>0?'Continue PIX’s Pro Animation Adventure':'Welcome to PIX Adventure 6.4' ,{
       onPlay: () => this.start(false), onNew: () => this.start(true), onClassic: () => this.classic()
     });
     this.bridge.send('ready',{stage:1});
@@ -107,14 +115,15 @@ export class WorldGame {
     }
     if(fresh||!this.elapsed)this.elapsed=0;this.respawn(false);this.running=true;
     this.engine.pause(false);this.ui.hideOverlay();
-    this.anim.set('Idle');this.bridge.send('started',{stage:1});
+    this.anim.set('Idle',.1,{force:true});this.bridge.send('started',{stage:1});
     this.ui.toast('Mission: Restore both terminals and collect 6 crystals');
   }
   respawn(hurt=true) {
     const point=this.progress.checkpoint;
     this.physics.setPlayer(point);
     this.vert=0;this.jumpCount=0;this.health=3;this.jumpAssist.reset();this.lastGrounded=false;this.landTimer=0;
-    this.invuln=1.8;
+    this.invuln=1.8;this.turnLean=0;this.forwardLean=0;
+    if(this.model){this.model.rotation.x=0;this.model.rotation.z=0;this.model.scale.setScalar(.83);}
     if(hurt){this.progress.failures++;this.save();this.ui.toast('Back at checkpoint');}
   }
   onLevelEvent(event,data) {
@@ -141,12 +150,15 @@ export class WorldGame {
     if(this.jumpAssist.canGroundJump() || this.jumpAssist.canAirJump(this.jumpCount)){
       const first=this.jumpAssist.canGroundJump();
       this.vert=first?10.1:9.1;this.jumpCount=first?1:2;this.jumpAssist.consume();this.audio.play('jump');
+      this.anim?.trigger(first?'Jump':'DoubleJump',{fade:.10,lock:first?.16:.38});
       const pos=this.physics.playerBody.translation();this.effects?.spawn(pos.x,pos.y-.7,pos.z,first?0x90edff:0xffdf9e,10,1.1);
     }
     if(input.just.dash && this.dashCooldown===0){this.dashCooldown=1.65;this.dashUntil=this.elapsed+.23;this.audio.play('dash');
+      this.anim?.trigger('Dash',{fade:.09,lock:.25});
       const p=this.physics.playerBody.translation();this.effects?.spawn(p.x,p.y,p.z,0x70dfff,18,1.4);}
     const dashing=this.elapsed<this.dashUntil;
     if(input.just.interact){
+      this.anim?.trigger('Interact',{fade:.12,lock:.48});
       if(this.level.interact(this.physics.playerBody.translation(),this.progress)) this.save();
       else this.ui.toast('Get closer to a terminal');
     }
@@ -157,7 +169,7 @@ export class WorldGame {
     this.physics.animatePlatforms(this.elapsed);
     const result=this.physics.move(movement.x*speed*dt,this.vert*dt,movement.z*speed*dt);
     if(result.grounded && this.vert<=0){
-      if(!this.lastGrounded && this.vert < -6){this.audio.play('land');this.effects?.spawn(result.x,result.y-.77,result.z,0xe7ffff,9,.48);this.landTimer=.23;}
+      if(!this.lastGrounded && this.vert < -6){this.audio.play('land');this.effects?.spawn(result.x,result.y-.77,result.z,0xe7ffff,9,.48);this.landTimer=.23;this.anim?.trigger('Land',{fade:.10,lock:.23});}
       this.vert=-.2;this.jumpCount=0;
     }
     this.lastGrounded=result.grounded;
@@ -166,10 +178,10 @@ export class WorldGame {
     const p=result;
     if(p.y < -8 || Math.abs(p.x) > 28){this.respawn(true);return;}
     const events=this.level.update(dt,this.elapsed,p,this.progress,dashing);
-    if(events.bounce && this.vert<=0){this.vert=15.5;this.jumpCount=1;this.audio.play('jump');this.effects?.spawn(p.x,p.y-.65,p.z,0xffcf74,13,1.5);this.ui.toast('SPRING PAD!');}
+    if(events.bounce && this.vert<=0){this.vert=15.5;this.jumpCount=1;this.anim?.trigger('Jump',{fade:.09,lock:.2});this.audio.play('jump');this.effects?.spawn(p.x,p.y-.65,p.z,0xffcf74,13,1.5);this.ui.toast('SPRING PAD!');}
     if(dashing){this.trailTimer+=dt;if(this.trailTimer>.025){this.trailTimer=0;this.effects?.trail(p.x,p.y-.6,p.z);}}
     if(events.danger && this.invuln===0){
-      this.health--;this.invuln=1.45;this.audio.play('hit');this.ui.toast('PIX took damage');
+      this.health--;this.invuln=1.45;this.anim?.trigger('Stumble',{fade:.08,lock:.30});this.audio.play('hit');this.ui.toast('PIX took damage');
       if(this.health<=0){this.respawn(true);return;}
     }
     if(canReachGoal(this.progress,p.z)) {this.finish();return;}
@@ -177,15 +189,27 @@ export class WorldGame {
     // Subtle landing response, on top of the real GLB animation.
     const squash=1-Math.sin(this.landTimer/.23*Math.PI)*.075;
     this.model.scale.set(.83/squash,.83*squash,.83/squash);
-    if(Math.abs(input.x)+Math.abs(input.z)>.07) {
+    let turn=0;
+    const moving=Math.hypot(input.x,input.z);
+    if(moving>.07){
       const desired=Math.atan2(movement.x,-movement.z);
-      let current=this.model.rotation.y,diff=Math.atan2(Math.sin(desired-current),Math.cos(desired-current));
-      this.model.rotation.y += diff*Math.min(1,dt*11);
+      const current=this.model.rotation.y;
+      const diff=Math.atan2(Math.sin(desired-current),Math.cos(desired-current));
+      this.model.rotation.y+=diff*(1-Math.exp(-12*dt));
+      turn=diff;
     }
+    // Inertial leaning is separate from the authored animated rig: the clip
+    // animates limbs and chest, while the whole avatar leans into motion.
+    const airborne=!(result.grounded && this.vert<=0);
+    const lean=pixLean({move:moving,sprint:input.sprint,dashing,airborne,turn});
+    this.forwardLean+=(lean.forward-this.forwardLean)*(1-Math.exp(-7*dt));
+    this.turnLean+=(lean.bank-this.turnLean)*(1-Math.exp(-9*dt));
+    this.model.rotation.x=this.forwardLean;
+    this.model.rotation.z=this.turnLean;
     if(this.anim){
-      const movement=Math.hypot(input.x,input.z);
-      this.anim.set(this.jumpCount>0?'Jump':movement>.12?'Walk':'Idle');
-      const walk=this.anim.actions.get('walk');if(walk)walk.timeScale=input.sprint?1.35:1;
+      const requested=selectPixLocomotion({grounded:!airborne,verticalSpeed:this.vert,move:moving,sprint:input.sprint,dashing});
+      this.anim.set(requested,.19);
+      document.documentElement.dataset.pixAnimation=this.anim.currentName;
     }
     if(this.elapsed-this.lastSaveTime>8){this.lastSaveTime=this.elapsed;this.save();}
   }
@@ -223,6 +247,8 @@ export class WorldGame {
     this.progress.finish();if(!this.record||this.elapsed<this.record)this.record=this.elapsed;await this.save();
     // Stage one completion is not misreported as finishing all five worlds.
     this.bridge.completion();this.audio.play('win');
+    this.anim?.trigger('Victory',{fade:.18,lock:1.9});
+    this.engine.pause(false); // continue only the victory pose; physics tick sees running=false
     this.ui.complete(this.progress,{record:this.record,onReplay:()=>{this.completedShown=false;this.start(true)},onExit:()=>this.exit(),onClassic:()=>this.classic()});
   }
   async exit(){
