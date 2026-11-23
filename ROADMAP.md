@@ -1,22 +1,11 @@
-# ASTATION 5 PRO — GAME REVOLUTION 4.0 / ROADMAP
+# ASTATION 5 PRO — GAME REVOLUTION Roadmap
 
-## Wydanie Alpha 1 — aktywne
+1. **World Beta 5.0** — first playable 3D platform level with imported original PIX GLB, motion clips, interactive quests, checkpoints, and 3D renderer (released).
+2. **World polish** — improve real visual GPU performance on iPhone, add refined Blender-authored meshes/textures and keyframe animation blending, improve level geometry and boss behavior.
+3. **ASTATION RACING: VELOCITY X** — first completely playable arcade circuit with 3D vehicle, opponent AI, timed laps and a garage. Only publish after driving tests.
+4. **ASTATION HERO: RISE OF LEGENDS** — 3D city district, traversal, combat and missions.
+5. **ASTATION SHADOW: LOST SIGNAL** — playable first-person puzzle/horror episode.
+6. **ASTATION BLADE: ETERNAL WAR** — fantasy action RPG combat vertical slice.
+7. **ASTATION FOOTBALL: PRO LEAGUE** — playable match mode, passes, shots and goalkeeper AI.
 
-- [x] Kopia starej wersji OS na osobnej gałęzi GitHub
-- [x] Wycofanie pięciu starych gier z aktywnej biblioteki, sklepu i stanu instalacji
-- [x] Zachowanie historii oraz archiwizacja starych zapisów i trofeów
-- [x] Nowy katalog gier i izolowane moduły rozgrywki
-- [x] ASTATION WORLD: DREAMBOUND — pięć światów, robot PIX, skoki, kryształy, przełączniki i zapis
-- [x] Test logiki Dreambound i podstawowych funkcji ASTATION OS
-- [ ] Test obrazu Three.js na prawdziwym iPhonie i komputerze z WebGL
-- [ ] Modele GLB/GLTF, profesjonalna oprawa środowisk i animacji
-
-## Kolejne etapy — nie są jeszcze gotowe
-
-1. **ASTATION RACING: VELOCITY X** — gra wyścigowa 3D, trasy i samochody.
-2. **ASTATION HERO: RISE OF LEGENDS** — eksploracja miasta, zadania fabularne i supermoce.
-3. **ASTATION SHADOW: LOST SIGNAL** — fabularna gra mystery/survival.
-4. **ASTATION BLADE: ETERNAL WAR** — gra przygodowa fantasy RPG.
-5. **ASTATION FOOTBALL: PRO LEAGUE** — trójwymiarowa gra sportowa.
-
-Każdą grę implementujemy, sprawdzamy i dopiero potem dodajemy jako grywalną w ASTATION Store. To nie jest lista działających premier.
+All new games should be original and separately tested before being added to the active store. GitHub Pages remains the hosting platform. Local profiles/trophies and archive migration are preserved.

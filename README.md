@@ -1,40 +1,44 @@
-# ASTATION 5 PRO — Game Revolution 4.0 · World Alpha
+# ASTATION 5 PRO — GAME REVOLUTION 5.0
 
-**Graj:** https://astation-console.github.io/astation-5-pro/
+**ASTATION WORLD: DREAMBOUND — World Beta (first production milestone)**
 
-Pierwszy etap całkowitej przebudowy gier. Zachowuje dotychczasowy **ASTATION OS 3.0** (profile, sklep, pobieranie, trofea, zapis, powiadomienia, znajomi NPC, imprezy, galerię, SSD i ustawienia), ale zastępuje aktywną bibliotekę gier.
+**Live:** https://astation-console.github.io/astation-5-pro/
 
-## Kopia bezpieczeństwa
+ASTATION 5 PRO remains a browser console simulation hosted on GitHub Pages. The existing ASTATION OS is preserved: profile, shop, simulated game installation queue, trophy/archive history, notifications, friends/party NPC demo, game hub, local saves, and settings.
 
-Wersja sprzed przebudowy jest zachowana w gałęzi: [`backup-astation-os-3-before-game-revolution-4`](https://github.com/Astation-console/astation-5-pro/tree/backup-astation-os-3-before-game-revolution-4).
+## What's new in Game Revolution 5.0
 
-Podczas pierwszego wejścia do 4.0 aplikacja zapisuje **jednorazową kopię starego stanu** w `localStorage` pod nazwą `astation_legacy_backup_v4`, a historię/stare statystyki/trofea w archiwum systemu. Pięć dawnych gier znika z instalacji i aktywnego sklepu. Trofea i ich historia **nie są kasowane**. Nowe gry nie wczytują ich niezgodnych zapisów.
+- **Original PIX model** exported to `games/world/assets/pix.glb` (glTF 2.0) with body parts and 3 animation clips: `Idle`, `Walk`, `Jump`.
+- **Three.js 3D gameplay** with follow camera, character movement, double-jump, dash, crystals, enemy patrols, portals and puzzle terminals.
+- **Polished Green Valley** terrain: sculpted rock formations, greenery, glowing waterfall, flags, moving platforms, checkpoint beacon and atmosphere; four additional existing worlds remain playable.
+- **Custom audio cues** for jumps, collecting, dashing, checkpoints, damage, terminals and portals (not PlayStation copyrighted audio).
+- **Redesigned HUD / title / pause screens** based on editable Figma concepts; link below.
+- **Adaptive graphics** settings (`performance`, `balanced`, `quality`), touch controls, keyboard/gamepad, mouse camera drag.
+- **Memory cleanup** between worlds; original procedural PIX fallback if GLB fails to load.
+- **Save compatibility:** uses the existing ASTATION OS key `astation_pro_v2` and Dreambound key `ASTATION_WORLD_DREAMBOUND_v4`; prior game archives are retained.
 
-## Dostępna gra: ASTATION WORLD — DREAMBOUND
+## Figma
 
-**Grywalna wersja Alpha:** powstała odrębna produkcja z własnym kodem w `games/world/world.js` oraz silnikiem Three.js. Obejmuje:
+Editable HUD, loading and pause screens: https://www.figma.com/design/kpMsC4skZIvlbLTOEJavlj
 
-- Bohater PIX — animowany, składający się z wielu elementów model robota 3D.
-- Pięć światów: Green Valley, Candy Galaxy, Frozen Kingdom, Mechanical Factory i Sky Islands.
-- Sterowanie 3D, kamera zza bohatera, skok i podwójny skok, dash.
-- Ruchome platformy, zagrożenia, obiekty kolekcjonerskie, 2 interaktywne terminale na poziom, checkpointy i finałowy strażnik.
-- Stopniowe odblokowywanie światów, automatyczne zapisywanie, ekrany Nowa gra / Kontynuuj / Pauza / Zwycięstwo.
-- Dziesięć trofeów powiązanych z faktycznymi wydarzeniami w grze.
+## Tech stack
 
-Sterowanie na komputerze: **WASD / strzałki** ruch, **Spacja** skok i podwójny skok, **Q** dash, **E** aktywacja terminalu, **Shift** sprint, **Esc** pauza. Na telefonie: joystick i przyciski Skok / Dash / E / Pauza. Podstawowe sterowanie padem opiera się na Gamepad API.
+Static HTML/CSS/JavaScript + Three.js 0.186.1 and `GLTFLoader`, WebGL, glTF 2.0. No backend required. The Three.js runtime is loaded from jsDelivr; players must have internet access.
 
-## Instalowanie i zapisy
+**Asset provenance:** Blender was **not available** in this session. The original PIX GLB was generated programmatically with Python + `trimesh` and contains glTF animations. It can be imported into Blender for further rigging/texturing. Figma was used directly for editable UI views.
 
-Wszystkie transfery GB są **symulowane**. Rzeczywisty kod gry jest częścią strony, a nie pobieranym produktem konsolowym. Po ukończeniu symulacji instalacji gra pojawia się w menu i bibliotece.
+## Controls
 
-System zapisuje do `astation_pro_v2` (ustawienia, profil, osiągnięcia, biblioteka, kopia punktów kontrolnych). Sama gra zapisuje dodatkowo do `ASTATION_WORLD_DREAMBOUND_v4`. Panel eksportu ASTATION OS zawiera też `worldSave` z ostatnim zapisanym stanem. Wyczyść dane strony tylko wtedy, gdy nie potrzebujesz lokalnych postępów.
+- Desktop: **WASD** move; **Space** jump/double jump; **Q** dash; **E** interact; **Shift** run; **Esc** pause; drag on 3D scene to rotate camera.
+- Phone: left joystick; on-screen Jump, Dash, Interact, Pause. Right-side drag moves the camera.
+- Gamepad (browser-dependent): left stick move, right stick camera, A jump, B dash, X interact, Start pause.
 
-## Ważne ograniczenia wersji Alpha
+## Release scope
 
-- To **nie jest emulator PS5**, ani gra o skali komercyjnego AAA.
-- Postacie i dekoracje są proceduralnymi modelami 3D. Animowane modele GLB/GLTF, dopracowane tekstury i szczegółowe poziomy pozostają do zrobienia.
-- Do załadowania Three.js jest potrzebne połączenie z CDN. Bez Three.js/WebGL pojawia się wyraźny komunikat zamiast udawanej rozgrywki.
-- Testy automatyczne sprawdziły menu desktop/mobile, migrację archiwum, sklep, symulowane pobieranie oraz logikę pięciu światów w symulowanym środowisku Three.js. Nie był możliwy pełny test renderera WebGL na iPhonie ani fizycznego kontrolera.
-- Pozostałe pięć nowych gier nie jest jeszcze dostępnych. Ich plan znajduje się w `ROADMAP.md`. Nie dodajemy pustych kafelków.
+Only `ASTATION WORLD: DREAMBOUND` is active. The five other requested games — Hero, Racing, Shadow, Blade and Football — are not yet playable and are not falsely presented in the store.
 
-Kod własny ASTATION. Three.js autorstwa Three.js Authors, licencja MIT, importowany z jsDelivr. Projekt nie jest powiązany z Sony.
+**Testing:** OS integration and logic are verified with automated desktop/mobile tests and a simulated 3D renderer. GLB structure and animation tracks are validated. A final visual WebGL test on a physical mobile device / GPU remains necessary before claiming production-level visual quality or a guaranteed frame rate.
+
+**Backup:** https://github.com/Astation-console/astation-5-pro/tree/backup-game-revolution-4-before-5
+
+This is an original, independent browser project, not a PlayStation emulator and not affiliated with Sony.
