@@ -24,6 +24,8 @@ jobs:
           test -f dist/index.html
           test -f dist/games/world/index.html
           test -f dist/models/pix.glb
+          test -f dist/models/pix_mk2.glb
+          test -f dist/models/guardian_mk2.glb
           test -f dist/games/world/classic.html
       - name: Build safe GitHub Pages preview under /preview-6/
         if: github.event_name == 'push' && github.ref == 'refs/heads/engine-6-dreambound-preview'

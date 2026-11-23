@@ -179,14 +179,27 @@ def merge_pix(base,addon,parents):
  for idx,node in enumerate(aj['nodes']):
   if 'mesh' not in node:continue
   q=copy.deepcopy(node);q['mesh']+=meshOff; q.pop('children',None)
-  bj['nodes'].append(q)
   parent=parents.get(node.get('name',''),'PIX_Rig')
   if parent not in baseParents:raise RuntimeError(f'Unknown parent {parent}')
+  # IMPORTANT: Add-on mesh vertices were authored in PIX_Rig/world coordinates.
+  # Original Head/Arm/Leg pivots have nonzero resting translations, so parenting
+  # without compensating their transform doubles the offset and creates broken,
+  # stretched-looking characters. Convert authored world-space into parent-local.
+  def node_matrix(n):
+   if 'matrix' in n:return np.array(n['matrix'],float).reshape(4,4,order='F')
+   matrix=np.eye(4);matrix[:3,3]=n.get('translation',[0,0,0]);return matrix
+  baseParent=bj['nodes'][baseParents[parent]]
+  worldParent=node_matrix(baseParent)
+  localAddon=node_matrix(q)
+  fixed=np.linalg.inv(worldParent) @ localAddon
+  q.pop('translation',None);q.pop('rotation',None);q.pop('scale',None)
+  q['matrix']=list(fixed.flatten(order='F'))
+  bj['nodes'].append(q)
   bj['nodes'][baseParents[parent]].setdefault('children',[]).append(len(bj['nodes'])-1)
  bj['buffers'][0]['byteLength']=offs+len(ab)
  bj['asset']['generator']='ASTATION Studios — PIX MK II geometry enhancement / preserved animation rig'
  # asset.extras not required; annotations for build and visual appearance
- bj['asset'].setdefault('extras',{})['revision']='6.2.0'
+ bj['asset'].setdefault('extras',{})['revision']='6.3.0'
  return glb_pack(bj,bb+ab)
 
 # Two reusable scenery prefabs. Geometry is authored as glTF mesh data, not 2D cards.

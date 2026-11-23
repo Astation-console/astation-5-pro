@@ -42,7 +42,7 @@ export class WorldGame {
     this.physics = await Physics.create();
     this.cameraRig = new CameraRig(this.engine.camera);
     this.input = new InputManager(this.engine.renderer.domElement, document.getElementById('stick'), document.getElementById('touchbuttons'));
-    this.ui.status('Loading PIX MK II detailed model...',40);
+    this.ui.status('Loading PIX repaired MK III model...',40);
     let gltf;
     try{gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix_mk2.glb')}
     catch(error){console.warn('PIX MK II unavailable, restoring original PIX GLB',error);gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix.glb');}
@@ -50,7 +50,7 @@ export class WorldGame {
     this.model.scale.setScalar(.83);
     this.engine.scene.add(this.model);
     this.anim = new AnimationController(this.model, gltf.animations);
-    document.documentElement.dataset.pixModel=gltf.parser.json?.asset?.extras?.revision==='6.2.0'?'mk2':'classic';
+    document.documentElement.dataset.pixModel=gltf.parser.json?.asset?.extras?.revision==='6.3.0'?'mk2':'classic';
     this.modelEmissive=[];
     this.model.traverse(obj=>{if(!obj.isMesh)return;const materials=Array.isArray(obj.material)?obj.material:[obj.material];for(const mat of materials){if(mat?.emissive && mat.emissive.r+mat.emissive.g+mat.emissive.b>.15)this.modelEmissive.push({mat,baseline:mat.emissiveIntensity??1});}});
     this.effects = new ImpactEffects(this.engine.scene, this.engine.quality);
@@ -69,7 +69,7 @@ export class WorldGame {
     this.engine.onFrame = dt => this.frame(dt);
     this.engine.start();this.engine.pause(true);
     this.ready=true;this.ui.status('READY',100);
-    this.ui.menu(this.progress.played>0?'Continue PIX MK II’s adventure':'Welcome to PIX MK II' ,{
+    this.ui.menu(this.progress.played>0?'Continue PIX MK III’s adventure':'Welcome to PIX MK III' ,{
       onPlay: () => this.start(false), onNew: () => this.start(true), onClassic: () => this.classic()
     });
     this.bridge.send('ready',{stage:1});

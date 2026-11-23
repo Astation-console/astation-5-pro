@@ -1,8 +1,14 @@
-# ASTATION 5 PRO — PIX ADVENTURE UPDATE 6.2 (PREVIEW)
+# ASTATION 5 PRO — PIX ADVENTURE UPDATE 6.3 — MODEL FIX (PREVIEW)
 
 **Status: test branch, not production.** The public ASTATION OS 5.1 homepage stays live until CI + browser testing confirms this engine is ready.
 
-## What changed in PIX Adventure 6.2
+## Critical model repair in 6.3
+
+- Fixed incorrect transforms on the animated head, arm and leg pivots. The 6.2 detail meshes were authored in world coordinates, then offset again by their parents, creating visibly detached/elongated geometry. Their transforms now compensate the parent rest transform, preserving animation.
+- After repair, PIX model bounds match the original height (3.28 units) instead of growing incorrectly to 5.07 units.
+- All original Idle, Walk and Jump clips retained, plus independent model-offset regression checks.
+
+## Existing improvements from PIX Adventure 6.2
 
 - **PIX MK II animated GLB:** 96 real GLB meshes, 12 PBR materials, new armor/visor lights, fingers, leg servos, illuminated thrusters. Original Idle/Walk/Jump animation channels preserved in the updated GLB.
 - **New guardian model:** 31 meshes with armored body, glowing visor/eyes, robotic arms and floating jet system; reacts visually to alert and patrol states.

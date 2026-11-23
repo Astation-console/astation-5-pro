@@ -30,7 +30,18 @@ test('PIX MK II is a detailed GLB with all three original animation clips',()=>{
   const j=parseGLB('pix_mk2.glb');
   assert.ok(j.meshes.length>=90);
   assert.deepEqual(j.animations.map(a=>a.name).sort(),['Idle','Jump','Walk']);
+  assert.equal(j.asset.extras.revision,'6.3.0');
   const nodes=j.nodes.map(n=>n.name);
+  // Regression: add-on mesh locations must compensate the original translated rig pivots.
+  // Without inverse-parent matrices, the helmet hovers ~2.2 m above the head and
+  // arm/leg details are detached from their animated limbs.
+  const ear=j.nodes.find(n=>n.name==='ear_sensor_1');
+  assert.ok(ear?.matrix,'PIX helmet detail requires a parent-local matrix');
+  assert.ok(Math.abs(ear.matrix[13]+2.17)<.001,'head pivot translation must be cancelled');
+  const pauldron=j.nodes.find(n=>n.name.startsWith('pauldron_cap_'));
+  assert.ok(pauldron?.matrix,'shoulder detail should be parent-local');
+  assert.ok(Math.abs(pauldron.matrix[13]+1.67)<.001,'arm pivot translation must be cancelled');
+  assert.ok(Math.abs(Math.abs(pauldron.matrix[12])-.58)<.001,'arm horizontal offset must be cancelled');
   for(const required of ['PIX_HeadPivot','PIX_ArmL','PIX_ArmR','PIX_LegL','PIX_LegR'])assert.ok(nodes.includes(required));
   for(const a of j.animations)for(const ch of a.channels)assert.ok(ch.target.node<j.nodes.length);
 });
