@@ -5,6 +5,8 @@ test('Green Valley loads its real 3D renderer and animated GLB, then starts game
   await page.goto(url);
   await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
   await expect(page.locator('#render canvas')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-pix-model','mk2');
+  await expect(page.locator('html')).toHaveAttribute('data-guardian-model','mk2');
   await expect(page.getByText('WORLD', {exact:false}).first()).toBeVisible();
   await page.getByRole('button',{name:'NEW GAME'}).click();
   await expect(page.locator('#overlay')).toHaveClass(/hidden/);

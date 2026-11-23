@@ -29,6 +29,7 @@ export class GreenValley {
     this.crystals = []; this.terminals = [];
     this.scenery = []; this.enemy = null;
     this.moving = []; this.hazards = []; this.time = 0;this.springPads=[];this.clouds=[];this.lastSpring=-100;this.spotlight=null;
+    this.detailPrefabs=[];this.detailMotion=[];this.guardianModel=null;this.modelUpgradeStatus='pending';
     this.materials = {
       grass:mat('#69bf85'), meadow:mat('#90d2a0'), lavender:mat('#86b9a9'), bluegrass:mat('#61b9a4'), rim:mat('#aaf0b3'), rock:mat('#657e86'), side:mat('#5b7c78'),
       water:mat('#2b94bb',{metalness:.23,roughness:.15,transparent:true,opacity:.86}),
@@ -74,6 +75,63 @@ export class GreenValley {
     this.buildEnemy();
     this.checkpoint=this.makeBeacon(1,-.7,-57.1);
     this.gateway=this.makeGateway(0,1.9,-97);
+  }
+  /**
+   * Optional GLB-based visual upgrade: no game logic depends on remote model loading.
+   * Rapier colliders use the same world-space locations as visible pedestals/trees.
+   * GLB models are authored locally and copied into public/models, so GitHub Pages
+   * serves them as static files without any new backend.
+   */
+  async upgradeModels(resources, baseUrl='') {
+    const prefix=baseUrl.endsWith('/')?baseUrl:baseUrl+'/';
+    const tasks=[
+      {name:'guardian',file:'guardian_mk2.glb'},
+      {name:'tree',file:'dream_tree_mk2.glb'},
+      {name:'arch',file:'dream_arch_mk2.glb'},
+    ];
+    const results=await Promise.allSettled(tasks.map(x=>resources.model(prefix+'models/'+x.file)));
+    const get=name=>{const ix=tasks.findIndex(x=>x.name===name);return results[ix].status==='fulfilled'?results[ix].value.scene:null;};
+    const guardian=get('guardian');
+    if(guardian&&this.enemy){
+      // Free old placeholder meshes, but keep shared material definitions until disposal.
+      for(const mesh of [...this.enemy.visual.children]){
+        this.enemy.visual.remove(mesh);
+        mesh.geometry?.dispose();
+      }
+      guardian.scale.setScalar(.88);
+      this.enemy.visual.add(guardian);
+      this.guardianModel=guardian;
+      this.modelUpgradeStatus='guardian';
+    }
+    const tree=get('tree');
+    if(tree){
+      // Hero trees along the edges; background forest still uses GPU instancing.
+      for(const [i,p] of ISLANDS.entries()) {
+        if(i===6)continue;
+        for(const side of (i===0?[-1,1]:[i%2===0?1:-1])){
+          const x=p.x+side*(p.w/2-1.05),z=p.z+((i%3)-1)*p.d*.23;
+          const item=tree.clone();item.position.set(x,p.y+.20,z);
+          const scale=.70+((i*3+(side===1?1:0))%4)*.065;
+          item.scale.setScalar(scale);
+          item.rotation.y=(i*1.75+(side===1?1.4:0));
+          this.group.add(item);this.detailPrefabs.push(item);
+          this.physics.staticCollider({x,y:p.y+.88,z,w:.27*scale,h:1.5*scale,d:.27*scale});
+        }
+      }
+      this.modelUpgradeStatus='trees';
+    }
+    const arch=get('arch');
+    if(arch){
+      for(const index of [1,3,5]){
+        const p=ISLANDS[index],z=p.z+Math.min(1.6,p.d*.2);
+        const item=arch.clone();item.position.set(p.x,p.y+.25,z);
+        item.scale.setScalar(.84);this.group.add(item);this.detailPrefabs.push(item);
+        for(const side of [-1,1])this.physics.staticCollider({x:p.x+side*1.30,y:p.y+1.02,z,w:.35,h:1.47,d:.43});
+      }
+      this.modelUpgradeStatus='complete';
+    }
+    if(results.some(r=>r.status==='rejected'))console.warn('Using fallback scenery for unavailable GLB model(s).');
+    return this.modelUpgradeStatus;
   }
   buildScenery(){
     const rand=makeRand();const treeG=new THREE.ConeGeometry(.72,3.1,7),trunkG=new THREE.CylinderGeometry(.12,.17,1.25,6);
@@ -260,6 +318,10 @@ export class GreenValley {
       enemy.x=Math.max(-4.35,Math.min(4.35,enemy.x));enemy.z=Math.max(-64.5,Math.min(-56,enemy.z));
       enemy.visual.position.set(enemy.x,enemy.y+Math.sin(now*2)*.15,enemy.z);
       enemy.visual.rotation.y=Math.atan2(-enemy.lookingX,-enemy.lookingZ);
+      if(this.guardianModel){
+        this.guardianModel.rotation.z=Math.sin(now*2.4)*.065;
+        this.guardianModel.scale.setScalar((enemy.state==='chase'?1.01:.88)*(1+Math.sin(now*2.6)*.018));
+      }
       if(distance<1.3&&Math.abs(player.y-enemy.y)<2.0){
         if(dashing){enemy.stunned=3;enemy.aware=0;this.onEvent('enemyDodged',{});}else danger=true;
       }
@@ -268,6 +330,7 @@ export class GreenValley {
   }
   dispose(){
     this.scene.remove(this.group);
+    this.detailPrefabs.length=0;
     const geo=new Set(),mts=new Set();this.group.traverse(o=>{
       if(o.geometry)geo.add(o.geometry);
       const materials=Array.isArray(o.material)?o.material:[o.material];for(const mat of materials)if(mat)mts.add(mat);

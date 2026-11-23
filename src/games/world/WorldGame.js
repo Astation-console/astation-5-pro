@@ -42,12 +42,17 @@ export class WorldGame {
     this.physics = await Physics.create();
     this.cameraRig = new CameraRig(this.engine.camera);
     this.input = new InputManager(this.engine.renderer.domElement, document.getElementById('stick'), document.getElementById('touchbuttons'));
-    this.ui.status('Loading animated PIX...',40);
-    const gltf = await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix.glb');
+    this.ui.status('Loading PIX MK II detailed model...',40);
+    let gltf;
+    try{gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix_mk2.glb')}
+    catch(error){console.warn('PIX MK II unavailable, restoring original PIX GLB',error);gltf=await this.engine.resources.model(import.meta.env.BASE_URL + 'models/pix.glb');}
     this.model = gltf.scene;
     this.model.scale.setScalar(.83);
     this.engine.scene.add(this.model);
     this.anim = new AnimationController(this.model, gltf.animations);
+    document.documentElement.dataset.pixModel=gltf.parser.json?.asset?.extras?.revision==='6.2.0'?'mk2':'classic';
+    this.modelEmissive=[];
+    this.model.traverse(obj=>{if(!obj.isMesh)return;const materials=Array.isArray(obj.material)?obj.material:[obj.material];for(const mat of materials){if(mat?.emissive && mat.emissive.r+mat.emissive.g+mat.emissive.b>.15)this.modelEmissive.push({mat,baseline:mat.emissiveIntensity??1});}});
     this.effects = new ImpactEffects(this.engine.scene, this.engine.quality);
     this.anim.set('Idle');
     this.ui.status('Generating Green Valley...',86);
@@ -56,12 +61,15 @@ export class WorldGame {
     if(saved && saved.version===6){ this.progress=new MissionManager(saved.mission || {});this.record=saved.bestTime||null; }
     this.level = new GreenValley(this.engine.scene, this.physics, (event,data) => this.onLevelEvent(event,data));
     this.level.initialize(this.progress);
+    this.ui.status('Loading guardian and forest models...',94);
+    await this.level.upgradeModels(this.engine.resources, import.meta.env.BASE_URL).catch(error => console.warn('Model upgrade fallback',error));
+    document.documentElement.dataset.guardianModel=this.level.guardianModel?'mk2':'classic';
     this.respawn(false);
     this.engine.onTick = dt => this.tick(dt);
     this.engine.onFrame = dt => this.frame(dt);
     this.engine.start();this.engine.pause(true);
     this.ready=true;this.ui.status('READY',100);
-    this.ui.menu(this.progress.played>0?'Continue PIX’s adventure':'Welcome to Dreambound',{
+    this.ui.menu(this.progress.played>0?'Continue PIX MK II’s adventure':'Welcome to PIX MK II' ,{
       onPlay: () => this.start(false), onNew: () => this.start(true), onClassic: () => this.classic()
     });
     this.bridge.send('ready',{stage:1});
@@ -185,6 +193,7 @@ export class WorldGame {
     const p=this.physics?.playerBody.translation();if(!p)return;
     this.cameraRig.update(p,dt,this.level?.obstacles||[],Boolean(this.lastInput?.sprint));
     this.anim?.tick(dt);
+    if(this.modelEmissive){const pulse=1+Math.sin(this.elapsed*3.6)*.10, dashBoost=this.elapsed<this.dashUntil?1.65:1;for(const e of this.modelEmissive)e.mat.emissiveIntensity=e.baseline*pulse*dashBoost;}
     this.effects?.update(dt);
     this.ui.hud(this.progress,this.health,{dash:this.dashCooldown,position:p,level:this.level,record:this.record,elapsed:this.elapsed});
   }

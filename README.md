@@ -1,8 +1,17 @@
-# ASTATION 5 PRO — PIX ADVENTURE UPDATE 6.1 (PREVIEW)
+# ASTATION 5 PRO — PIX ADVENTURE UPDATE 6.2 (PREVIEW)
 
 **Status: test branch, not production.** The public ASTATION OS 5.1 homepage stays live until CI + browser testing confirms this engine is ready.
 
-## What changed in PIX Adventure 6.1
+## What changed in PIX Adventure 6.2
+
+- **PIX MK II animated GLB:** 96 real GLB meshes, 12 PBR materials, new armor/visor lights, fingers, leg servos, illuminated thrusters. Original Idle/Walk/Jump animation channels preserved in the updated GLB.
+- **New guardian model:** 31 meshes with armored body, glowing visor/eyes, robotic arms and floating jet system; reacts visually to alert and patrol states.
+- **Detailed forest props:** two new GLB prefabs, 30-mesh tree and 24-mesh ancient arch, added to Green Valley with matching trunk/column physics colliders.
+- **Rendering:** animated emissive details respond to movement and dash; scenery retains instancing for mobile performance.
+- **Model source:** `tools/build_models.py` recreates the original assets with trimesh/Python; no Blender file was claimed.
+
+### Previous 6.1 improvements retained
+
 
 - **Camera-relative controls** with full 360° orbit. Forward always follows the view rather than map axes.
 - **Forgiving jumping** with a short coyote-time window and buffered jump input, plus double-jump effects.
@@ -16,7 +25,7 @@
 ## What works in the preview
 
 - **ASTATION OS remains the exact 5.1 console**, including boot sequence, profiles, store, downloads, trophies, control centre, settings, saved progress and collectible avatars.
-- **ASTATION WORLD: Dreambound — Green Valley:** one fully designed 3D level with the original PIX model GLB and its Idle, Walk and Jump animation clips, 7 islands, moving platforms, rotating obstacles, energy hazards, a patrolling enemy, 10 crystals, 2 activation terminals, a mid-level checkpoint, a completion portal, and a result screen.
+- **ASTATION WORLD: Dreambound — Green Valley:** one fully designed 3D level with the upgraded PIX MK II model GLB and its Idle, Walk and Jump animation clips, 7 islands, moving platforms, rotating obstacles, energy hazards, a patrolling enemy, 10 crystals, 2 activation terminals, a mid-level checkpoint, a completion portal, and a result screen.
 - Three **real, event-triggered** ASTATION trophy events: first crystal (`collect`), Green Valley completion (`worldComplete`), and collecting every crystal (`secret`).
 - Real Rapier 3D collision shapes and a kinematic character controller, fixed step 1/90 second, grounded double jump, dash, camera orbit and obstruction checking.
 - **Vite + Three.js + Rapier** modular game engine. Independent modules for graphics, physics, loading, AnimationMixer, camera, sound, input and IndexedDB saves.
@@ -45,7 +54,7 @@ The GitHub Actions test workflow runs all of those checks on every change to `en
 
 ## Important accuracy notes
 
-- The existing PIX GLB contains **mesh-transform animations** named Idle, Walk and Jump, **not a skinned rig**. The new AnimationMixer supports any GLTF animations, but we will add rigged assets later when Blender production files are available.
+- PIX MK II preserves the existing **mesh-transform animations** named Idle, Walk and Jump, **not a skinned rig**. The new AnimationMixer supports any GLTF animations, but we will add rigged assets later when Blender production files are available.
 - This is **one** next-gen Green Valley level, not six finished games. The five older worlds remain in Classic mode and no other new products appear as unfinished storefront tiles.
 - A virtual game download in ASTATION OS does not download a real external title.
 - ASTATION has no real online multiplayer backend on GitHub Pages.
