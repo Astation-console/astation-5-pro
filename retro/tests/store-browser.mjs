@@ -19,10 +19,12 @@ try{
   const origin=`http://127.0.0.1:${server.address().port}`;
   await page.route('https://cdnjs.cloudflare.com/**',route=>route.abort());
   await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
+  assert.equal(await page.locator('#choose').isVisible(),false,'profile picker must stay hidden until boot completes');
   await page.locator('#power-button').click();
   await page.locator('#enter-profile').waitFor({state:'visible',timeout:12000});
   await page.locator('#enter-profile').click();
   await page.locator('#console.active').waitFor({timeout:15000});
+  await page.locator('#choose').waitFor({state:'hidden',timeout:5000});
   assert.equal(await page.locator('#retro-tile').count(),0,'old hardcoded RETRO tile must be gone');
   await page.locator('#nav-media').click();
   await page.locator('button.product[data-id=retro]').waitFor({timeout:10000});
