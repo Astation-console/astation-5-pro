@@ -3,6 +3,7 @@ import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {resolve,extname,normalize,join} from 'node:path';
 import {chromium} from 'playwright';
+import {inspectNDS} from '../rom.js';
 
 // An MIT-licensed homebrew program downloaded during CI, never a commercial ROM.
 const testROM=process.env.ASTATION_TEST_NDS;
@@ -26,8 +27,9 @@ try{
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await page.locator('#library-grid .empty-card').waitFor({timeout:20000});
   const file=await readFile(testROM);
+  try{console.log('HOME BREW HEADER',inspectNDS(new Uint8Array(file)))}catch(e){console.log('HOME BREW FORMAT CHECK',e.message,'head',Buffer.from(file).subarray(0,32).toString('hex'))}
   await page.locator('#rom-input').setInputFiles({name:'hash-bench-nds.nds',mimeType:'application/octet-stream',buffer:file});
-  await page.locator('.game-card').waitFor({timeout:12000});
+  try{await page.locator('.game-card').waitFor({timeout:12000})}catch(e){const report=await page.evaluate(()=>({toast:document.querySelector('#toast')?.textContent,library:document.querySelector('#library-grid')?.innerText}));throw new Error('Homebrew import failed: '+JSON.stringify(report),{cause:e})}
   await page.getByRole('button',{name:'Graj'}).click();
   const iframe=page.frameLocator('#player-frame');
   await iframe.locator('#game').waitFor({timeout:15000});
