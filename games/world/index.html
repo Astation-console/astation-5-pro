@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no" />
   <meta name="theme-color" content="#07182a" />
-  <title>ASTATION WORLD: Dreambound — PIX Adventure 6.2</title>
+  <title>ASTATION WORLD: Dreambound — PIX Adventure 6.5 — Heart of the Valley</title>
   <style>
     :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;color:#fff;color-scheme:dark;background:#07182a}
     *{box-sizing:border-box}html,body{margin:0;overflow:hidden;width:100%;height:100%;touch-action:none}button,a{font:inherit;-webkit-tap-highlight-color:transparent}
@@ -24,19 +24,31 @@
     .tracker{color:#a6fff3!important;font-size:11px!important;font-weight:800!important;letter-spacing:.09em!important}.interact-hint{position:absolute;left:50%;bottom:23%;transform:translateX(-50%);pointer-events:none;z-index:4;color:#fff;padding:8px 13px;border-radius:25px;background:#061f39ab;backdrop-filter:blur(12px);font-size:11px;letter-spacing:.1em;box-shadow:0 5px 18px #0019;text-align:center}.interact-hint:empty{display:none}.hud-chip{transition:transform .18s,background .18s} .hud-chip:hover{background:#103b58e6}.dialog{animation:dialogIn .3s cubic-bezier(.2,.85,.2,1) both}@keyframes dialogIn{from{opacity:0;transform:translateY(22px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
     @media(pointer:coarse){#touch{display:flex}.hint{display:none}}@media(max-width:680px){#hud{padding:9px;gap:4px}#hud .status{display:grid;grid-template-columns:repeat(2,minmax(58px,1fr));gap:5px;max-width:155px}.hud-chip{min-width:0!important}.hud-chip{min-width:62px;padding:7px 8px;border-radius:9px}.hud-chip b{font-size:13px}.hud-chip small{font-size:8px}.region{font-size:18px}.small{font-size:8px}.objective{font-size:9px;max-width:190px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}.progress{width:145px}#toast{top:84px}#stick{width:105px;height:105px}#touchbuttons{grid-template-columns:repeat(2,50px);gap:9px}#touchbuttons button,#touchbuttons button[data-input="jump"]{width:48px;height:48px}.dialog{padding:22px;border-radius:17px}.buttons{gap:7px}.buttons button{padding:12px 13px}}
     @media (max-height:440px) and (orientation:landscape){#hud{padding:6px 13px}.region{font-size:15px}.objective{font-size:9px}.hud-chip{padding:6px}.hud-chip b{font-size:12px;margin-top:2px}#stick{width:90px;height:90px}#touchbuttons button,#touchbuttons button[data-input="jump"]{width:43px;height:43px}#touch{bottom:5px}.dialog{max-width:560px;padding:14px 24px}.dialog h1{font-size:30px;margin:6px 0}.dialog h2{font-size:28px;margin:6px 0}.dialog p{margin:6px 0}.buttons{flex-direction:row;flex-wrap:wrap;margin-top:10px}.buttons button{padding:7px 12px;font-size:10px}.hint{display:none}}
+
+    /* Original Dreambound cinematics, not a static image: every dialogue line has accessible controls. */
+    #overlay.story-mode{align-items:end;background:linear-gradient(0deg,#061328f9 0%,#061326d9 39%,#061a37aa 66%,#061b390c 100%);backdrop-filter:blur(3px);padding:4vw clamp(14px,4vw,58px);text-align:left}
+    .story-cinema{width:min(1100px,98vw);margin:0 auto;color:#fff;animation:storyOpen .3s ease both}
+    @keyframes storyOpen{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .story-overline{font-weight:850;font-size:11px;letter-spacing:.23em;color:#9eeaff}
+    .story-location{margin-top:10px;font-size:clamp(25px,3.5vw,44px);font-weight:850;letter-spacing:-.04em;text-transform:uppercase;text-shadow:0 6px 18px #0009}
+    .story-content{display:flex;gap:clamp(15px,3vw,38px);align-items:center;margin:22px 0;padding:clamp(18px,3vw,35px);border:1px solid #9edaf143;border-radius:21px;background:linear-gradient(120deg,#0b243de8,#071529e9);box-shadow:0 15px 50px #0008}
+    .story-orb{width:clamp(63px,10vw,120px);height:clamp(63px,10vw,120px);flex:0 0 auto;display:grid;place-items:center;border:2px solid var(--story-color);border-radius:28%;background:radial-gradient(circle at 25% 15%,var(--story-color),#163a5b 68%);font-size:clamp(28px,4vw,53px);font-weight:950;color:#031020;box-shadow:0 0 38px color-mix(in srgb,var(--story-color) 45%,transparent)}
+    .story-lines{flex:1;min-width:0}.story-who{font-weight:900;letter-spacing:.19em;font-size:12px}.story-text{font-size:clamp(17px,2.2vw,26px);line-height:1.5;min-height:70px;margin:11px 0 25px;color:#fff}.story-actions{display:flex;gap:15px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.story-actions button{cursor:pointer;border-radius:30px;border:1px solid #ffffff51;padding:11px 20px;color:#fff;background:#ffffff1a;font-weight:750}.story-actions .story-next{color:#12334e;background:#f0fcff;border-color:#fff}.story-skip{opacity:.7}.story-count{margin-right:auto;color:#9cbacf;font-size:11px;letter-spacing:.14em}.story-progress{display:flex;gap:8px;justify-content:center}.story-progress i{width:30px;height:3px;background:#ffffff42;border-radius:5px}.story-progress i.lit{background:#8bf5e6}.journal-dialog{width:min(790px,96vw)!important}.journal-scroll{max-height:min(45vh,360px);overflow:auto;margin:20px 0}.journal-entry{background:#ffffff0e;border:1px solid #ffffff20;border-radius:10px;padding:11px 14px;margin:6px 0;display:flex;gap:10px;justify-content:space-between;align-items:center}.journal-entry span{font-size:11px;color:#abcae3;text-align:right}.journal-entry b{font-size:12px}.journal-entry.future{opacity:.55}
+    @media(max-width:650px){#overlay.story-mode{padding:14px 10px}.story-content{gap:9px;padding:14px;margin:12px 0}.story-location{font-size:21px}.story-text{font-size:14px;min-height:50px;margin:8px 0 15px}.story-orb{width:50px;height:50px;border-radius:17px;font-size:26px}.story-actions{gap:6px}.story-actions button{padding:10px 12px;font-size:11px}.story-count{font-size:10px}}
+    @media(max-height:470px) and (orientation:landscape){.story-content{margin:7px 0;padding:10px 15px}.story-text{font-size:14px;margin:5px 0 8px;min-height:35px}.story-location{font-size:19px}.story-orb{width:46px;height:46px}.story-overline{font-size:9px}.story-actions button{padding:7px 11px}.story-progress{display:none}}
   </style>
 </head>
 <body>
   <div id="render"></div>
   <header id="hud">
-    <div><div class="small">ASTATION WORLD · DREAMBOUND</div><div class="region">GREEN VALLEY</div><div class="objective" id="mission">RESTORE THE CORE</div><div class="objective tracker" id="target">FOLLOW THE DREAM SIGNAL</div><div class="progress"><i id="mission-bar"></i></div></div>
+    <div><div class="small">ASTATION WORLD · DREAMBOUND · CHAPTER I</div><div class="region">GREEN VALLEY · HEART OF THE VALLEY</div><div class="objective" id="mission">RESTORE THE CORE</div><div class="objective tracker" id="target">FOLLOW THE DREAM SIGNAL</div><div class="progress"><i id="mission-bar"></i></div></div>
     <div class="status"><div class="hud-chip"><small>PIX STATUS</small><b id="hp">HP 3/3</b></div><div class="hud-chip"><small>CRYSTALS</small><b id="crystals">0 / 6</b></div><div class="hud-chip"><small>TERMINALS</small><b id="terminals">0 / 2</b></div><div class="hud-chip"><small>TIME</small><b id="timer">00:00</b></div></div>
   </header>
   <div class="hint"><span id="dash">DASH READY</span> · WASD move · Space double jump · Q dash · E interact · Esc pause · Drag to orbit</div><div id="interactHint" class="interact-hint"></div>
   <div id="touch"><div id="stick" aria-label="Touch joystick"><div class="nub"></div></div><div id="touchbuttons"><button data-input="pause">PAUSE</button><button data-input="interact">E</button><button data-input="dash">DASH</button><button data-input="jump">JUMP</button></div></div>
   <div id="toast"></div>
   <div id="overlay" class="hidden"></div>
-  <div id="loading"><div class="dialog"><div class="eyebrow">ASTATION STUDIOS · NEXT GENERATION</div><h1>WORLD <span>DREAMBOUND</span></h1><p>Loading ASTATION Game Engine 6.2 and the detailed PIX MK II animated model.</p><div id="load-track"><i id="load-progress"></i></div><span id="load-label">Preparing PIX…</span></div></div>
+  <div id="loading"><div class="dialog"><div class="eyebrow">ASTATION STUDIOS · NEXT GENERATION</div><h1>WORLD <span>DREAMBOUND</span></h1><p>Loading Dreambound 6.5: Chapter I — Heart of the Valley, featuring PIX Pro Animations.</p><div id="load-track"><i id="load-progress"></i></div><span id="load-label">Preparing PIX…</span></div></div>
   <script type="module" src="../../src/games/world/main.js"></script>
 </body>
 </html>

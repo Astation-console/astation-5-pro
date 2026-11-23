@@ -8,6 +8,7 @@ import { InputManager } from '../../input/InputManager.js';
 import { AudioManager } from '../../audio/AudioManager.js';
 import { MissionManager } from '../../systems/MissionManager.js';
 import { SaveManager } from '../../systems/SaveManager.js';
+import { STORY_SCENES } from '../../systems/StoryCampaign.js';
 import { TrophyBridge } from '../../systems/TrophyBridge.js';
 import { GreenValley, canReachGoal } from './GreenValley.js';
 import { UI } from '../../ui/GameUI.js';
@@ -19,7 +20,7 @@ export class WorldGame {
   constructor() {
     this.bridge = new TrophyBridge();
     this.ui = new UI();this.saveManager = new SaveManager();
-    this.onGlobalKey = event => {if(event.code==='Escape' && this.running && this.engine?.paused && !event.repeat){event.preventDefault();this.pause(false)}};
+    this.onGlobalKey = event => {if(event.code==='Escape' && !this.storyActive && this.running && this.engine?.paused && !event.repeat){event.preventDefault();this.pause(false)}};
     window.addEventListener('keydown',this.onGlobalKey);
     this.engine = null;this.physics = null;this.level = null;
     this.audio = new AudioManager();this.anim = null;this.model = null;
@@ -33,6 +34,7 @@ export class WorldGame {
     this.jumpAssist = new JumpAssist();this.effects = null;this.trailTimer = 0;
     this.record = null; this.landTimer = 0; this.lastGrounded = false;
     this.turnLean=0;this.forwardLean=0;
+    this.storyActive=false;this.lang='pl';this.storyTotal=0;
   }
   async boot() {
     this.ui.status('Loading graphics engine...',12);
@@ -77,13 +79,36 @@ export class WorldGame {
     this.engine.onFrame = dt => this.frame(dt);
     this.engine.start();this.engine.pause(true);
     this.ready=true;this.ui.status('READY',100);
-    this.ui.menu(this.progress.played>0?'Continue PIX’s Pro Animation Adventure':'Welcome to PIX Adventure 6.4' ,{
-      onPlay: () => this.start(false), onNew: () => this.start(true), onClassic: () => this.classic()
+    this.ui.menu(this.progress.played>0?'PIX: Serce Doliny — kontynuuj historię':'PIX: Serce Doliny — Rozdział I' ,{
+      onPlay: () => this.start(false), onNew: () => this.start(true), onClassic: () => this.classic(),
+      onJournal:()=>this.ui.journal(this.progress,{lang:this.lang,onBack:()=>this.showMainMenu()})
     });
     this.bridge.send('ready',{stage:1});
     if(this.pendingStart){const p=this.pendingStart;this.pendingStart=null;this.start(Boolean(p.newGame));}
     document.addEventListener('visibilitychange',() => { if(document.hidden && this.running) this.pause(true); });
     return this;
+  }
+  showMainMenu(){
+    this.engine.pause(true);
+    this.ui.menu(this.progress.played>0?'PIX: Serce Doliny — kontynuuj historię':'PIX: Serce Doliny — Rozdział I' ,{
+      onPlay:()=>this.start(false),onNew:()=>this.start(true),onClassic:()=>this.classic(),
+      onJournal:()=>this.ui.journal(this.progress,{lang:this.lang,onBack:()=>this.showMainMenu()})
+    });
+  }
+  showStory(id,after=null){
+    if(!STORY_SCENES[id] || this.storyActive || !this.progress.story.unlock(id))return false;
+    this.storyActive=true;
+    this.engine.pause(true);
+    this.bridge.send('story',{id,chapter:1});
+    this.ui.story({...STORY_SCENES[id],id,lang:this.lang},()=>{
+      this.storyActive=false;
+      this.input?.latched?.clear(); // Continue/Skip must not become an unintended jump.
+      this.save();
+      if(typeof after==='function') after();
+      else if(this.running) this.engine.pause(false);
+    });
+    this.save();
+    return true;
   }
   classic(){window.location.href = import.meta.env.BASE_URL + 'games/world/classic.html';}
   receive({event,...data}) {
@@ -94,6 +119,7 @@ export class WorldGame {
       case 'pause': this.pause(true);break;
       case 'resume': this.pause(false);break;
       case 'quality':this.engine?.setQuality(data.mode||'balanced');break;
+      case 'settings':this.lang=data.lang==='en'?'en':'pl';break;
       case 'exit': this.exit();break;
       case 'capture':try{this.bridge.send('capture',{data:this.engine.photo('image/webp')})}catch(e){this.ui.toast('Photo unavailable')}break;
       case 'inputs':this.externalInputs=data.keys || {};break;
@@ -105,7 +131,7 @@ export class WorldGame {
     for(const terminal of this.level.terminals){terminal.active=this.progress.terminals.has(terminal.id);terminal.screen.material=terminal.active?this.level.materials.gold:this.level.materials.crystal;}
   }
   async start(fresh=false) {
-    if(!this.ready)return;
+    if(!this.ready||this.storyActive)return;
     if(fresh) {
       this.progress=new MissionManager();this.health=3;
       for(const crystal of this.level.crystals){crystal.taken=false;crystal.visual.visible=true;}
@@ -116,7 +142,7 @@ export class WorldGame {
     if(fresh||!this.elapsed)this.elapsed=0;this.respawn(false);this.running=true;
     this.engine.pause(false);this.ui.hideOverlay();
     this.anim.set('Idle',.1,{force:true});this.bridge.send('started',{stage:1});
-    this.ui.toast('Mission: Restore both terminals and collect 6 crystals');
+    if(!this.showStory('awakening'))this.ui.toast(this.lang==='pl'?'Misja: Serce Doliny — 6 iskier i 2 przekaźniki':'Mission: Heart of the Valley — 6 sparks and 2 relays');
   }
   respawn(hurt=true) {
     const point=this.progress.checkpoint;
@@ -128,15 +154,15 @@ export class WorldGame {
   }
   onLevelEvent(event,data) {
     if(event==='crystal') {
-      this.audio.play('gem');const gem=this.level.crystals.find(c=>c.id===data.id);if(gem)this.effects?.spawn(gem.x,gem.y,gem.z,0x86ffed,15,1.3);this.ui.toast('Crystal recovered');this.bridge.send('collect',{stage:1,total:this.progress.crystals.size});
+      this.audio.play('gem');if(this.progress.crystals.size===1)this.showStory('firstSpark');const gem=this.level.crystals.find(c=>c.id===data.id);if(gem)this.effects?.spawn(gem.x,gem.y,gem.z,0x86ffed,15,1.3);this.ui.toast('Crystal recovered');this.bridge.send('collect',{stage:1,total:this.progress.crystals.size});
       if(this.progress.crystals.size===this.level.crystals.length)this.bridge.send('secret',{type:'all-crystals'});
       this.save();
     } else if(event==='terminal') {
-      this.audio.play('interact');const term=this.level.terminals.find(t=>t.id===data.id);if(term)this.effects?.spawn(term.x,term.y+1,term.z,0xffdf88,22,1.1);this.ui.toast('Signal terminal activated');this.save();
+      this.audio.play('interact');this.showStory(this.progress.terminals.size===1?'firstRelay':'secondRelay');const term=this.level.terminals.find(t=>t.id===data.id);if(term)this.effects?.spawn(term.x,term.y+1,term.z,0xffdf88,22,1.1);this.ui.toast('Signal terminal activated');this.save();
     } else if(event==='checkpoint') {
-      this.audio.play('checkpoint');this.ui.toast('Checkpoint saved');this.save();
+      this.audio.play('checkpoint');this.ui.toast('Checkpoint saved');this.showStory('checkpoint');this.save();
     } else if(event==='enemyDodged') {
-      this.bridge.send('enemyDodge',{});this.ui.toast('Guardian stunned');
+      this.bridge.send('enemyDodge',{});this.ui.toast('Guardian stunned');this.showStory('guardian');
     }
   }
   tick(dt) {
@@ -184,6 +210,7 @@ export class WorldGame {
       this.health--;this.invuln=1.45;this.anim?.trigger('Stumble',{fade:.08,lock:.30});this.audio.play('hit');this.ui.toast('PIX took damage');
       if(this.health<=0){this.respawn(true);return;}
     }
+    if(this.progress.canComplete() && p.z < -87 && this.showStory('gate'))return;
     if(canReachGoal(this.progress,p.z)) {this.finish();return;}
     this.model.position.set(p.x,p.y-.81,p.z);
     // Subtle landing response, on top of the real GLB animation.
@@ -229,11 +256,13 @@ export class WorldGame {
   }
   pause(flag=true){
     if(!this.running)return;
+    if(this.storyActive){if(flag)this.engine.pause(true);return;}
     this.engine.pause(flag);
     if(flag){this.save();this.ui.pause({
       onResume:()=>this.pause(false),
       onRestart:()=>{this.respawn(false);this.pause(false);},
       onSave:()=>{this.save();this.ui.toast('Progress saved');},
+      onJournal:()=>this.ui.journal(this.progress,{lang:this.lang,onBack:()=>this.pause(true)}),
       onPhoto:()=>{try{this.ui.photo(this.engine.photo('image/png'),()=>this.pause(true))}catch{this.ui.toast('Photo mode unavailable');}},
       onQuality:(mode)=>{this.engine.setQuality(mode);localStorage.setItem('ASTATION_QUALITY',mode);this.ui.toast('Graphics: '+mode.toUpperCase());this.pause(true);},
       onClassic:()=>this.classic(),
@@ -248,12 +277,12 @@ export class WorldGame {
     // Stage one completion is not misreported as finishing all five worlds.
     this.bridge.completion();this.audio.play('win');
     this.anim?.trigger('Victory',{fade:.18,lock:1.9});
-    this.engine.pause(false); // continue only the victory pose; physics tick sees running=false
-    this.ui.complete(this.progress,{record:this.record,onReplay:()=>{this.completedShown=false;this.start(true)},onExit:()=>this.exit(),onClassic:()=>this.classic()});
+    const openSummary=()=>{this.engine.pause(false);this.ui.complete(this.progress,{record:this.record,onReplay:()=>{this.completedShown=false;this.start(true)},onExit:()=>this.exit(),onClassic:()=>this.classic()});};
+    if(!this.showStory('epilogue',openSummary))openSummary();
   }
   async exit(){
     await this.save();this.running=false;this.engine?.pause(true);this.bridge.send('exit',{});
     if(window.parent===window)this.ui.toast('Return to ASTATION OS using the console tab');
   }
-  destroy(){window.removeEventListener('keydown',this.onGlobalKey);this.running=false;this.anim?.dispose();this.input?.dispose();this.effects?.dispose();this.audio.dispose();this.level?.dispose();this.physics?.dispose();this.saveManager.close();this.engine?.destroy();}
+  destroy(){window.removeEventListener('keydown',this.onGlobalKey);this.running=false;this.anim?.dispose();this.ui._removeStoryListener?.();this.input?.dispose();this.effects?.dispose();this.audio.dispose();this.level?.dispose();this.physics?.dispose();this.saveManager.close();this.engine?.destroy();}
 }

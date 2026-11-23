@@ -10,6 +10,7 @@ test('Green Valley loads its real 3D renderer and animated GLB, then starts game
   await expect(page.locator('html')).toHaveAttribute('data-guardian-model','mk2');
   await expect(page.getByText('WORLD', {exact:false}).first()).toBeVisible();
   await page.getByRole('button',{name:'NEW GAME'}).click();
+  await page.getByRole('button',{name:'Pomiń scenę'}).click();
   await expect(page.locator('#overlay')).toHaveClass(/hidden/);
   await page.keyboard.down('KeyW');await page.waitForTimeout(500);await page.keyboard.up('KeyW');
   await page.keyboard.press('Space');await page.waitForTimeout(300);
@@ -24,6 +25,7 @@ test('Initial v6 save is in IndexedDB and classic five-world game is still avail
   await page.goto(url);
   await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
   await page.getByRole('button',{name:'NEW GAME'}).click();
+  await page.getByRole('button',{name:'Pomiń scenę'}).click();
   await expect.poll(()=>page.evaluate(async()=>{
     const req=indexedDB.open('ASTATION_GAME_ENGINE_6');
     const db=await new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});
@@ -46,6 +48,7 @@ test('mobile touch controls are present and interactive',async({browser})=>{
   await expect(page.locator('#stick')).toBeVisible();
   await expect(page.locator('[data-input="jump"]')).toBeVisible();
   await page.getByRole('button',{name:'NEW GAME'}).click();
+  await page.getByRole('button',{name:'Pomiń scenę'}).click();
   await page.locator('[data-input="jump"]').tap();
   await page.locator('[data-input="pause"]').tap();
   await expect(page.getByText('PAUSED',{exact:true})).toBeVisible();
@@ -60,6 +63,7 @@ test('PIX 6.1 shows live HUD, dash cooldown and allows changing graphics while p
   await page.goto(url);
   await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
   await page.getByRole('button',{name:'NEW GAME'}).click();
+  await page.getByRole('button',{name:'Pomiń scenę'}).click();
   await expect(page.locator('#target')).toContainText(/TERMINAL|DREAM GATE/);
   await expect(page.locator('#dash')).toContainText('DASH READY');
   await page.keyboard.press('KeyQ');
@@ -77,6 +81,7 @@ test('PIX Pro Animation 6.4 offers actual 3D motion clips and switches to Run/Da
   await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
   await expect(page.locator('html')).toHaveAttribute('data-pix-model','cinematic');
   await page.getByRole('button',{name:'NEW GAME'}).click();
+  await page.getByRole('button',{name:'Pomiń scenę'}).click();
   await page.keyboard.down('KeyW');await page.keyboard.down('ShiftLeft');
   await expect.poll(()=>page.locator('html').getAttribute('data-pix-animation')).toBe('run');
   await page.keyboard.up('ShiftLeft');await page.keyboard.up('KeyW');
@@ -84,4 +89,37 @@ test('PIX Pro Animation 6.4 offers actual 3D motion clips and switches to Run/Da
   await expect.poll(()=>page.locator('html').getAttribute('data-pix-animation')).toBe('dash');
   await page.keyboard.press('Escape');
   await expect(page.getByText('PAUSED',{exact:true})).toBeVisible();
+});
+
+test('Story edition starts with an interactive Polish chapter scene and can continue gameplay',async({page})=>{
+  const errors=[];page.on('pageerror',err=>errors.push(err.message));
+  await page.goto(url);
+  await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
+  await page.getByRole('button',{name:'NEW GAME'}).click();
+  await expect(page.locator('#overlay')).not.toHaveClass(/hidden/);
+  await expect(page.locator('.story-location')).toContainText('Stacja przebudzenia');
+  await expect(page.locator('.story-who')).toHaveText('PIX');
+  await page.getByRole('button',{name:'Dalej'}).click();
+  await expect(page.locator('.story-who')).toHaveText('LUMA');
+  await page.getByRole('button',{name:'Pomiń scenę'}).click();
+  await expect(page.locator('#overlay')).toHaveClass(/hidden/);
+  await page.keyboard.down('KeyW');await page.waitForTimeout(150);await page.keyboard.up('KeyW');
+  expect(errors).toEqual([]);
+});
+
+test('Story scenes survive reload and appear in the chapter journal',async({page})=>{
+  await page.goto(url);await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
+  await page.getByRole('button',{name:'NEW GAME'}).click();
+  await page.getByRole('button',{name:'Pomiń scenę'}).click();
+  await expect.poll(()=>page.evaluate(async()=>{
+    const req=indexedDB.open('ASTATION_GAME_ENGINE_6');
+    const db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+    const got=db.transaction('game_saves').objectStore('game_saves').get('world:green-valley:v1');
+    return await new Promise(resolve=>{got.onsuccess=()=>resolve(got.result?.data?.mission?.storySeen||[])});
+  })).toContain('awakening');
+  await page.reload();await expect(page.locator('#loading')).toHaveClass(/hidden/,{timeout:45000});
+  await page.getByRole('button',{name:'FABUŁA / STORY JOURNAL'}).click();
+  await expect(page.getByText('KRONIKA SNÓW')).toBeVisible();
+  await expect(page.getByText('Przebudzenie')).toBeVisible();
+  await expect(page.getByText('Fabuła w przygotowaniu').first()).toBeVisible();
 });
