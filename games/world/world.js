@@ -2,6 +2,7 @@
 // Only game data and game mechanics live here. OS communicates via postMessage.
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {solvePlatformCollision,carryPlatform,platformSurface,footprintOverlaps} from './collision.js';
 const $=s=>document.querySelector(s), clamp=(n,a,b)=>Math.max(a,Math.min(b,n)), PI=Math.PI;
 const worldNames=['GREEN VALLEY','CANDY GALAXY','FROZEN KINGDOM','MECHANICAL FACTORY','SKY ISLANDS'];
 const worlds=[
@@ -48,7 +49,7 @@ pixLoader.load('./assets/pix.glb',gltf=>{
 },undefined,err=>{console.warn('PIX asset not loaded; original animated robot is retained',err);$('#model-indicator').textContent='PIX · FALLBACK 3D'});
 const arms=[],legs=[];for(let side of [-1,1]){let arm=new THREE.Group();arm.position.set(side*.55,1.6,0);player.add(arm);sphere(.22,white,0,-.02,0,arm);cylinder(.145,.15,.67,white,0,-.41,0,arm);sphere(.18,glass,0,-.76,-.03,arm);arms.push(arm);let leg=new THREE.Group();leg.position.set(side*.27,.79,0);player.add(leg);cylinder(.19,.17,.65,dark,0,-.28,0,leg);box(.35,.22,.52,white,0,-.68,-.12,leg);legs.push(leg)}
 let stage=0,progress={stage:0,cores:0,checkpoints:[],collected:{},switches:{},secrets:0,failures:0,playTime:0,completions:0},running=false,paused=true,won=false;
-let pos={x:0,y:2.0,z:4.2},velY=0,grounded=false,jumps=0,health=3,checkpoint={x:0,y:2,z:3.5},time=0,dashTime=0,dashCool=0,invuln=0,walkPhase=0,landPulse=0;
+let pos={x:0,y:2.0,z:4.2},velY=0,grounded=false,jumps=0,supportPlatform=null,health=3,checkpoint={x:0,y:2,z:3.5},time=0,dashTime=0,dashCool=0,invuln=0,walkPhase=0,landPulse=0;
 let platforms=[],gems=[],enemies=[],switches=[],scenery=[],gate=null,boss=null,secret=null,particles=[];
 let keys={},lastKeys={},touchVec={x:0,z:0},padAxes={x:0,z:0},lastGamepad={};let cameraOrbit=0,dragLook=false,prevPointerX=0;
 const storageKey='ASTATION_WORLD_DREAMBOUND_v4';
@@ -100,38 +101,49 @@ function scenicGreenValley(){if(stage!==0)return;
 function gemAt(x,y,z,index){let g=new THREE.Group();root.add(g);g.position.set(x,y,z);let diamond=mesh(new THREE.OctahedronGeometry(.48),mat(worlds[stage].accent,{emissive:worlds[stage].accent,emissiveIntensity:.35,metalness:.3}),g);const taken=!!progress.collected[stage+'-'+index];g.visible=!taken;gems.push({g,x,y,z,taken,index})}
 function switchAt(x,y,z,index){let g=new THREE.Group();root.add(g);g.position.set(x,y,z);box(.7,1.35,.7,mat('#233a5e'),0,.66,0,g);let lamp=sphere(.32,mat('#f6b56d',{emissive:'#7b2d05',emissiveIntensity:.7}),0,1.42,0,g);let active=!!progress.switches[stage+'-'+index];if(active){lamp.material=mat('#66f6cb',{emissive:'#42e3b2',emissiveIntensity:.8})}switches.push({g,x,y,z,index,active,lamp})}
 function addEnemy(x,y,z,index){let g=new THREE.Group();root.add(g);g.position.set(x,y,z);sphere(.56,mat(stage===2?'#c7a5ff':'#e46b91',{metalness:.5}),0,.9,0,g);sphere(.22,ink,-.2,.93,-.49,g);sphere(.22,ink,.2,.93,-.49,g);sphere(.10,glow,-.2,.93,-.64,g);sphere(.10,glow,.2,.93,-.64,g);let wing=mesh(new THREE.TorusGeometry(.83,.10,6,24),mat('#ffffff',{emissive:'#628bef',emissiveIntensity:.45}),g);wing.position.y=.8;wing.rotation.x=PI/2;enemies.push({g,x,y,z,index,phase:index*1.8,wing,stunned:0})}
-function createWorld(index){stage=clamp(index,0,4);variantWorld();clearWorld();let s=worlds[stage];addIsland(0,0,3,10,16);
+function createWorld(index){stage=clamp(index,0,4);supportPlatform=null;variantWorld();clearWorld();let s=worlds[stage];addIsland(0,0,3,10,16);
 // Seventeen floating terrain sections with increasingly intricate geometry, bridges and moving spans.
 for(let i=0;i<17;i++){let z=-i*6-10, x=Math.sin(i*1.1+stage*.7)*2.3;let w=6.8+(i%3)*.35,d=5.5;let y=(i%4===2?.75:0);let moving=i%6===4;addIsland(x,y,z,w,d,moving);if(i%2===0&&i<15)gemAt(x,y+1.45,z-.7,i);if(i%3===1)addDecor(x+(i%2?5:-5),y+.2,z);if(i%4===3)addEnemy(x,y,z-.5,i)}
+// These solid islands make checkpoints and the final portal reachable even if
+// a legacy save resumes very near a gap between two floating sections.
+addIsland(0,0,-54,7.4,7.4,false);
+addIsland(0,0,-112,8.5,17,false);
 scenicGreenValley();
 // extra crystals, two visible objective switches and a bonus hidden crystal.
 gemAt(0,1.5,-24,30);gemAt(-1,1.5,-58,31);gemAt(1.3,1.5,-83,32);switchAt(-1,0,-38,0);switchAt(2,0,-80,1);
 if(stage===1 && !(progress.secrets||0)){addIsland(6.1,0,-46,3.1,4.2);secret=sphere(.64,mat('#fff3a1',{emissive:'#ffb83b',emissiveIntensity:.7}),6.1,1.4,-46);}
 gate=new THREE.Group();root.add(gate);gate.position.set(0,.7,-111);let ring=mesh(new THREE.TorusGeometry(2.4,.33,13,37),mat('#d4eaff',{emissive:'#3d8dff',emissiveIntensity:.8}),gate);ring.rotation.y=Math.PI/2;let field=mesh(new THREE.CircleGeometry(2.05,32),mat('#6edcff',{transparent:true,opacity:.36,emissive:'#42cfff',emissiveIntensity:.4,side:THREE.DoubleSide}),gate);field.rotation.y=Math.PI/2;
 if(stage===4){let g=new THREE.Group();root.add(g);g.position.set(0,1,-97);sphere(1.45,mat('#b84b92',{emissive:'#6a2d6a',emissiveIntensity:.5}),0,.5,0,g);sphere(.25,glow,-.48,.6,-1.2,g);sphere(.25,glow,.48,.6,-1.2,g);boss={g,hp:3,cool:0,active:true}}
-const ck=progress.checkpoints[stage];checkpoint=ck?{...ck}:{x:0,y:2,z:3.5};pos={...checkpoint};velY=0;health=3;invuln=0;grounded=false;jumps=0;writeHud();post('status',{stage:stage+1,progress:Math.round(stage/5*100),cores:progress.cores})}
+const ck=progress.checkpoints[stage];checkpoint=ck?{...ck}:{x:0,y:2,z:3.5};pos={...checkpoint};velY=0;health=3;invuln=0;grounded=false;supportPlatform=null;jumps=0;writeHud();post('status',{stage:stage+1,progress:Math.round(stage/5*100),cores:progress.cores})}
 function inputState(){let vx=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+touchVec.x+padAxes.x;let vz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+touchVec.z+padAxes.z;return{x:clamp(vx,-1,1),z:clamp(vz,-1,1)}}
 function down(...ks){return ks.some(k=>!!keys[k])}function just(k){return !!keys[k]&&!lastKeys[k]}
-function respawn(){progress.failures++;health=3;pos={...checkpoint};velY=0;invuln=1.6;note('PIX: powrót do checkpointu');persist()}
+function respawn(){progress.failures++;health=3;pos={...checkpoint};velY=0;grounded=false;supportPlatform=null;invuln=1.6;note('PIX: powrót do checkpointu');persist()}
 function hurt(){if(invuln>0)return;health--;invuln=1.4;landPulse=.6;note('Uszkodzenie! '+health+'/3 HP');sfx('hurt');if(health<=0)respawn()}
 function interact(){for(let sw of switches)if(!sw.active&&Math.hypot(sw.x-pos.x,sw.z-pos.z)<3.2){sw.active=true;progress.switches[stage+'-'+sw.index]=true;sw.lamp.material=mat('#66f6cb',{emissive:'#42e3b2',emissiveIntensity:.8});note('Terminal '+(sw.index+1)+'/2 aktywowany');sfx('switch');persist();writeHud();return}}
 function completeWorld(){if(stage===4){running=false;paused=true;won=true;progress.completions++;progress.stage=5;persist();post('win',{stage:5});showMenu('DREAMBOUND COMPLETE','PIX odzyskał wszystkie rdzenie energii. Światy znów są bezpieczne!',true);sfx('portal');return}progress.stage=Math.max(progress.stage,stage+1);progress.cores+=1;persist();post('worldComplete',{stage:stage+1,cores:progress.cores});sfx('portal');note('ŚWIAT UKOŃCZONY');createWorld(stage+1)}
 function fx(x,y,z,color){for(let i=0;i<7;i++){let m=sphere(.1,mat(color,{emissive:color,emissiveIntensity:.4}),x,y,z);particles.push({m,ttl:.7,vx:(Math.random()-.5)*4,vy:Math.random()*5,vz:(Math.random()-.5)*4})}}
 function step(dt){if(!running||paused)return;time+=dt;progress.playTime+=dt;let ax=inputState();let speed=down('ShiftLeft','ShiftRight')?8.4:5.7;if(dashTime>0){dashTime-=dt;speed=20;}dashCool=Math.max(0,dashCool-dt);invuln=Math.max(0,invuln-dt);landPulse=Math.max(0,landPulse-dt);
-if(just('Space')||just('touchJump')||just('padJump')){if(jumps<2){velY=jumps?8.0:9.7;jumps++;grounded=false;fx(pos.x,pos.y-.7,pos.z,'#b2f5ff');sfx('jump')}}
+if(just('Space')||just('touchJump')||just('padJump')){if(jumps<2){velY=jumps?8.0:9.7;jumps++;grounded=false;supportPlatform=null;fx(pos.x,pos.y-.7,pos.z,'#b2f5ff');sfx('jump')}}
 if((just('KeyQ')||just('touchDash')||just('padDash'))&&dashCool<=0){dashTime=.24;dashCool=1.7;fx(pos.x,pos.y,pos.z,'#80e6ff');sfx('dash')}
-if(just('KeyE')||just('touchInteract')||just('padInteract'))interact();let len=Math.hypot(ax.x,ax.z)||1;let mx=ax.x/len*speed*dt,mz=ax.z/len*speed*dt;pos.x+=mx;pos.z+=mz;pos.x=clamp(pos.x,-7,7);pos.z=clamp(pos.z,-118,7);velY-=20*dt;let oldY=pos.y;pos.y+=velY*dt;let hit=null;
-for(const p of platforms){let py=p.y+p.group.position.y-p.y;let above=Math.abs(pos.x-p.group.position.x)<p.w*.5-.2&&Math.abs(pos.z-p.z)<p.d*.5-.25;if(above&&velY<=0&&oldY>=py+1.05&&pos.y<=py+1.05){hit=p;break}}
-if(hit){if(!grounded)landPulse=.3;pos.y=hit.group.position.y+1.05;velY=0;grounded=true;jumps=0}else grounded=false;
+if(just('KeyE')||just('touchInteract')||just('padInteract'))interact();
+// Update moving-platform transforms BEFORE calculating collision, and carry PIX with
+// its supporting platform. This removes the one-frame lag that caused clipping.
+for(const p of platforms)if(p.moving){let nx=p.x+Math.sin(time*p.speed+p.phase)*1.3;let delta=nx-p.group.position.x;p.group.position.x=nx;if(grounded&&supportPlatform===p)carryPlatform(pos,p,delta)}
+let previous={...pos};let len=Math.hypot(ax.x,ax.z)||1,mx=ax.x/len*speed*dt,mz=ax.z/len*speed*dt;
+pos.x=clamp(pos.x+mx,-7,7);pos.z=clamp(pos.z+mz,-118,7);
+velY-=20*dt;pos.y+=velY*dt;
+let solved=solvePlatformCollision({pos,prev:previous,velY,platforms,wasGrounded:grounded,support:supportPlatform});
+if(solved.grounded){if(!grounded)landPulse=.3;jumps=0}
+velY=solved.velY;grounded=solved.grounded;supportPlatform=solved.support;
 if(pos.y< -9)respawn();
 if(secret){secret.rotation.y+=dt*2;secret.position.y=1.4+Math.sin(time*2)*.25;if(Math.hypot(pos.x-6.1,pos.z+46)<1.2&&Math.abs(pos.y-1.4)<2){root.remove(secret);secret.geometry.dispose();secret=null;progress.secrets=(progress.secrets||0)+1;persist();post('secret',{});note('SEKRET ODKRYTY!')}}
 for(const g of gems){if(g.taken)continue;if(Math.hypot(pos.x-g.x,pos.z-g.z)<1.25&&Math.abs(pos.y-g.y)<2.2){g.taken=true;g.g.visible=false;progress.collected[stage+'-'+g.index]=true;note('Kryształ znaleziony!');sfx('gem');fx(g.x,g.y,g.z,worlds[stage].accent);persist();post('collect',{stage:stage+1,total:currentGems()})}}
 for(const e of enemies){if(e.stunned>0)e.stunned-=dt;e.phase+=dt;e.g.position.x=e.x+Math.sin(e.phase*1.9)*1.8;e.g.position.y=e.y+Math.sin(e.phase*2.4)*.18;let d=Math.hypot(pos.x-e.g.position.x,pos.z-e.z);if(d<1.25&&Math.abs(pos.y-(e.y+1))<2.2){if(dashTime>0){e.stunned=3;e.g.visible=false;post('enemyDodge',{})}else if(e.stunned<=0)hurt()}if(e.stunned>0)e.g.visible=false;else e.g.visible=true;e.wing.rotation.z+=dt*.8}
 if(boss&&boss.active){boss.cool=Math.max(0,boss.cool-dt);boss.g.position.x=Math.sin(time*1.7)*1.8;if(Math.hypot(pos.x-boss.g.position.x,pos.z-boss.g.position.z)<2.3){if(dashTime>0&&boss.cool===0){boss.hp--;boss.cool=1.5;fx(boss.g.position.x,2,boss.g.position.z,'#f8b8ff');note('Strażnik: '+boss.hp+'/3');if(boss.hp<=0){boss.active=false;boss.g.visible=false;sfx('portal');post('bossDefeated',{})}}else hurt()}}
-if(pos.z<-52&&checkpoint.z>-52){checkpoint={x:pos.x,y:pos.y,z:-54};progress.checkpoints[stage]=checkpoint;persist();note('Checkpoint zapisany');sfx('checkpoint')}
+if(pos.z<-52&&checkpoint.z>-52){checkpoint={x:pos.x,y:2.1,z:-54};progress.checkpoints[stage]=checkpoint;persist();note('Checkpoint zapisany');sfx('checkpoint')}
 if(pos.z<-107&&currentGems()>=6&&activatedSwitches()===2&&(!boss||!boss.active))completeWorld();
 player.position.set(pos.x,pos.y-.95,pos.z);let dir=Math.atan2(ax.x,ax.z);if(Math.abs(ax.x)+Math.abs(ax.z)>.05)player.rotation.y=THREE.MathUtils.lerp(player.rotation.y,dir+Math.PI,Math.min(1,dt*9));walkPhase+=dt*speed*(Math.hypot(ax.x,ax.z)>.1?1:0);let swing=Math.sin(walkPhase*1.9)*(Math.hypot(ax.x,ax.z)>.1?.48:.035);arms[0].rotation.x=swing;arms[1].rotation.x=-swing;legs[0].rotation.x=-swing*.7;legs[1].rotation.x=swing*.7;head.rotation.z=Math.sin(time*1.7)*.045;torso.scale.y=1+Math.sin(time*2)*.008;if(pixModel){usePixAnimation(!grounded?'Jump':Math.abs(ax.x)+Math.abs(ax.z)>.10?'Walk':'Idle');pixModel.rotation.z=dashTime>0?-.12:0}player.scale.setScalar(invuln>0?.97:1);
-for(const p of platforms)if(p.moving)p.group.position.x=p.x+Math.sin(time*p.speed+p.phase)*1.3;for(const w of waterfallMeshes)w.m.scale.y=1+Math.sin(time*3+w.phase)*.04;if(checkpointBeacon){checkpointBeacon.rotation.y+=dt*.35;checkpointBeacon.position.y=.8+Math.sin(time*1.8)*.12;}
+for(const w of waterfallMeshes)w.m.scale.y=1+Math.sin(time*3+w.phase)*.04;if(checkpointBeacon){checkpointBeacon.rotation.y+=dt*.35;checkpointBeacon.position.y=.8+Math.sin(time*1.8)*.12;}
 for(const g of gems)if(!g.taken){g.g.rotation.y+=dt*1.5;g.g.position.y=g.y+Math.sin(time*2+g.index)*.18}
 for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.ttl-=dt;p.m.position.x+=p.vx*dt;p.m.position.y+=p.vy*dt;p.m.position.z+=p.vz*dt;if(p.ttl<=0){root.remove(p.m);p.m.geometry.dispose();particles.splice(i,1)}}
 cam.position.lerp(new THREE.Vector3(pos.x+5.2*Math.cos(cameraOrbit)+10.5*Math.sin(cameraOrbit),pos.y+5.9,pos.z+10.5*Math.cos(cameraOrbit)-5.2*Math.sin(cameraOrbit)),Math.min(1,dt*3.8));cam.lookAt(pos.x,pos.y+.8,pos.z-5);if(Math.floor(time*3)!==Math.floor((time-dt)*3))writeHud();if(Math.floor(progress.playTime/12)!==Math.floor((progress.playTime-dt)/12))persist();if(Math.floor(progress.playTime/3)!==Math.floor((progress.playTime-dt)/3))post('status',{stage:stage+1,progress:Math.min(99,Math.round((stage/5+(-pos.z)/115/5)*100)),cores:progress.cores,played:progress.playTime});lastKeys={...keys}}
