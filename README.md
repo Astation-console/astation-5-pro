@@ -1,3 +1,23 @@
+# ASTATION 5 PRO — PIX Story Edition 6.5
+
+**Graj w konsolę:** https://astation-console.github.io/astation-5-pro/
+
+ASTATION OS uruchamia teraz **ASTATION WORLD: DREAMBOUND 6.5 — Serce Doliny** bezpośrednio wewnątrz konsoli, zamiast starszego modułu gry. Dotychczasowa biblioteka zainstalowanych gier, profil, trofea i lokalne zapisy nie są kasowane.
+
+## Fabularny Rozdział I — Serce Doliny
+
+PIX budzi się w zagrożonej krainie Green Valley. Przewodniczka LUMA pomaga mu odnaleźć sześć iskier pamięci, aktywować dwa przekaźniki i odkryć tajemnicę tajemniczego ECHO. **Osiem autorskich scen** uruchamia się przy wydarzeniach w grze, a Kronika Snów zapamiętuje odkryte dialogi. Gra jest w pełni 3D z oryginalnym modelem GLB, 11 klipami animacji, skakaniem, dash, Strażnikiem, checkpointem i zapisywaniem postępów.
+
+**Ważne:** Nową fabułę ma obecnie tylko pierwszy rozdział Green Valley. Kolejne fabularne rozdziały są planowane; starsze światy pozostają dostępne jako Classic Worlds. „Pobieranie” w ASTATION OS jest symulowane, a dane zapisu pozostają w przeglądarce.
+
+**Testy:** 23 testy jednostkowe i 8 testów przeglądarkowych przeszły w GitHub Actions na gałęzi testowej przed integracją.
+
+**Kod silnika:** [engine-6-dreambound-preview](https://github.com/Astation-console/astation-5-pro/tree/engine-6-dreambound-preview)
+
+**Kopia bezpieczeństwa konsoli przed aktualizacją:** [backup-before-pix-story-6-5-console-update](https://github.com/Astation-console/astation-5-pro/tree/backup-before-pix-story-6-5-console-update)
+
+---
+
 # ASTATION 5 PRO — Update 5.1: Power, Avatars & Collision Fix
 
 Oficjalna przeglądarkowa konsola ASTATION, hostowana na GitHub Pages:
