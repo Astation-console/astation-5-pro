@@ -4,6 +4,10 @@
 <script>
 'use strict';
 let launched=false;
+let startupTimer=0, gameStarted=false;
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const logError=(message)=>post('core-error',{message:String(message).slice(0,260)});
+const setStage=(stage,extra={})=>post(stage,extra);
 const layoutValues={classic:'top/bottom',side:'left/right',focus:'hybrid/top'};
 const post=(event,details={})=>parent.postMessage({source:'astation-retro-player',event,...details},location.origin);
 function mapControls(keys={}){
@@ -12,11 +16,20 @@ function mapControls(keys={}){
   const d={};Object.entries(vals).forEach(([id,[key,pad]],i)=>d[id]={value:String(keys[n[i]]||key).toLowerCase(),value2:pad});
   return {0:d,1:{},2:{},3:{}};
 }
-function updateLayout(mode){
+function updateLayout(mode,manual=false){
  const value=layoutValues[mode]||layoutValues.classic;
- try {const em=window.EJS_emulator; if(!em?.gameManager?.setVariable)return post('layout-unsupported',{message:'Zmień układ w ustawieniach rdzenia EmulatorJS.'});
- em.gameManager.setVariable('desmume_screens_layout',value);post('layout-ok',{mode});
- }catch(e){post('layout-unsupported',{message:e.message||'Opcja układu niedostępna'});}
+ const em=window.EJS_emulator;
+ // 'ready' fires before WebAssembly game startup. Applying core options then is premature.
+ if(!gameStarted||!em?.gameManager?.setVariable){
+   if(manual)post('layout-unsupported',{message:'Układ można zmienić po uruchomieniu gry w ustawieniach EmulatorJS (Core Options).'});
+   return;
+ }
+ try{
+   em.gameManager.setVariable('desmume_screens_layout',value);
+   post('layout-ok',{mode});
+ }catch(e){
+   if(manual)post('layout-unsupported',{message:'Opcja układu niedostępna w tym rdzeniu. Użyj ustawień EmulatorJS.'});
+ }
 }
 async function sendSave(){
  try {const gm=window.EJS_emulator?.gameManager; if(!gm?.saveSaveFiles)throw Error('Rdzeń nie jest gotowy.');await Promise.resolve(gm.saveSaveFiles());post('save-ok');}
@@ -30,7 +43,11 @@ function start(cfg){
  window.EJS_gameName='ASTATION_RETRO_'+cfg.profile+'_'+cfg.sha.slice(0,16);
  window.EJS_gameID=parseInt(cfg.sha.slice(0,7),16);
  window.EJS_pathtodata='https://cdn.emulatorjs.org/stable/data/';
- window.EJS_startOnLoaded=true;
+ // iOS Safari often needs a direct touch gesture to start audio/graphics.
+ // Keep the official EmulatorJS Play button enabled instead of forced auto-start.
+ window.EJS_startOnLoaded=!isIOS;
+ window.EJS_startButtonName='Uruchom Nintendo DS';
+
  window.EJS_controlScheme='nds';
  window.EJS_volume=Math.max(0,Math.min(1,Number.isFinite(Number(cfg.volume))?Number(cfg.volume):0.55));
  window.EJS_color='#56b9ff';
@@ -39,8 +56,21 @@ function start(cfg){
  window.EJS_defaultControls=mapControls(cfg.keys);
  window.EJS_defaultOptions={'desmume_screens_layout':layoutValues[cfg.layout]||'top/bottom','desmume_pointer_mouse':'enabled','desmume_pointer_type':'touch','desmume_frameskip':Number(cfg.frameskip||0)};
  window.EJS_fixedSaveInterval=10000;
- window.EJS_ready=()=>{document.getElementById('waiting').classList.add('hide');post('core-ready');setTimeout(()=>updateLayout(cfg.layout),1500)};
+ window.EJS_ready=()=>{
+   document.getElementById('waiting').classList.add('hide');
+   setStage('core-ready',{requiresTap:isIOS});
+ };
+ window.EJS_onGameStart=()=>{
+   gameStarted=true;
+   clearTimeout(startupTimer);
+   setStage('game-started');
+   // Core options may only be changed after the ROM is actually running.
+   setTimeout(()=>updateLayout(cfg.layout,false),600);
+ };
  window.EJS_onExit=()=>post('exited');
+ startupTimer=setTimeout(()=>{
+   if(!gameStarted&&!isIOS)post('startup-slow',{message:'Gra nie rozpoczęła działania. Spróbuj lżejszego rdzenia DeSmuME 2015.'});
+ },70000);
  const loader=document.createElement('script');loader.src='https://cdn.emulatorjs.org/stable/data/loader.js';loader.async=true;
  loader.onerror=()=>{document.getElementById('waiting').querySelector('small').textContent='Nie udało się pobrać rdzenia EmulatorJS. Sprawdź połączenie.';post('core-error',{message:'Nie można pobrać EmulatorJS z CDN. Sprawdź połączenie internetowe.'})};
  document.head.append(loader);
@@ -48,8 +78,11 @@ function start(cfg){
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==parent||event.data?.source!=='astation-retro-host')return;
  const d=event.data;
- switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout);break;case 'pause':window.EJS_emulator?.pause?.();break;case 'resume':window.EJS_emulator?.play?.();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
+ switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'pause':window.EJS_emulator?.pause?.();break;case 'resume':window.EJS_emulator?.play?.();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
 });
-window.addEventListener('error',e=>{if(launched)post('core-error',{message:(e.message||'Błąd emulacji').slice(0,300)})});
+window.addEventListener('error',e=>{if(launched)logError(e.message||'Błąd emulacji')});
+window.addEventListener('unhandledrejection',e=>{
+  if(launched&&!gameStarted)logError(e.reason?.message||e.reason||'Nie udało się rozpocząć emulacji');
+});
 post('player-ready');
 </script></body></html>

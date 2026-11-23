@@ -10,7 +10,7 @@ const DEFAULT_KEYS = Object.freeze({Up:'up arrow',Down:'down arrow',Left:'left a
 const DEFAULT_SETTINGS={core:'desmume',layout:'classic',frameskip:0,volume:65,persist:true,keys:{...DEFAULT_KEYS}};
 function readSettings(){try{const data=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');return {...DEFAULT_SETTINGS,...data,keys:{...DEFAULT_KEYS,...(data?.keys||{})}}}catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
 const settings=readSettings();
-const state={games:[],volatile:new Map(),selected:null,playerUrl:null,playerReady:false,coreReady:false,view:'library',playing:null,menuWasPaused:false,saveWaiters:[],closing:false};
+const state={games:[],volatile:new Map(),selected:null,playerUrl:null,playerReady:false,coreReady:false,view:'library',playing:null,menuWasPaused:false,saveWaiters:[],closing:false,gameStarted:false,startupTimer:null};
 const formatBytes=n=>n>1024*1024?`${(n/1048576).toFixed(1)} MiB`:`${(n/1024).toFixed(0)} KiB`;
 const safeName=s=>String(s||'Untitled').replace(/[\x00-\x1f<>]/g,'').slice(0,90);
 let toastTimeout;
@@ -70,10 +70,29 @@ async function importROM(file){
 }
 function refreshPad(){try{const connected=Array.from(navigator.getGamepads?.()||[]).some(Boolean);const target=$('#gamepad-status');target.classList.toggle('online',connected);target.title=connected?'Wykryto kontroler':'Nie wykryto kontrolera';target.lastElementChild.textContent=connected?'Pad ✓':'Pad';}catch{}}
 function activeBlob(item){return state.volatile.get(item.id)?.blob||item.blob}
+function clearStartupTimer(){if(state.startupTimer){clearTimeout(state.startupTimer);state.startupTimer=null}}
+function recovery(message){
+  if(!state.playing||state.gameStarted)return;
+  $('#player-loading').hidden=true;
+  $('#player-recovery-message').textContent=message;
+  $('#player-recovery').hidden=false;
+  $('#playing-status').textContent='Emulator nie rozpoczął gry — dostępna próba ponowna';
+}
+function retryCurrent(core){
+  if(!state.playing)return;
+  settings.core=core;saveSettings();displaySettings();
+  clearStartupTimer();
+  state.playerReady=false;state.coreReady=false;state.gameStarted=false;
+  $('#player-recovery').hidden=true;
+  $('#player-loading').hidden=false;
+  $('#playing-status').textContent='Ponowne ładowanie rdzenia: '+(core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+'…';
+  $('#player-frame').src='./player.html?retry='+Date.now();
+}
+
 function launch(item){
  if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
- state.playing=item;state.playerUrl=URL.createObjectURL(blob);state.playerReady=false;state.coreReady=false;
+ state.playing=item;state.playerUrl=URL.createObjectURL(blob);state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
  const frame=$('#player-frame');frame.src='./player.html';$('#playing-title').textContent=safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
  $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie emulatora…';show('play');
  item.lastPlayed=Date.now();
@@ -81,7 +100,7 @@ function launch(item){
  renderLibrary();
 }
 function requestSaveBeforeExit(timeout=1800){
- if(!state.playing||!state.playerReady||!state.coreReady)return Promise.resolve(false);
+ if(!state.playing||!state.playerReady||!state.gameStarted)return Promise.resolve(false);
  return new Promise(resolve=>{
    const timer=setTimeout(()=>{state.saveWaiters=state.saveWaiters.filter(x=>x!==done);resolve(false)},timeout);
    const done=success=>{clearTimeout(timer);resolve(success)};
@@ -95,7 +114,7 @@ async function exitToLibrary(notify=true){
    if(state.playing){post('pause');await requestSaveBeforeExit()}
    const frame=$('#player-frame');frame.removeAttribute('src');$('#pause-overlay').hidden=true;$('#player-loading').hidden=true;
    if(state.playerUrl){URL.revokeObjectURL(state.playerUrl);state.playerUrl=null}
-   state.playerReady=false;state.coreReady=false;state.playing=null;show('library');
+   state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;state.playing=null;show('library');
    if(notify)toast('Powrót do biblioteki. Zapis w grze: użyj menu EmulatorJS do kontroli danych.');
  }finally{state.closing=false}
 }
@@ -110,14 +129,32 @@ window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
  const d=event.data;
  if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{url:state.playerUrl,profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:settings.frameskip,keys:settings.keys});}
- if(d.event==='core-ready'){state.coreReady=true;$('#player-loading').hidden=true;$('#playing-status').textContent='Rdzeń emulatora gotowy · gra uruchamiana';toast('Rdzeń Nintendo DS gotowy. Jeśli pojawi się ekran startowy, wybierz Play.');}
- if(d.event==='core-error'){$('#player-loading').hidden=true;$('#playing-status').textContent='Błąd rdzenia';toast('Błąd: '+d.message,true)}
+ if(d.event==='core-ready'){
+   state.coreReady=true;
+   $('#player-loading').hidden=true;
+   $('#playing-status').textContent=d.requiresTap?'Rdzeń gotowy · naciśnij Play na ekranie emulatora':'Rdzeń gotowy · oczekiwanie na rozpoczęcie gry';
+   clearStartupTimer();
+   state.startupTimer=setTimeout(()=>{
+     if(!state.gameStarted)recovery('Gra nadal się nie uruchomiła. Na iPhonie dotknij Play w emulatorze albo spróbuj DeSmuME 2015.');
+   },60000);
+ }
+ if(d.event==='game-started'){
+   state.gameStarted=true;clearStartupTimer();
+   $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
+   $('#playing-status').textContent='Gra uruchomiona · DeSmuME WebAssembly';
+ }
+ if(d.event==='startup-slow')recovery(d.message||'Próba uruchomienia trwa zbyt długo.');
+ if(d.event==='core-error'){
+   $('#playing-status').textContent='Błąd uruchamiania emulatora';
+   recovery('Błąd EmulatorJS: '+d.message);
+   toast('Błąd rdzenia: '+d.message,true);
+ }
  if(d.event==='save-ok'||d.event==='save-error'){
    state.saveWaiters.splice(0).forEach(done=>done(d.event==='save-ok'));
    if(d.event==='save-ok')toast('Zlecono zapis danych gry w EmulatorJS.');
    else toast('Zapis nieudany: '+d.message,true);
  }
- if(d.event==='layout-unsupported')toast(d.message||'Układ zmień w ustawieniach EmulatorJS.',true);
+ if(d.event==='layout-unsupported')toast(d.message||'Układ można zmienić w ustawieniach EmulatorJS.');
  if(d.event==='exited')exitToLibrary(false);
 });
 $('#rom-input').addEventListener('change',e=>importROM(e.target.files?.[0]));
@@ -127,6 +164,9 @@ $('#play-exit').addEventListener('click',()=>exitToLibrary());
 $('#play-menu').addEventListener('click',()=>pauseMenu(true));
 $('#play-fullscreen').addEventListener('click',async()=>{try{await $('.player-wrap').requestFullscreen();}catch(e){toast('Pełny ekran niedostępny: '+e.message,true)}});
 $('#layout-cycle').addEventListener('click',changeLayout);
+$('#retry-light-core').addEventListener('click',()=>retryCurrent('desmume2015'));
+$('#retry-default-core').addEventListener('click',()=>retryCurrent('desmume'));
+$('#recovery-close').addEventListener('click',()=>$('#player-recovery').hidden=true);
 $('#settings-open').addEventListener('click',openSettings);$('#settings-close').addEventListener('click',exitSettings);
 $('#controls-open').addEventListener('click',()=>$('#controls-overlay').hidden=false);$('#controls-close').addEventListener('click',()=>$('#controls-overlay').hidden=true);
 $('#gamepad-status').addEventListener('click',()=>toast(navigator.getGamepads?.()?.filter(Boolean).length?'Kontroler został wykryty.':'Nie podłączono kontrolera.'));

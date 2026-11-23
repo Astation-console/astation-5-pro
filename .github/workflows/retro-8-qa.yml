@@ -1,7 +1,7 @@
 name: ASTATION RETRO 8 — browser integration QA
 on:
   push:
-    branches: [retro-8-integration]
+    branches: [retro-8-integration, retro-8-ios-fix]
   workflow_dispatch:
 permissions:
   contents: read

@@ -18,7 +18,7 @@ try {
   const page=await browser.newPage({viewport:{width:1300,height:850}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('https://cdnjs.cloudflare.com/**',r=>r.abort());
-  await page.route('https://cdn.emulatorjs.org/stable/data/loader.js',r=>r.fulfill({status:200,contentType:'text/javascript',body:"window.EJS_emulator={pause(){},play(){},setVolume(){},gameManager:{setVariable(){},saveSaveFiles(){},restart(){}}};window.EJS_ready();"}));
+  await page.route('https://cdn.emulatorjs.org/stable/data/loader.js',r=>r.fulfill({status:200,contentType:'text/javascript',body:"window.EJS_emulator={pause(){},play(){},setVolume(){},gameManager:{setVariable(){},saveSaveFiles(){},restart(){}}};window.EJS_ready();setTimeout(()=>window.EJS_onGameStart(),1200);"}));
   await page.goto(origin+'/retro/index.html?profile=qa',{waitUntil:'domcontentloaded'});
   await page.locator('#library-grid .empty-card').waitFor();
   assert.equal(await page.locator('#import-btn').isVisible(),true);
@@ -29,6 +29,9 @@ try {
   await page.getByRole('button',{name:'Graj'}).click();
   await page.waitForFunction(()=>document.querySelector('#player-frame').contentWindow?.EJS_core==='desmume',{timeout:12000});
   assert.equal(await page.frameLocator('#player-frame').locator('body').evaluate(()=>window.EJS_gameUrl.startsWith('blob:')),true);
+  await page.waitForFunction(()=>document.querySelector('#playing-status')?.textContent?.includes('Gra uruchomiona'),null,{timeout:10000});
+  assert.equal(await page.locator('#player-recovery').isVisible(),false,'no premature error overlay');
+
   await page.locator('#play-menu').click();assert.equal(await page.locator('#pause-overlay').isVisible(),true);
   await page.locator('[data-pause=save]').click();await page.locator('[data-pause=layout]').click();await page.locator('[data-pause=resume]').click();
   await page.locator('#play-exit').click();await page.locator('#library-view').waitFor({state:'visible',timeout:10000});
