@@ -1,6 +1,17 @@
-# ASTATION 5 PRO — NEXT GEN ENGINE 6.0 (PREVIEW)
+# ASTATION 5 PRO — PIX ADVENTURE UPDATE 6.1 (PREVIEW)
 
 **Status: test branch, not production.** The public ASTATION OS 5.1 homepage stays live until CI + browser testing confirms this engine is ready.
+
+## What changed in PIX Adventure 6.1
+
+- **Camera-relative controls** with full 360° orbit. Forward always follows the view rather than map axes.
+- **Forgiving jumping** with a short coyote-time window and buffered jump input, plus double-jump effects.
+- **Energy spring pads** on two islands, burst effects for crystals/terminals/jumps and an animated PIX dash trail.
+- **More distinctive Green Valley:** varied island surfaces, ruins, glowing markers, waterfalls and distant moving clouds.
+- **Guardian awareness:** patrol, limited-range facing-based detection, chase, short search and return to patrol; dash can stun the Guardian.
+- **Fairer obstacles:** the rotating beam, orb and timing gates use position/height-sensitive detection so jumps can avoid hits.
+- **HUD and settings:** live objective proximity, dash cooldown, timer, checkpoint feedback, graphical quality buttons in pause and a saved best completion time.
+- **Compatibility:** v6 mission save ID is unchanged and existing 5 classic worlds, trophies, installed games and OS settings remain untouched.
 
 ## What works in the preview
 

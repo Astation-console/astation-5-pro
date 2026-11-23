@@ -8,7 +8,7 @@ export class CameraRig {
     this.position = new Vector3(); this.temp = new Vector3(); this.direction = new Vector3();
     this.ray = new Raycaster();
   }
-  orbit(dx, dy) { this.yaw = clamp(this.yaw - dx * .003, -1.3, 1.3); this.pitch = clamp(this.pitch + dy * .003, -.16, .86); }
+  orbit(dx, dy) { this.yaw = ((this.yaw - dx * .003 + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; this.pitch = clamp(this.pitch + dy * .003, -.16, .86); }
   setMode(mode) { if (['third-person', 'first-person', 'cinematic', 'vehicle'].includes(mode)) this.mode = mode; }
   update(foot, dt, obstacles, sprint = false) {
     this.look.set(foot.x, foot.y + 1.42, foot.z - .4);

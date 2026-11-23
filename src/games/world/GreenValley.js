@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { beamHazard, orbHazard, gateHazard, canSpotPlayer } from './HazardLogic.js';
 
 const mat = (hex, extra = {}) => new THREE.MeshStandardMaterial({color:hex, roughness:.82, metalness:0, ...extra});
 const sq = n => n*n;
@@ -27,15 +28,18 @@ export class GreenValley {
     this.obstacles = [];
     this.crystals = []; this.terminals = [];
     this.scenery = []; this.enemy = null;
-    this.moving = []; this.hazards = []; this.time = 0;
+    this.moving = []; this.hazards = []; this.time = 0;this.springPads=[];this.clouds=[];this.lastSpring=-100;this.spotlight=null;
     this.materials = {
-      grass:mat('#69bf85'), rim:mat('#aaf0b3'), rock:mat('#657e86'), side:mat('#5b7c78'),
+      grass:mat('#69bf85'), meadow:mat('#90d2a0'), lavender:mat('#86b9a9'), bluegrass:mat('#61b9a4'), rim:mat('#aaf0b3'), rock:mat('#657e86'), side:mat('#5b7c78'),
       water:mat('#2b94bb',{metalness:.23,roughness:.15,transparent:true,opacity:.86}),
       bark:mat('#87684e'), canopy:mat('#2d8d78'), lilac:mat('#9ba8ec'),
       crystal:mat('#9efff2',{emissive:'#49bde6',emissiveIntensity:1.3,metalness:.3,roughness:.15}),
       enemy:mat('#8e75c3',{emissive:'#494394',emissiveIntensity:.25}),
       gold:mat('#ffe8a6',{emissive:'#e3a64b',emissiveIntensity:.5}),
-      hazard:mat('#eb8290',{emissive:'#a52c53',emissiveIntensity:.5})
+      hazard:mat('#eb8290',{emissive:'#a52c53',emissiveIntensity:.5}),
+      spring:mat('#ffcc7b',{emissive:'#ff922e',emissiveIntensity:1.2,metalness:.35,roughness:.3}),
+      ruin:mat('#d5e2dc',{metalness:.04,roughness:.9}),
+      glass:mat('#8ff4ef',{transparent:true,opacity:.43,emissive:'#59daed',emissiveIntensity:.7})
     };
     this.initialized = false;
   }
@@ -51,7 +55,7 @@ export class GreenValley {
     // Rendered rounded floating islands have their own real Rapier colliders.
     for(const [i,p] of ISLANDS.entries()){
       const rock=this.mesh(new RoundedBoxGeometry(p.w,.95,p.d,4,.62),this.materials.rock);rock.position.set(p.x,p.y-.59,p.z);
-      const top=this.mesh(new RoundedBoxGeometry(p.w,.38,p.d,4,.35),i===3?this.materials.rim:this.materials.grass);top.position.set(p.x,p.y,p.z);
+      const top=this.mesh(new RoundedBoxGeometry(p.w,.38,p.d,4,.35),[this.materials.grass,this.materials.meadow,this.materials.bluegrass,this.materials.rim,this.materials.lavender,this.materials.meadow,this.materials.bluegrass][i]);top.position.set(p.x,p.y,p.z);
       this.physics.staticCollider({x:p.x,y:p.y-.03,z:p.z,w:p.w-.10,h:.45,d:p.d-.10});
       this.obstacles.push(top,rock);
       if(i!==6){const edge=this.mesh(new THREE.TorusGeometry(Math.min(p.w,p.d)*.29,.035,4,48),this.materials.rim);edge.rotation.x=-Math.PI/2;edge.position.set(p.x,p.y+.20,p.z);edge.castShadow=false;}
@@ -65,14 +69,15 @@ export class GreenValley {
     this.buildCrystals(mission);
     this.buildTerminals(mission);
     this.buildHazards();
+    this.buildSpringPads();
+    this.buildLandmarks();
     this.buildEnemy();
     this.checkpoint=this.makeBeacon(1,-.7,-57.1);
     this.gateway=this.makeGateway(0,1.9,-97);
   }
   buildScenery(){
     const rand=makeRand();const treeG=new THREE.ConeGeometry(.72,3.1,7),trunkG=new THREE.CylinderGeometry(.12,.17,1.25,6);
-    const trees=this.mesh(new THREE.InstancedMesh(treeG,this.materials.canopy,85).geometry,this.materials.canopy);this.group.remove(trees); // Geometry is reused by InstancedMesh below.
-    trees.geometry.dispose();
+    // Shared, GPU-instanced tree meshes: no temporary duplicate geometry.
     const foliage=new THREE.InstancedMesh(new THREE.ConeGeometry(.82,2.85,7),this.materials.canopy,80);
     const trunks=new THREE.InstancedMesh(trunkG,this.materials.bark,80);
     foliage.castShadow=false;trunks.castShadow=false;
@@ -90,7 +95,7 @@ export class GreenValley {
     // Far mountains and clouds: atmospheric geometry, not image billboards.
     const mountain=new THREE.ConeGeometry(26,42,5),cloud=new THREE.IcosahedronGeometry(1,1);
     for(let i=0;i<13;i++){const m=this.mesh(mountain,mat(i%2?'#a7bac3':'#92b6c0'));m.position.set((i-6)*32,-4,-135-i*7);m.rotation.y=i*.6;m.castShadow=false;}
-    for(let i=0;i<18;i++){const o=this.mesh(cloud,mat('#e2f7f7',{transparent:true,opacity:.66}));o.position.set((i-9)*15,22+(i%4)*4,-35-i*12);o.scale.set(5,1.2,2.8);o.castShadow=false;}
+    for(let i=0;i<18;i++){const o=this.mesh(cloud,mat('#e2f7f7',{transparent:true,opacity:.66}));o.position.set((i-9)*15,22+(i%4)*4,-35-i*12);o.scale.set(5,1.2,2.8);o.castShadow=false;this.clouds.push(o);}
     // Flower clusters are instanced and intentionally inexpensive on phones.
     const flowerG=new THREE.IcosahedronGeometry(.11,0);
     const flowerM=mat('#e6c7f5',{emissive:'#977ad1',emissiveIntensity:.18});
@@ -119,7 +124,7 @@ export class GreenValley {
       this.mesh(new THREE.CylinderGeometry(.63,.78,1.1,8),this.materials.rock,terminal);
       const screen=this.mesh(new THREE.BoxGeometry(.9,.65,.1),this.materials.crystal,terminal);screen.position.y=.5;
       terminal.rotation.y=.5;
-      this.terminals.push({...p,y:surface,visual:terminal,active:mission.terminals.has(p.id)});
+      this.terminals.push({...p,y:surface,visual:terminal,screen,active:mission.terminals.has(p.id)});
       if(mission.terminals.has(p.id))screen.material=this.materials.gold;
     }
   }
@@ -138,10 +143,43 @@ export class GreenValley {
     this.hazards.push({type:'timed-gate',visual:pillars,z:-89});
   }
   buildEnemy(){
-    const group=new THREE.Group();this.group.add(group);group.position.set(0,3,-65);
+    const group=new THREE.Group();this.group.add(group);group.position.set(0,3,-62.4);
     const shell=this.mesh(new THREE.IcosahedronGeometry(.88,1),this.materials.enemy,group);
     const eye=this.mesh(new THREE.SphereGeometry(.24,10,8),this.materials.crystal,group);eye.position.set(0,.06,-.75);
-    this.enemy={visual:group,x:0,y:3,z:-65,originX:0,angle:0,aware:0,stunned:0,dir:1};
+    this.enemy={visual:group,x:0,y:3,z:-62.4,originX:0,angle:0,aware:0,stunned:0,dir:1,
+      lookingX:1,lookingZ:0,targetX:0,targetZ:-62.4,search:0,state:'patrol'};
+  }
+  buildSpringPads(){
+    for(const p of [{x:3.3,z:-18.5,island:1},{x:-3.1,z:-60,island:4}]){
+      const y=ISLANDS[p.island].y+.37;
+      const ring=this.mesh(new THREE.TorusGeometry(.86,.12,8,34),this.materials.spring);
+      ring.rotation.x=-Math.PI/2;ring.position.set(p.x,y,p.z);
+      const pad=this.mesh(new THREE.CylinderGeometry(.64,.73,.18,24),this.materials.gold);
+      pad.position.set(p.x,y-.09,p.z);
+      const core=this.mesh(new THREE.IcosahedronGeometry(.20,1),this.materials.crystal);core.position.set(p.x,y+.26,p.z);
+      this.springPads.push({...p,y,ring,core,at:-10});
+    }
+  }
+  buildLandmarks(){
+    // Arched ruins, glowing pillars and falling translucent water give every island a recognizable silhouette.
+    for(const [i,p] of ISLANDS.entries()){
+      if(i===0||i===6)continue;
+      const sign=this.mesh(new THREE.TorusGeometry(1.3,.14,9,36,Math.PI),this.materials.ruin);
+      sign.position.set(p.x+(i%2?2.8:-2.8),p.y+.28,p.z+1);
+      sign.rotation.z=Math.PI;sign.rotation.y=.2*i;
+      for(const offset of [-1.3,1.3]){
+        const pillar=this.mesh(new THREE.CylinderGeometry(.17,.22,1.45,8),this.materials.ruin);
+        pillar.position.set(sign.position.x+offset,p.y+.68,p.z+1);
+      }
+    }
+    for(const [i,p] of [ISLANDS[1],ISLANDS[3],ISLANDS[5]].entries()){
+      const falls=this.mesh(new THREE.CylinderGeometry(.39,.63,9.7,16,1,true),this.materials.glass);
+      falls.position.set(p.x+p.w/2-.1,p.y-4.7,p.z+1.1);falls.castShadow=false;
+      const spray=this.mesh(new THREE.TorusGeometry(1.55,.07,6,36),this.materials.glass);
+      spray.rotation.x=-Math.PI/2;spray.position.set(falls.position.x,p.y-9.5,falls.position.z);
+    }
+    const markers=[{x:0,z:-5},{x:-.65,z:-20},{x:.9,z:-36},{x:-.8,z:-49},{x:.65,z:-65.5},{x:-.5,z:-81}];
+    for(const mark of markers){const glow=this.mesh(new THREE.OctahedronGeometry(.20),this.materials.gold);glow.position.set(mark.x,3.35,mark.z);glow.castShadow=false;}
   }
   makeBeacon(x,y,z){
     const group=new THREE.Group();this.group.add(group);group.position.set(x,1.85,z);
@@ -161,7 +199,7 @@ export class GreenValley {
   interact(player,mission){
     for(const t of this.terminals){
       if(!t.active && Math.hypot(player.x-t.x,player.z-t.z)<2.45){
-        t.active=true;mission.terminal(t.id);this.onEvent('terminal',{id:t.id});return true;
+        t.active=true;t.screen.material=this.materials.gold;mission.terminal(t.id);this.onEvent('terminal',{id:t.id});return true;
       }
     }return false;
   }
@@ -184,26 +222,49 @@ export class GreenValley {
     sweeper.visual.position.x=Math.sin(now*2)*3.4;
     sweeper.visual.position.y=2.55+Math.sin(now*2.1)*.35;
     for(const [i,p] of gate.visual.entries())p.scale.y=(Math.sin(now*3+i*2)>-.1?1:.42);
-    let danger=false;
-    if(Math.abs(player.z+16)<.6){const angle=now*1.9;const projected=(player.x+.65)*Math.cos(angle);danger=Math.abs(projected)<.55&&Math.abs(player.x+.65)<2.2;}
-    if(Math.abs(player.z+43.8)<1.1 && Math.abs(player.x-sweeper.visual.position.x)<1.0)danger=true;
-    if(Math.abs(player.z+89)<.75 && Math.abs(player.x)<4.2 && Math.sin(now*3)>-.1)danger=true;
-    const enemy=this.enemy;
-    if(enemy.stunned>0){enemy.stunned=Math.max(0,enemy.stunned-dt);enemy.visual.visible=enemy.stunned===0;}
-    else {
-      const distance=Math.hypot(player.x-enemy.x,player.z-enemy.z);
-      if(distance<6.5)enemy.aware=3.5;
-      else enemy.aware=Math.max(0,enemy.aware-dt);
-      if(enemy.aware>0){
-        const dx=player.x-enemy.x,dz=player.z-enemy.z,r=Math.max(.01,Math.hypot(dx,dz));
-        enemy.x+=dx/r*dt*1.5;enemy.z+=dz/r*dt*1.5;
-      } else {
-        enemy.angle+=dt*.8;enemy.x=enemy.originX+Math.sin(enemy.angle)*2.3;enemy.z=-65+Math.cos(enemy.angle)*1.3;
+    let danger=beamHazard(player,now) || orbHazard(player,{x:sweeper.visual.position.x,y:sweeper.visual.position.y,z:-43.8}) || gateHazard(player,now);
+    let bounce=false;
+    for(const pad of this.springPads){
+      pad.ring.rotation.z=now*.8;
+      pad.core.position.y=pad.y+.26+Math.sin(now*3)*.09;
+      if(now-pad.at>.7 && player.y<pad.y+1.6 && player.y>pad.y+.35 && Math.hypot(player.x-pad.x,player.z-pad.z)<.85){
+        pad.at=now;bounce=true;this.onEvent('spring',{x:pad.x,z:pad.z});
       }
-      enemy.visual.position.set(enemy.x,enemy.y+Math.sin(now*2)*.15,enemy.z);
-      if(distance<1.25){if(dashing){enemy.stunned=3;this.onEvent('enemyDodged',{})}else danger=true;}
     }
-    return {danger};
+    for(const [i,cloud] of this.clouds.entries()){cloud.position.x+=(i%2?1:-1)*dt*.38;if(Math.abs(cloud.position.x)>150)cloud.position.x*=-.92;}
+    const enemy=this.enemy;
+    if(enemy.stunned>0){enemy.stunned=Math.max(0,enemy.stunned-dt);enemy.visual.visible=enemy.stunned===0;enemy.state='stunned';}
+    else {
+      const dx=player.x-enemy.x,dz=player.z-enemy.z;
+      const distance=Math.hypot(dx,dz);
+      if(canSpotPlayer(enemy,player,enemy.lookingX,enemy.lookingZ)){
+        enemy.aware=2.4;enemy.targetX=player.x;enemy.targetZ=player.z;enemy.state='chase';
+      }else {const hadFocus=enemy.aware>0;enemy.aware=Math.max(0,enemy.aware-dt);if(hadFocus&&enemy.aware===0)enemy.search=1.6;}
+      if(enemy.aware>0 || enemy.search>0){
+        if(enemy.aware<=0)enemy.state='search';
+        const vx=enemy.targetX-enemy.x,vz=enemy.targetZ-enemy.z,r=Math.hypot(vx,vz);
+        if(r>.25){
+          const speed=enemy.state==='chase'?1.9:1.1;
+          const step=Math.min(r,dt*speed);enemy.x+=vx/r*step;enemy.z+=vz/r*step;
+          enemy.lookingX=vx/r;enemy.lookingZ=vz/r;
+        } else if(enemy.aware===0){enemy.search=Math.max(0,enemy.search-dt);}
+        if(enemy.aware===0&&enemy.search===0){enemy.state='patrol';enemy.search=0;}
+      } else {
+        enemy.state='patrol';enemy.angle+=dt*.75;
+        let xx=enemy.originX+Math.sin(enemy.angle)*2.2,zz=-62.4+Math.cos(enemy.angle)*1.4;
+        const vx=xx-enemy.x,vz=zz-enemy.z,len=Math.hypot(vx,vz);
+        if(len>.005){enemy.lookingX=vx/len;enemy.lookingZ=vz/len;}
+        enemy.x=xx;enemy.z=zz;
+      }
+      // Keep the guardian inside its island (it cannot float through the ocean).
+      enemy.x=Math.max(-4.35,Math.min(4.35,enemy.x));enemy.z=Math.max(-64.5,Math.min(-56,enemy.z));
+      enemy.visual.position.set(enemy.x,enemy.y+Math.sin(now*2)*.15,enemy.z);
+      enemy.visual.rotation.y=Math.atan2(-enemy.lookingX,-enemy.lookingZ);
+      if(distance<1.3&&Math.abs(player.y-enemy.y)<2.0){
+        if(dashing){enemy.stunned=3;enemy.aware=0;this.onEvent('enemyDodged',{});}else danger=true;
+      }
+    }
+    return {danger,bounce};
   }
   dispose(){
     this.scene.remove(this.group);
