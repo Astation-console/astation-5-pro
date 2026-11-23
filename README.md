@@ -1,34 +1,43 @@
-# ASTATION 5 PRO — Beta 1.1
+# ASTATION 5 PRO — ULTIMATE UPDATE 2.0
 
-Przeglądarkowy symulator autorskiej konsoli ASTATION 5 PRO, inspirowany doświadczeniem korzystania z nowoczesnej konsoli.
+Autorski symulator interfejsu konsoli i zestaw grywalnych minigier uruchamianych w przeglądarce. Inspirowany wygodą i płynnością nowoczesnych konsol, niezwiązany z Sony.
 
-## Nowe w Beta 1.1
-- Pusta biblioteka po pierwszym uruchomieniu
-- Gry na ekranie głównym pojawiają się dopiero po ukończonej instalacji
-- Migracja zapisów z Beta 1.0 bez usuwania rzeczywistych postępów
+**Graj online:** https://astation-console.github.io/astation-5-pro/
 
-## Co jest w becie
-- Animowany ekran startowy i logo ASTATION 5
-- Menu konsoli, biblioteka, sklep i ekran profilu
-- Pięć grywalnych dem: **Eclipse Zero**, **Velocity Nights**, **Astro Drift**, **Signal Lost**, **Afterlight**
-- Kolejka pobierania, postęp instalacji i wirtualny dysk
-- Trofea, osiągnięcia i zapis postępów w przeglądarce
-- Obsługa klawiatury, dotyku i podstawowa obsługa kontrolera
+## Co nowego w 2.0
 
-> **Beta:** projekt jest symulatorem interfejsu i autorskich minigier. Nie jest emulatorem konsoli PS5 ani sposobem na uruchamianie gier PlayStation. Niektóre elementy są uproszczone i mogą wymagać dalszych testów.
+- Ekran konsoli z dynamiczną grafiką, logo ASTATION 5 i paskiem **zainstalowanych** gier. Nowa konsola zaczyna z pustą biblioteką.
+- Trzy przebudowane gry 3D na autorskim silniku **WebGL 1** (z zachowanym trybem grywalności 2D na urządzeniach bez WebGL).
+- **Eclipse Zero:** kamera zza postaci, sterowanie 3D, uniki, skok, system walki, 3 sektory, ruchomi przeciwnicy i boss.
+- **Velocity Nights:** trasa z zakrętami, sterowanie autem, turbo/hamulec, samochody AI, kolizje i 3 okrążenia.
+- **Astrob​​ound Worlds:** przestrzenne platformy, skok/podwójny skok, kryształy, latające przeszkody, checkpointy i 3 światy.
+- **Lost Signal:** 3 misje z nadajnikami i zapisywanym postępem.
+- **Afterlight Survival:** 3 noce, zasoby, schronienie i przeciwnicy.
+- **Trofea 2.0:** trofea brązowe, srebrne, złote, ukryte oraz platynowe; odblokowywane za działania w grze.
+- **Centrum sterowania:** przycisk PS podczas gry otwiera panel bez kasowania sesji; profil, pobieranie, osiągnięcia, powiadomienia i ustawienia.
+- **Sklep:** banner, filtry kategorii, wyszukiwarka, szczegóły, prawdziwe zrzuty z trybu zgodności 2D i zarządzanie instalacjami.
+- **Instalacje:** kolejka, symulowany transfer, pauza, wznawianie i anulowanie; kontynuowanie w tle podczas używania konsoli.
+- **Telefon:** joystick, przyciski akcji, opcjonalne ukrycie sterowania, skalowany układ; pad przez Gamepad API.
+- Muzyka systemowa generowana lokalnie (możliwość wyciszenia), motywy, język PL/EN, lokalny zapis, wirtualne 825 GB SSD, symulowane aktualizacje i uśpienie.
 
-## Uruchomienie
-Otwórz `index.html` w przeglądarce albo skorzystaj z GitHub Pages.
+## Sterowanie
 
-## Publikacja na GitHub Pages
-1. Stwórz publiczne repozytorium, np. `astation-5-pro`.
-2. Prześlij **zawartość tego folderu** do głównego katalogu repozytorium (w tym `index.html` i `assets/`).
-3. W repozytorium wejdź w **Settings → Pages → Build and deployment**.
-4. Ustaw **Deploy from a branch**, gałąź `main`, folder `/ (root)` i wybierz **Save**.
-5. Gdy publikacja się zakończy, witryna będzie dostępna pod adresem `https://TWOJ_LOGIN.github.io/astation-5-pro/`.
+**Klawiatura:** WASD / strzałki — ruch; Spacja — akcja lub skok; B/Control — unik lub hamulec; Q/E — skok w trybie 3D; Shift — sprint; Esc — pauza; P — centrum sterowania.
 
-## Zapisy
-Gra korzysta z `localStorage`, dlatego postępy są zachowywane w tej samej przeglądarce. Usunięcie danych witryny może usunąć zapisy.
+**Telefon:** joystick lub D-pad, A, B i Jump w grach 3D. Obsługa myszy i przycisków interfejsu.
 
-## Projekt
-ASTATION 5 PRO — autorski projekt fanowski. Nazwy oraz interfejsy PlayStation należą do odpowiednich właścicieli; ASTATION nie jest oficjalnym produktem Sony.
+**Pad:** lewy drążek / D-pad, A / B, Y (skok), Start (pauza), PS (jeśli przycisk jest udostępniany przez przeglądarkę).
+
+## Ważne
+
+- „Pobieranie” i wielkości GB są **symulowane**. Program nie pobiera plików oryginalnych gier.
+- To nie jest emulator PlayStation 5 i nie uruchamia oryginalnych tytułów PS5.
+- WebGL 3D wymaga obsługi WebGL przez przeglądarkę. Gdy jej brak, trzy główne tytuły mają zachowane grywalne wydania 2D.
+- Stan jest przechowywany w pamięci lokalnej przeglądarki pod kluczem `astation_pro_v2`; wyczyszczenie danych witryny może usunąć zapis.
+- Wersja 2.0 zachowuje instalacje, trofea i inne zapisy z wersji 1.1 (z migracją starszych trofeów).
+
+## Testy
+
+Uruchomienie pięciu gier, powrót przez centrum sterowania, menu, sklep, instalacje oraz trofea sprawdzono w automatycznych testach w wariantach desktopowym i mobilnym. Sprawdzono też logikę gier 3D, ale renderer WebGL wymaga dalszych testów wizualnych na urządzeniu z obsługą WebGL.
+
+**© ASTATION Studios — niezależny projekt demonstracyjny.**
