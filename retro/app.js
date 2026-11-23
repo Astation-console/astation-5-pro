@@ -1,4 +1,5 @@
-import { unpackLocalFile, dbAll, dbPut, dbDelete } from './rom.js';
+import { unpackLocalFile, dbPut } from './rom.js';
+import { loadLocalROMs, persistLocalROM, deleteLocalROM } from './persistent.js';
 
 'use strict';
 const $ = selector => document.querySelector(selector);
@@ -13,6 +14,7 @@ const matchesDirectROM=item=>{
  return DIRECT_GAME==='mario'? /^A2D[A-Z0-9]$/.test(code)&&title.startsWith('NEW MARIO') : DIRECT_GAME==='cod'?/^BDY[A-Z0-9]$/.test(code)&&title.startsWith('CALLOFDUTY7'):true;
 };
 const SETTINGS_KEY = 'astation_retro_settings_v8_' + profile;
+const IMPORT_MARK_KEY='astation_retro_lastimport_v85_'+profile+'_'+(DIRECT_GAME||'library');
 const DEFAULT_KEYS = Object.freeze({Up:'up arrow',Down:'down arrow',Left:'left arrow',Right:'right arrow',B:'z',A:'x',Y:'a',X:'s',Start:'enter',Select:'shift',L:'q',R:'e'});
 const mobileDevice=/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&innerWidth<800);
 const PERF_PRESETS={performance:{core:'desmume2015',frameskip:2},balanced:{core:mobileDevice?'desmume2015':'desmume',frameskip:mobileDevice?1:0},quality:{core:'desmume',frameskip:0}};
@@ -31,6 +33,10 @@ const safeName=s=>String(s||'Untitled').replace(/[\x00-\x1f<>]/g,'').slice(0,90)
 let toastTimeout;
 function toast(message,error=false){const box=$('#toast');box.textContent=message;box.style.background=error?'#5a2030':'#17365a';box.hidden=false;clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>{box.hidden=true},6000)}
 function saveSettings(){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}catch(e){toast('Nie można zachować ustawień w tej przeglądarce.',true)}}
+function markImport(){try{localStorage.setItem(IMPORT_MARK_KEY,JSON.stringify({at:Date.now(),game:DIRECT_GAME}))}catch{}}
+function storedBefore(){try{return !!localStorage.getItem(IMPORT_MARK_KEY)}catch{return false}}
+function storageStatus(message,problem=false){const tag=$('#rom-storage-status');if(!tag)return;tag.hidden=false;tag.classList.toggle('storage-error',problem);tag.textContent=message}
+
 function post(event,extra={}){const frame=$('#player-frame').contentWindow;if(!state.playerReady||!frame)return;frame.postMessage({source:'astation-retro-host',event,...extra},location.origin)}
 function show(view){state.view=view;for(const name of ['library','play','settings'])$('#'+name+'-view').hidden=view!==name}
 function profileSwitch(){// Prevent accidental cross-profile ROM access when the parent console changes users.
@@ -55,7 +61,7 @@ function gameCard(item){
  const play=document.createElement('button');play.type='button';play.textContent='Graj';play.addEventListener('click',()=>launch(item));
  const remove=document.createElement('button');remove.type='button';remove.className='del';remove.textContent='Usuń ROM';remove.addEventListener('click',async()=>{
    if(!confirm(`Usunąć grę „${safeName(item.info?.title)}” z lokalnej biblioteki? Zapisy emulatora pozostaną.`))return;
-   try{if(!state.volatile.has(item.id))await dbDelete(item.id);state.volatile.delete(item.id);state.games=state.games.filter(g=>g.id!==item.id);renderLibrary();toast('Usunięto lokalny ROM. Zapisy emulatora pozostają.')}catch(e){toast('Błąd usuwania: '+e.message,true)}
+   try{await deleteLocalROM(item);state.volatile.delete(item.id);state.games=state.games.filter(g=>g.id!==item.id);renderLibrary();toast('Usunięto lokalny ROM. Zapisy emulatora pozostają.')}catch(e){toast('Błąd usuwania: '+e.message,true)}
  });
  foot.append(play,remove);card.append(meta,title,info,foot);return card;
 }
@@ -66,9 +72,18 @@ function renderLibrary(){
  for(const game of games)box.append(gameCard(game));
 }
 async function fetchLibrary(){
- try{const games=await dbAll(profile);state.games=[...games,...state.volatile.values()].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i);renderLibrary()}
- catch(e){toast('IndexedDB niedostępne. Możesz grać do zamknięcia tej karty.',true);state.games=[...state.volatile.values()];renderLibrary()}
- if(DIRECT_GAME){const saved=state.games.find(matchesDirectROM);if(saved)launch(saved)}
+ const {games,error}=await loadLocalROMs(profile);
+ state.games=[...games,...state.volatile.values()].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i);
+ renderLibrary();
+ const target=DIRECT_GAME?state.games.find(matchesDirectROM):state.games[0];
+ if(target){
+   storageStatus(target.cacheBackup?'Plik gry odzyskany z lokalnej pamięci zapasowej.':'Gra zapisana na urządzeniu. Nie musisz ponownie wybierać ZIP-a.');
+   if(DIRECT_GAME)launch(target);
+ }else if(DIRECT_GAME){
+   if(storedBefore())storageStatus('Poprzednio zapisany ROM nie jest już dostępny w tej przeglądarce. Otwórz ASTATION bezpośrednio w Safari i wskaż ZIP ponownie.',true);
+   else storageStatus('Pierwsze uruchomienie: wskaż własny plik ZIP lub NDS. ASTATION spróbuje zachować go na przyszłość.');
+ }
+ if(error&&!target)storageStatus('Przeglądarka blokuje lokalną pamięć gier. Spróbuj otworzyć ASTATION w Safari poza przeglądarką aplikacji.',true);
 }
 async function importROM(file){
  if(!file)return;
@@ -81,7 +96,23 @@ async function importROM(file){
   const old=state.games.find(x=>x.id===id);
   const entry={id,profile,sha,filename,info,blob,imported:old?.imported||Date.now(),lastPlayed:old?.lastPlayed||0};
   state.games=[entry,...state.games.filter(x=>x.id!==id)];state.volatile.set(id,entry);
-  if(settings.persist){try{await dbPut(entry);state.volatile.delete(id);toast('ROM poprawny. Zapisano lokalnie w bibliotece.')}catch(e){toast('ROM poprawny, ale brak miejsca na trwały zapis. Gra działa w tej sesji.',true)}}else toast('ROM poprawny. Dostępny tylko do zamknięcia tej karty.');
+  if(settings.persist){
+    try{
+      storageStatus('Trwa sprawdzanie zapisu gry na urządzeniu…');
+      const result=await persistLocalROM(entry);
+      state.volatile.delete(id);
+      entry.cacheBackup=result.method==='Cache Storage';
+      markImport();
+      storageStatus('Potwierdzono: ROM zapisany w '+result.method+'. Przy następnym uruchomieniu nie powinien być potrzebny wybór ZIP-a.');
+      toast('Zapisano grę lokalnie i zweryfikowano jej odczyt.');
+    }catch(e){
+      storageStatus('Nie udało się zachować gry na przyszłość. '+e.message+' Plik działa tylko do zamknięcia tej strony.',true);
+      toast('Uwaga: gra nie została zapisana na urządzeniu. Otwórz ASTATION w Safari.',true);
+    }
+  }else{
+    storageStatus('Zapisywanie ROM-u zostało wyłączone w ustawieniach — następnym razem trzeba będzie wybrać plik.',true);
+    toast('Plik dostępny tylko w tej sesji. Włącz Zapamiętuj ROM w ustawieniach.',true);
+  }
   renderLibrary();
   if(DIRECT_GAME)launch(entry);
  }catch(e){toast('Import nieudany: '+(e?.message||e),true)}finally{importButton.disabled=false;$('#rom-input').value=''}
@@ -114,7 +145,7 @@ function launch(item){
  const frame=$('#player-frame');frame.src='./player.html';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
  $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie silnika DS · ROM lokalnie na urządzeniu';show('play');
  item.lastPlayed=Date.now();
- if(settings.persist&&!state.volatile.has(item.id))dbPut(item).catch(()=>{});
+ // Last-played timestamps are transient; do not risk overwriting a known-good ROM on every launch.
  renderLibrary();
 }
 function requestSaveBeforeExit(timeout=1800){

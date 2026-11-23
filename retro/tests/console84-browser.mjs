@@ -73,9 +73,11 @@ try{
     await page.locator('#ast-retro-shell iframe').waitFor({timeout:10000});
     assert.match(await page.locator('#ast-retro-shell iframe').getAttribute('src'),new RegExp('game='+game));
     const frame=page.frameLocator('#ast-retro-shell iframe');
-    await frame.locator('#rom-input').waitFor({state:'attached',timeout:14000});
+    await frame.locator('#rom-input').waitFor({timeout:14000});
     await frame.locator('#rom-input').setInputFiles({name:`synthetic-${game}.nds`,mimeType:'application/octet-stream',buffer:syntheticNDS(title,code)});
     await frame.locator('#playing-title').waitFor({state:'visible',timeout:16000});
+    await frame.locator('#rom-storage-status').waitFor({state:'visible',timeout:16000});
+    assert.match(await frame.locator('#rom-storage-status').innerText(),/Potwierdzono: ROM zapisany/);
     await page.waitForFunction(code=>{const retro=document.querySelector('#ast-retro-shell iframe')?.contentWindow;const child=retro?.document.querySelector('#player-frame')?.contentWindow;return child?.__actualReceivedROM?.code===code},code,{timeout:25000});
     const received=await page.evaluate(()=>document.querySelector('#ast-retro-shell iframe').contentWindow.document.querySelector('#player-frame').contentWindow.__actualReceivedROM);
     assert.equal(received.length,0x10000);
@@ -93,6 +95,7 @@ try{
     await page.locator(`#hero-copy button[data-action=launch][data-id=${id}]`).click();
     const frame=page.frameLocator('#ast-retro-shell iframe');
     await frame.locator('#playing-title').waitFor({state:'visible',timeout:14000});
+    assert.match(await frame.locator('#rom-storage-status').innerText(),/Nie musisz ponownie wybierać ZIP-a/);
     await page.waitForFunction(code=>document.querySelector('#ast-retro-shell iframe')?.contentWindow?.document.querySelector('#player-frame')?.contentWindow?.__actualReceivedROM?.code===code,code,{timeout:25000});
     await frame.locator('#os-back').click();
     await page.locator('#ast-retro-shell').waitFor({state:'detached',timeout:12000});
