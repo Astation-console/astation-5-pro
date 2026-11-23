@@ -1,0 +1,53 @@
+name: ASTATION Engine 6 - Build and Unit QA
+on:
+  push:
+    branches: [engine-6-dreambound-preview, main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Check dist structure
+        run: |
+          test -f dist/index.html
+          test -f dist/games/world/index.html
+          test -f dist/models/pix.glb
+          test -f dist/games/world/classic.html
+      - name: Build safe GitHub Pages preview under /preview-6/
+        if: github.event_name == 'push' && github.ref == 'refs/heads/engine-6-dreambound-preview'
+        run: npm run build -- --base=/astation-5-pro/preview-6/
+      - name: Publish preview without replacing public ASTATION 5.1
+        if: github.event_name == 'push' && github.ref == 'refs/heads/engine-6-dreambound-preview'
+        run: |
+          git fetch origin main
+          git worktree add --detach ../astation-public-preview origin/main
+          rm -rf ../astation-public-preview/preview-6
+          mkdir -p ../astation-public-preview/preview-6
+          cp -a dist/. ../astation-public-preview/preview-6/
+          cd ../astation-public-preview
+          git config user.name 'ASTATION CI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A preview-6
+          if ! git diff --cached --quiet; then
+            git commit -m 'preview: publish tested ASTATION Engine 6 at /preview-6/'
+            git push origin HEAD:main
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: astation-engine-6-dist
+          path: |
+            dist
+            test-results

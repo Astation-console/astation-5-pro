@@ -1,45 +1,47 @@
-# ASTATION 5 PRO — Update 5.1: Power, Avatars & Collision Fix
+# ASTATION 5 PRO — NEXT GEN ENGINE 6.0 (PREVIEW)
 
-Oficjalna przeglądarkowa konsola ASTATION, hostowana na GitHub Pages:
+**Status: test branch, not production.** The public ASTATION OS 5.1 homepage stays live until CI + browser testing confirms this engine is ready.
 
-https://astation-console.github.io/astation-5-pro/
+## What works in the preview
 
-## Nowe w wersji 5.1
+- **ASTATION OS remains the exact 5.1 console**, including boot sequence, profiles, store, downloads, trophies, control centre, settings, saved progress and collectible avatars.
+- **ASTATION WORLD: Dreambound — Green Valley:** one fully designed 3D level with the original PIX model GLB and its Idle, Walk and Jump animation clips, 7 islands, moving platforms, rotating obstacles, energy hazards, a patrolling enemy, 10 crystals, 2 activation terminals, a mid-level checkpoint, a completion portal, and a result screen.
+- Three **real, event-triggered** ASTATION trophy events: first crystal (`collect`), Green Valley completion (`worldComplete`), and collecting every crystal (`secret`).
+- Real Rapier 3D collision shapes and a kinematic character controller, fixed step 1/90 second, grounded double jump, dash, camera orbit and obstruction checking.
+- **Vite + Three.js + Rapier** modular game engine. Independent modules for graphics, physics, loading, AnimationMixer, camera, sound, input and IndexedDB saves.
+- Keyboard + mouse, touch joystick/buttons, Gamepad API, adjustable performance/balanced/quality modes, pause/resume, checkpoint restart, photo capture, export, exit.
+- Previous five-world Dreambound remains available under **CLASSIC WORLDS**. Existing `ASTATION_WORLD_DREAMBOUND_v4` saves are retained unmodified and OS backups are preserved.
 
-- **Nowy ekran zasilania:** przed uruchomieniem systemu gracz musi nacisnąć wirtualny przycisk Power. Następują animacja startowa, wybór profilu i ekran konsoli. Wyłączanie konsoli wraca na ekran zasilania.
-- **Profilowe z naszych gier:** 12 oryginalnych awatarów SVG, m.in. PIX, Green Valley, Candy Galaxy, Frozen Kingdom, Mechanical Factory, Sky Islands, Crystal Collector i Dream Guardian. Niektóre są dostępne od początku; pozostałe odblokowują się wraz z postępami, zdobywaniem kryształów i trofeów. Można wybrać awatar na ekranie użytkownika i w panelu profilu.
-- **Zachowanie konta:** wybrany awatar zapisuje się w dotychczasowym `astation_pro_v2` bez usuwania statystyk, biblioteki, historii ani trofeów.
-- **Kolizje Dreambound 5.1:** osobny moduł `games/world/collision.js` obsługujący pionowe zderzenia przez wykrycie przekroczenia powierzchni między klatkami, blokowanie wejścia w boki platform, podtrzymywanie postaci na ruchomej platformie i korektę małych penetracji ze starszych wersji.
-- **Stabilny checkpoint i portal:** dodatkowe stałe platformy na trasie przy punkcie zapisu i końcowym portalu.
-- **Wiadomość o odblokowaniu nowego awatara**, gdy postęp z rozgrywki spełni jego warunek.
+## Run locally
 
-## Co pozostaje bez zmian
+```bash
+npm install
+npm run dev
+```
 
-- ASTATION OS, logo, profil użytkownika, trofea i historia, sklep, kolejka symulowanych instalacji, centrum sterowania, ustawienia, galerie, Game Hub oraz archiwalne dane poprzednich gier.
-- Dreambound: model PIX GLB (Idle, Walk, Jump), pięć światów, zadania, kryształy, terminale, przeciwnicy, boss, gamepad/touch, zapisy i pauza.
+Then open `http://localhost:5173/astation-5-pro/` and install ASTATION WORLD from the store.
 
-## Pliki
+Tests and production build:
 
-- `index.html` — system ASTATION OS, zasilanie, profile, sklep i integracja gry
-- `games/world/index.html` — ekran i HUD Dreambound
-- `games/world/world.js` — silnik rozgrywki
-- `games/world/collision.js` — logika kolizji platform
-- `games/world/assets/pix.glb` — autorski model 3D z animacjami
+```bash
+npm run test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
 
-## Sterowanie
+The GitHub Actions test workflow runs all of those checks on every change to `engine-6-dreambound-preview`.
 
-**System:** wciśnij Power, wybierz profil. W menu wybierz profil, żeby zmienić awatar. Możesz też otworzyć jego kolekcję na ekranie logowania.
+## Important accuracy notes
 
-**Dreambound:** WASD lub analog — ruch, Spacja/A — skok i podwójny skok, Q/B — dash, E/X — terminal, Esc — pauza. Na telefonie korzystaj z joysticka i przycisków dotykowych.
+- The existing PIX GLB contains **mesh-transform animations** named Idle, Walk and Jump, **not a skinned rig**. The new AnimationMixer supports any GLTF animations, but we will add rigged assets later when Blender production files are available.
+- This is **one** next-gen Green Valley level, not six finished games. The five older worlds remain in Classic mode and no other new products appear as unfinished storefront tiles.
+- A virtual game download in ASTATION OS does not download a real external title.
+- ASTATION has no real online multiplayer backend on GitHub Pages.
+- No original PlayStation sounds or assets are included; sound cues are synthesized specifically for ASTATION.
 
-## Testy
+## Figma UI project
 
-- Osiem deterministycznych testów modułu kolizji platform w Node.js.
-- Test integracyjny logiki Dreambound w przeglądarce z symulowanym rendererem: pięć światów, ruch, skok, zbiory, boss, brak błędów JS.
-- Testy interfejsu w Chromium desktop i układzie mobilnym: power, boot, wybór awatara, profil, sklep, pobieranie, centrum sterowania, wyłączenie i zapisy po re-inicjalizacji.
+Editable Dreambound HUD, loading and pause screens: https://www.figma.com/design/kpMsC4skZIvlbLTOEJavlj
 
-> Renderowanie WebGL na fizycznym iPhonie i fizycznym kontrolerze wymaga osobnego testu. Pojemności pobierania w konsoli są symulowane; nie pobieramy rzeczywistych gier PS5. ASTATION 5 PRO nie jest produktem Sony.
-
-## Bezpieczeństwo
-
-Poprzedni commit jest zachowany w gałęzi GitHub `backup-revolution-5-before-5-1`. Lokalnych zapisów przeglądarki nie nadpisujemy przy wdrożeniu.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module ownership and save compatibility.
