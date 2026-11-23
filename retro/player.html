@@ -39,7 +39,11 @@ function start(cfg){
  if(launched)return;launched=true;
  window.EJS_player='#game';
  window.EJS_core=cfg.core==='desmume2015'?'desmume2015':'desmume';
- window.EJS_gameUrl=cfg.url;
+ // Create this frame's own blob URL — iOS Safari can reject blob URLs created in a parent iframe.
+ const localRom = cfg.romBlob instanceof Blob ? cfg.romBlob : null;
+ if (!localRom && !cfg.url) {post('core-error',{message:'Nie odnaleziono lokalnego ROM-u. Wróć do biblioteki i zaimportuj plik.'});return;}
+ window.EJS_gameUrl = localRom ? URL.createObjectURL(localRom) : cfg.url;
+ window.addEventListener('pagehide',()=>{if(localRom)URL.revokeObjectURL(window.EJS_gameUrl)},{once:true});
  window.EJS_gameName='ASTATION_RETRO_'+cfg.profile+'_'+cfg.sha.slice(0,16);
  window.EJS_gameID=parseInt(cfg.sha.slice(0,7),16);
  window.EJS_pathtodata='https://cdn.emulatorjs.org/stable/data/';
@@ -72,7 +76,7 @@ function start(cfg){
    if(!gameStarted&&!isIOS)post('startup-slow',{message:'Gra nie rozpoczęła działania. Spróbuj lżejszego rdzenia DeSmuME 2015.'});
  },70000);
  const loader=document.createElement('script');loader.src='https://cdn.emulatorjs.org/stable/data/loader.js';loader.async=true;
- loader.onerror=()=>{document.getElementById('waiting').querySelector('small').textContent='Nie udało się pobrać rdzenia EmulatorJS. Sprawdź połączenie.';post('core-error',{message:'Nie można pobrać EmulatorJS z CDN. Sprawdź połączenie internetowe.'})};
+ loader.onerror=()=>{document.getElementById('waiting').querySelector('small').textContent='Nie udało się pobrać rdzenia EmulatorJS. Sprawdź połączenie.';post('core-error',{message:'Nie można pobrać plików rdzenia EmulatorJS z zewnętrznego CDN. ROM jest nadal zapisany lokalnie. Spróbuj ponownie przy stabilnym połączeniu.'})};
  document.head.append(loader);
 }
 window.addEventListener('message',event=>{

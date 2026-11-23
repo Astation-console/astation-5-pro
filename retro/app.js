@@ -5,8 +5,13 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const parsedProfile = new URLSearchParams(location.search).get('profile') || 'legacy';
 const profile = /^[\w-]{1,40}$/.test(parsedProfile) ? parsedProfile : 'legacy';
-const DIRECT_MARIO = new URLSearchParams(location.search).get('game') === 'mario';
-const isMarioROM = item => /^A2D[A-Z0-9]$/i.test(String(item?.info?.code||'')) && /^NEW MARIO/i.test(String(item?.info?.title||''));
+const DIRECT_GAME = ['mario','cod'].includes(new URLSearchParams(location.search).get('game')) ? new URLSearchParams(location.search).get('game') : null;
+const DIRECT_TITLES={mario:'New Super Mario Bros.',cod:'Call of Duty: Black Ops'};
+const matchesDirectROM=item=>{
+ const code=String(item?.info?.code||'').toUpperCase();
+ const title=String(item?.info?.title||'').toUpperCase();
+ return DIRECT_GAME==='mario'? /^A2D[A-Z0-9]$/.test(code)&&title.startsWith('NEW MARIO') : DIRECT_GAME==='cod'?/^BDY[A-Z0-9]$/.test(code)&&title.startsWith('CALLOFDUTY7'):true;
+};
 const SETTINGS_KEY = 'astation_retro_settings_v8_' + profile;
 const DEFAULT_KEYS = Object.freeze({Up:'up arrow',Down:'down arrow',Left:'left arrow',Right:'right arrow',B:'z',A:'x',Y:'a',X:'s',Start:'enter',Select:'shift',L:'q',R:'e'});
 const mobileDevice=/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&innerWidth<800);
@@ -55,15 +60,15 @@ function gameCard(item){
  foot.append(play,remove);card.append(meta,title,info,foot);return card;
 }
 function renderLibrary(){
- const box=$('#library-grid');box.replaceChildren();const games=[...state.games].filter(g=>!DIRECT_MARIO||isMarioROM(g)).sort((a,b)=>(b.lastPlayed||b.imported||0)-(a.lastPlayed||a.imported||0));
+ const box=$('#library-grid');box.replaceChildren();const games=[...state.games].filter(matchesDirectROM).sort((a,b)=>(b.lastPlayed||b.imported||0)-(a.lastPlayed||a.imported||0));
  $('#library-count').textContent=games.length?`${games.length} ${games.length===1?'gra':'gry'} · profil ${profile}`:`Brak gier · profil ${profile}`;
- if(!games.length){const empty=document.createElement('div');empty.className='empty-card';empty.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h4"/></svg><strong>Twoja biblioteka jest pusta</strong><span>Wybierz własny plik New Super Mario Bros. (.nds lub .zip), aby rozpocząć grę.</span>';box.append(empty);return}
+ if(!games.length){const empty=document.createElement('div');empty.className='empty-card';empty.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h4"/></svg><strong>Twoja biblioteka jest pusta</strong><span>Wybierz własny plik gry (.nds lub .zip), aby rozpocząć rozgrywkę.</span>';box.append(empty);return}
  for(const game of games)box.append(gameCard(game));
 }
 async function fetchLibrary(){
  try{const games=await dbAll(profile);state.games=[...games,...state.volatile.values()].filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i);renderLibrary()}
  catch(e){toast('IndexedDB niedostępne. Możesz grać do zamknięcia tej karty.',true);state.games=[...state.volatile.values()];renderLibrary()}
- if(DIRECT_MARIO){const saved=state.games.find(isMarioROM);if(saved)launch(saved)}
+ if(DIRECT_GAME){const saved=state.games.find(matchesDirectROM);if(saved)launch(saved)}
 }
 async function importROM(file){
  if(!file)return;
@@ -71,14 +76,14 @@ async function importROM(file){
  const importButton=$('#import-btn');importButton.disabled=true;
  try{
   const {blob,info,sha,filename}=await unpackLocalFile(file);
-  if(DIRECT_MARIO&&!isMarioROM({info}))throw Error('Ten kafelek wymaga pliku New Super Mario Bros. (NDS, kod A2D). Wybierz właściwy ZIP lub .nds.');
+  if(DIRECT_GAME&&!matchesDirectROM({info}))throw Error('Wybrany plik nie jest poprawną grą '+DIRECT_TITLES[DIRECT_GAME]+'. Kod ROM-u: '+info.code+'. Wskaż właściwy plik NDS lub ZIP.');
   const id=profile+':'+sha;
   const old=state.games.find(x=>x.id===id);
   const entry={id,profile,sha,filename,info,blob,imported:old?.imported||Date.now(),lastPlayed:old?.lastPlayed||0};
   state.games=[entry,...state.games.filter(x=>x.id!==id)];state.volatile.set(id,entry);
   if(settings.persist){try{await dbPut(entry);state.volatile.delete(id);toast('ROM poprawny. Zapisano lokalnie w bibliotece.')}catch(e){toast('ROM poprawny, ale brak miejsca na trwały zapis. Gra działa w tej sesji.',true)}}else toast('ROM poprawny. Dostępny tylko do zamknięcia tej karty.');
   renderLibrary();
-  if(DIRECT_MARIO)launch(entry);
+  if(DIRECT_GAME)launch(entry);
  }catch(e){toast('Import nieudany: '+(e?.message||e),true)}finally{importButton.disabled=false;$('#rom-input').value=''}
 }
 function refreshPad(){try{const connected=Array.from(navigator.getGamepads?.()||[]).some(Boolean);const target=$('#gamepad-status');target.classList.toggle('online',connected);target.title=connected?'Wykryto kontroler':'Nie wykryto kontrolera';target.lastElementChild.textContent=connected?'Pad ✓':'Pad';}catch{}}
@@ -105,9 +110,9 @@ function retryCurrent(core){
 function launch(item){
  if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
- state.playing=item;state.playerUrl=URL.createObjectURL(blob);state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
- const frame=$('#player-frame');frame.src='./player.html';$('#playing-title').textContent=DIRECT_MARIO?'New Super Mario Bros.':safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
- $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie emulatora…';show('play');
+ state.playing=item;state.playerUrl=null;state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
+ const frame=$('#player-frame');frame.src='./player.html';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
+ $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie silnika DS · ROM lokalnie na urządzeniu';show('play');
  item.lastPlayed=Date.now();
  if(settings.persist&&!state.volatile.has(item.id))dbPut(item).catch(()=>{});
  renderLibrary();
@@ -141,7 +146,7 @@ const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
  const d=event.data;
- if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{url:state.playerUrl,profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:settings.frameskip,keys:settings.keys,performance:settings.performance});}
+ if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:settings.frameskip,keys:settings.keys,performance:settings.performance});}
  if(d.event==='core-ready'){
    state.coreReady=true;
    $('#player-loading').hidden=true;
@@ -203,15 +208,15 @@ setInterval(refreshPad,2500);
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#controls-overlay').hidden){$('#controls-overlay').hidden=true;e.preventDefault()}else if(e.key==='Escape'&&!$('#pause-overlay').hidden){pauseMenu(false);e.preventDefault()}});
 window.addEventListener('beforeunload',()=>{if(state.playerUrl)URL.revokeObjectURL(state.playerUrl)});
 function setDirectMarioMode(){
- if(!DIRECT_MARIO)return;
- document.body.classList.add('mario-direct');
- document.title='New Super Mario Bros. — ASTATION 5 PRO';
- const hero=$('.hero h1');if(hero)hero.innerHTML='NEW SUPER<br><span>MARIO BROS.</span>';
+ if(!DIRECT_GAME)return;
+ document.body.classList.add(DIRECT_GAME==='mario'?'mario-direct':'cod-direct');
+ document.title=DIRECT_TITLES[DIRECT_GAME]+' — ASTATION 5 PRO';
+ const hero=$('.hero h1');if(hero)hero.textContent=DIRECT_TITLES[DIRECT_GAME];
  const eyebrow=$('.hero .eyebrow');if(eyebrow)eyebrow.textContent='ASTATION STORE · NINTENDO DS · GRA LOKALNA';
- const desc=$('.hero-copy p');if(desc)desc.textContent='Uruchom oryginalną grę Nintendo DS. Przy pierwszym uruchomieniu wskaż własny plik New Super Mario Bros. (.nds albo .zip); później gra otworzy się bezpośrednio z konsoli.';
+ const desc=$('.hero-copy p');if(desc)desc.textContent='Przy pierwszym uruchomieniu wskaż własny plik '+DIRECT_TITLES[DIRECT_GAME]+' (.nds lub .zip). Następne uruchomienia otworzą grę z zapisu lokalnego. Emulator nie wymaga ponownego wybierania pliku, jeśli IndexedDB zachowa dane.';
  const fine=$('.hero .fineprint');if(fine)fine.textContent='Uwaga: komercyjny ROM NIE jest pobierany ze sklepu. Plik pozostaje lokalnie w pamięci przeglądarki. Nie przesyłamy go na GitHub.';
- const importButton=$('#import-btn');if(importButton)importButton.textContent='Wybierz plik New Super Mario Bros. (.zip / .nds)';
- const heading=$('.content-head h2');if(heading)heading.textContent='New Super Mario Bros. · zapisana gra';
+ const importButton=$('#import-btn');if(importButton)importButton.textContent='Wybierz plik '+DIRECT_TITLES[DIRECT_GAME]+' (.zip / .nds)';
+ const heading=$('.content-head h2');if(heading)heading.textContent=DIRECT_TITLES[DIRECT_GAME]+' · zapisana gra';
  const brand=$('.brand strong');if(brand)brand.innerHTML='ASTATION <em>GAMES</em>';
  const b=$('#play-exit span');if(b)b.textContent='Karta gry';
 }

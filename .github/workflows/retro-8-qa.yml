@@ -1,7 +1,7 @@
 name: ASTATION RETRO 8 — browser integration QA
 on:
   push:
-    branches: [retro-8-integration, retro-8-ios-fix, retro-8-2-store-fps, mario-store-integration, main]
+    branches: [retro-8-integration, retro-8-ios-fix, retro-8-2-store-fps, mario-store-integration, astation-8-4-console-edition, main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,6 +24,8 @@ jobs:
         run: node retro/tests/retro-browser.mjs
       - name: ASTATION Store New Super Mario Bros. local ROM launcher (desktop/mobile)
         run: node retro/tests/store-browser.mjs
+      - name: ASTATION 8.4 direct game Store, local blobs and IndexedDB (desktop/mobile; synthetic test files only)
+        run: node retro/tests/console84-browser.mjs
       - name: Run actual DeSmuME WebAssembly core on MIT homebrew ROM (no commercial files)
         env:
           ASTATION_TEST_NDS: /tmp/astation-nds-homebrew.nds

@@ -7,6 +7,12 @@
 .mario-direct .primary{background:#ffdbab;color:#402118}
 .mario-direct .blink{background:#ffb96e}
 .mario-direct .game-card{border-color:#ffba7350}
+.cod-direct .hero{background:linear-gradient(120deg,#191e23,#2f4144 57%,#57452e)}
+.cod-direct .hero h1{color:#eddbb9;font-size:clamp(32px,4.1vw,66px)}
+.cod-direct .primary{background:#dec3a0;color:#372c24}
+.cod-direct .blink{background:#e0af73}
+.cod-direct .game-card{border-color:#d0ab6a50}
+.mario-direct .hero h1{font-size:clamp(32px,4vw,68px)}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 /* Real emulator startup feedback; this never covers an actively running game. */
