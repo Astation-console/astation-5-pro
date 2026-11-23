@@ -110,7 +110,7 @@ export class WorldGame {
     this.save();
     return true;
   }
-  classic(){window.location.href = import.meta.env.BASE_URL + 'games/world/classic.html';}
+  classic(){window.location.href = import.meta.env.BASE_URL + 'games/world/classic.html?profile='+encodeURIComponent(this.saveManager.profileId);}
   receive({event,...data}) {
     switch(event) {
       case 'restore': this.bridge.updateLegacy(data.data);this.legacySave=data.data||{};

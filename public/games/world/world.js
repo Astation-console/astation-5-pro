@@ -52,7 +52,8 @@ let stage=0,progress={stage:0,cores:0,checkpoints:[],collected:{},switches:{},se
 let pos={x:0,y:2.0,z:4.2},velY=0,grounded=false,jumps=0,supportPlatform=null,health=3,checkpoint={x:0,y:2,z:3.5},time=0,dashTime=0,dashCool=0,invuln=0,walkPhase=0,landPulse=0;
 let platforms=[],gems=[],enemies=[],switches=[],scenery=[],gate=null,boss=null,secret=null,particles=[];
 let keys={},lastKeys={},touchVec={x:0,z:0},padAxes={x:0,z:0},lastGamepad={};let cameraOrbit=0,dragLook=false,prevPointerX=0;
-const storageKey='ASTATION_WORLD_DREAMBOUND_v4';
+const storedProfile=new URLSearchParams(location.search).get('profile')||'legacy';
+const storageKey=storedProfile==='legacy'||!(/^[a-zA-Z0-9_-]{1,64}$/.test(storedProfile))?'ASTATION_WORLD_DREAMBOUND_v4':'ASTATION_WORLD_DREAMBOUND_v4:profile:'+storedProfile;
 const post=(event,data={})=>parent.postMessage({source:'astation-world-v4',event,...data},location.origin);
 function persist(){try{localStorage.setItem(storageKey,JSON.stringify(progress))}catch{}post('save',{save:progress})}
 try{const old=JSON.parse(localStorage.getItem(storageKey)||'{}');if(old&&typeof old==='object')progress={...progress,...old}}catch{}

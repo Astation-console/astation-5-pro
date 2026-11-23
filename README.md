@@ -1,3 +1,25 @@
+# ASTATION 5 PRO — Ultimate 7.0 Foundation (etap 1)
+
+**Status:** jedna pełna, grywalna przygoda 3D *ASTATION WORLD: Dreambound / Serce Doliny* (Chapter I) z GLB PIX, 11 klipami AnimationMixer, fizyką Rapier, misjami, checkpointami, fabułą, VFX, zapisem IndexedDB, trofeami i trybem Classic Worlds. Konsola pozostaje na **GitHub Pages**. **To nie jest jeszcze kompletna wersja 7.0 ani sześć gotowych gier.**
+
+## Co rzeczywiście dodaje etap 7.0
+
+- Lokalny wybór maksymalnie ośmiu profili; nazwa, awatar, trofea, biblioteka, postępy, ustawienia i historia rozdzielone. Pierwszy profil **legacy** przejmuje dotychczasowe dane z `astation_pro_v2`, bez kasowania archiwów.
+- Zapisy **IndexedDB** gry i starszych Classic Worlds dostają odrębne klucze profili; `legacy` zachowuje poprzedni klucz. Zrzuty ekranu są filtrowane według profilu.
+- Działający przycisk zmiany użytkownika w profilu i szybkim centrum sterowania. Centrum sterowania wysyła pauzę do aktywnej gry, a po zamknięciu przywraca jej symulację.
+- Postęp kolejki oznaczony **SYMULOWANA INSTALACJA** — bez udawania rzeczywistych szybkości internetu. Dysk 825 GB jest wirtualny.
+- Istniejące funkcje ASTATION OS: ekran zasilania, menu, sklep, pobieranie, awatary z gier, archiwum, osiągnięcia, galerie, ustawienia, lokalni znajomi NPC, parties demo, odtwarzanie sesji i tryb uśpienia.
+
+**Ograniczenia:** profile są lokalne, bez haseł i synchronizacji; nie zastępują kont online. Pozostałe 5 gier z dokumentu produkcyjnego to plan, a nie aktywne produkty. PIX jest detalicznym GLB z animacjami transformacji obiektów, nie zawiera szkieletu z riggingiem Blendera; nie deklarujemy inaczej. Figma pozostaje projektem UI, a GSAP i Howler.js są opcjonalne, nie wdrożone w tym etapie. Pełnych testów fizycznego kontrolera i iPhone'a nie wykonano.
+
+## Testy
+
+`npm install --no-audit --no-fund && npm run test && npm run build && npx playwright install chromium && npm run test:e2e`
+
+GitHub Actions publikuje podgląd `/preview-6/` z gałęzi `engine-6-dreambound-preview` **dopiero po testach**. Publiczny adres konsoli i poprzednia wersja są chronione gałęziami `backup-astation-6-5-before-ultimate-7` i `backup-engine-6-5-before-ultimate-7`. Publikacja głównego ASTATION 7.0 wymaga promocji potwierdzonego wydania, nie oznacza automatycznie ukończenia kolejnych etapów.
+
+---
+
 # ASTATION WORLD: Dreambound — Story Edition 6.5
 
 **Podgląd gry:** https://astation-console.github.io/astation-5-pro/preview-6/games/world/index.html
