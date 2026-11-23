@@ -1,13 +1,13 @@
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 export class InputManager {
   constructor(canvas, stick, buttons) {
-    this.keys = new Set(); this.buttons = new Set(); this.pressed = new Set(); this.last = new Set();
+    this.keys = new Set(); this.buttons = new Set(); this.pressed = new Set(); this.last = new Set(); this.latched = new Set();
     this.x = 0; this.z = 0; this.camX = 0; this.camY = 0;
     this.canvas = canvas; this.stick = stick; this.touchX = 0; this.touchZ = 0;
     this.listeners = []; this.padPrev = { start: false }; this.lastPointer = null;
-    this.listen(window, 'keydown', e => { if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault(); this.keys.add(e.code); });
+    this.listen(window, 'keydown', e => { if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault(); this.keys.add(e.code); if (!e.repeat) {const action={Space:'jump',KeyQ:'dash',KeyE:'interact',Escape:'pause'}[e.code];if(action)this.latched.add(action);} });
     this.listen(window, 'keyup', e => this.keys.delete(e.code));
-    this.listen(window, 'blur', () => { this.keys.clear(); this.buttons.clear(); });
+    this.listen(window, 'blur', () => { this.keys.clear(); this.buttons.clear(); this.latched.clear(); });
     if (stick) {
       this.listen(stick, 'pointerdown', e => { e.preventDefault(); stick.setPointerCapture(e.pointerId); this.stickId = e.pointerId; this.updateStick(e); });
       this.listen(stick, 'pointermove', e => { if (e.pointerId === this.stickId) this.updateStick(e); });
@@ -15,7 +15,7 @@ export class InputManager {
     }
     buttons?.querySelectorAll('[data-input]')?.forEach(button => {
       const key = button.dataset.input;
-      this.listen(button, 'pointerdown', e => { e.preventDefault(); button.setPointerCapture(e.pointerId); this.buttons.add(key); });
+      this.listen(button, 'pointerdown', e => { e.preventDefault(); button.setPointerCapture(e.pointerId); this.buttons.add(key); this.latched.add(key); });
       for (const kind of ['pointerup', 'pointercancel', 'lostpointercapture']) this.listen(button, kind, () => this.buttons.delete(key));
     });
     this.listen(canvas, 'pointerdown', e => { if (e.pointerType === 'touch' && e.clientX < innerWidth * .45) return; this.lastPointer = { id: e.pointerId, x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); });
@@ -53,8 +53,9 @@ export class InputManager {
     if (Math.abs(this.touchX) > .08 || Math.abs(this.touchZ) > .08) { x = this.touchX; z = this.touchZ; }
     const magnitude = Math.max(1, Math.hypot(x, z)); x /= magnitude; z /= magnitude;
     const actions = { jump, dash, interact, pause };
-    const just = Object.fromEntries(Object.entries(actions).map(([k,v]) => [k, v && !this.last.has(k)]));
+    const just = Object.fromEntries(Object.entries(actions).map(([k,v]) => [k, (v && !this.last.has(k)) || this.latched.has(k)]));
     this.last = new Set(Object.keys(actions).filter(k => actions[k]));
+    this.latched.clear();
     const result = { x, z, sprint, ...actions, just, camX: this.camX, camY: this.camY };
     this.camX = 0; this.camY = 0;
     return result;

@@ -16,6 +16,8 @@ export class WorldGame {
   constructor() {
     this.bridge = new TrophyBridge();
     this.ui = new UI();this.saveManager = new SaveManager();
+    this.onGlobalKey = event => {if(event.code==='Escape' && this.running && this.engine?.paused && !event.repeat){event.preventDefault();this.pause(false)}};
+    window.addEventListener('keydown',this.onGlobalKey);
     this.engine = null;this.physics = null;this.level = null;
     this.audio = new AudioManager();this.anim = null;this.model = null;
     this.input = null;this.cameraRig = null;
@@ -197,5 +199,5 @@ export class WorldGame {
     await this.save();this.bridge.send('exit',{});
     if(window.parent===window)this.ui.toast('Return to ASTATION OS using the console tab');
   }
-  destroy(){this.running=false;this.anim?.dispose();this.input?.dispose();this.audio.dispose();this.level?.dispose();this.physics?.dispose();this.saveManager.close();this.engine?.destroy();}
+  destroy(){window.removeEventListener('keydown',this.onGlobalKey);this.running=false;this.anim?.dispose();this.input?.dispose();this.audio.dispose();this.level?.dispose();this.physics?.dispose();this.saveManager.close();this.engine?.destroy();}
 }
