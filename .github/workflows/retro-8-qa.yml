@@ -1,0 +1,24 @@
+name: ASTATION RETRO 8 — browser integration QA
+on:
+  push:
+    branches: [retro-8-integration]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate NDS file format and ZIP decoder
+        run: node --test retro/tests/retro-unit.test.mjs
+      - name: Install Playwright test runner
+        run: npm install --no-audit --no-fund --no-save --no-package-lock playwright@1.58.2
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: ASTATION RETRO integration in browser (mock loader — no commercial ROM)
+        run: node retro/tests/retro-browser.mjs
