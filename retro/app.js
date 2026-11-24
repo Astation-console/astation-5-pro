@@ -43,7 +43,32 @@ function show(view){state.view=view;document.body.classList.toggle('playing-mode
 function profileSwitch(){// Prevent accidental cross-profile ROM access when the parent console changes users.
  if(window.parent===window)return;
 }
+async function storageEstimate(){
+ const target=$('#storage-estimate');
+ if(!target)return;
+ try{
+ const s=navigator.storage;
+ if(!s?.estimate){target.textContent='Szacowanie pamięci niedostępne.';return}
+ const [e,persisted]=await Promise.all([s.estimate(),s.persisted?.()??false]);
+ const percent=e.quota?Math.round((e.usage||0)/e.quota*100):null;
+ target.textContent='Dane całej witryny: '+formatBytes(e.usage||0)+(e.quota?' / limit '+formatBytes(e.quota):'')+(percent!==null?' · '+percent+'%':'')+' · '+(persisted?'magazyn trwały':'magazyn może zostać usunięty')+(percent>=85?' · Mało miejsca':'');
+ }catch{target.textContent='Przeglądarka nie udostępniła informacji o magazynie.'}
+}
+function diagnostics90(){
+ let webgl=false;try{const c=document.createElement('canvas'),g=c.getContext('webgl2')||c.getContext('webgl');webgl=!!g;g?.getExtension('WEBGL_lose_context')?.loseContext()}catch{}
+ return ['ASTATION 9 · DS','WebAssembly: '+(typeof WebAssembly==='object'?'tak':'nie'),'WebGL: '+(webgl?'tak':'nie'),'Gamepad API: '+(typeof navigator.getGamepads==='function'?'tak':'nie'),'IndexedDB: '+('indexedDB' in window?'dostępne API':'brak API'),'Service Worker: '+(navigator.serviceWorker?.controller?'aktywny':'brak aktywnego'),'Viewport: '+innerWidth+' × '+innerHeight,'Rdzeń: '+settings.core,'Pomiar: '+(state.gameStarted?$('#playing-status').textContent:'gra nieaktywna')].join('\n');
+}
+function showPadTest90(){
+ if(state.view!=='settings')return;
+ let pad;try{pad=Array.from(navigator.getGamepads?.()||[]).find(Boolean)}catch{}
+ const target=$('#pad-test90');if(!target)return;
+ target.textContent=pad?'Przyciski: '+pad.buttons.map((b,i)=>b.pressed?i:null).filter(v=>v!==null).join(', ')+' · Analogi: '+pad.axes.map(v=>v.toFixed(2)).join(' / '):'Nie wykryto kontrolera. Naciśnij dowolny przycisk.';
+}
 function displaySettings(){
+ storageEstimate();
+ $('#diagnostic90').textContent=diagnostics90();
+ const dz=Math.round((window.AstationController?.deadzone??.35)*100);
+ $('#pad-deadzone').value=String(dz);$('#pad-deadzone-value').textContent=dz+'%';
  $('#core-select').value=settings.core;$('#frameskip-select').value=String(settings.frameskip);$('#performance-select').value=settings.performance||'custom';$('#layout-select').value=settings.layout;$('#volume-range').value=settings.volume;$('#volume-value').textContent=settings.volume+'%';$('#persist-rom').checked=settings.persist;
  const area=$('#key-mappings');area.replaceChildren();
  for(const name of ['Up','Down','Left','Right','B','A','Y','X','Start','Select','L','R']){
@@ -164,7 +189,7 @@ async function exitToLibrary(notify=true){
    if(state.playing){post('pause');await requestSaveBeforeExit()}
    const frame=$('#player-frame');frame.removeAttribute('src');$('#pause-overlay').hidden=true;$('#player-loading').hidden=true;
    if(state.playerUrl){URL.revokeObjectURL(state.playerUrl);state.playerUrl=null}
-   state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;state.playing=null;show('library');
+   state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;state.playing=null;state.menuWasPaused=false;show('library');
    if(notify)toast('Powrót do biblioteki. Zapis w grze: użyj menu EmulatorJS do kontroli danych.');
  }finally{state.closing=false}
 }
@@ -213,6 +238,10 @@ window.addEventListener('message',event=>{
  if(d.event==='layout-unsupported')toast(d.message||'Układ można zmienić w ustawieniach EmulatorJS.');
  if(d.event==='exited')exitToLibrary(false);
 });
+$('#storage-persist-request').addEventListener('click',async()=>{try{if(!navigator.storage?.persist){toast('Trwały magazyn nie jest obsługiwany.',true);return}const ok=await navigator.storage.persist();toast(ok?'Przeglądarka przyznała trwały magazyn.':'Przeglądarka nie przyznała trwałego magazynu.',!ok)}catch{toast('Nie udało się uzyskać trwałego magazynu.',true)}finally{storageEstimate()}});
+$('#pad-deadzone').addEventListener('input',e=>{window.AstationController?.setDeadzone(Number(e.target.value)/100);$('#pad-deadzone-value').textContent=e.target.value+'%'});
+$('#copy-diagnostic90').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(diagnostics90());toast('Skopiowano raport.')}catch{toast('Kopiowanie niedostępne. Zaznacz tekst raportu ręcznie.',true)}});
+setInterval(showPadTest90,150);
 $('#rom-input').addEventListener('change',e=>importROM(e.target.files?.[0]));
 $('#import-btn').addEventListener('click',()=>$('#rom-input').click());$('#import-small').addEventListener('click',()=>$('#rom-input').click());
 $('#os-back').addEventListener('click',quitOS);

@@ -12,7 +12,7 @@ function scope(){
    if(visible($('#controls-overlay')))return $('#controls-overlay');
    if(visible($('#pause-overlay')))return $('#pause-overlay');
    if(visible($('#play-view')))return null;
-   return visible($('#settings-view'))?$('#settings-view'):$('#library-view');
+   return visible($('#settings-view'))?$('#settings-view'):document.body;
  }
  if($('#ast-retro-shell'))return null;
  if(visible($('#control.open')))return $('#control');
@@ -58,7 +58,7 @@ function options(){
 function notify(message){const el=document.createElement('div');el.className='ast-pad-toast';el.setAttribute('role','status');el.textContent=message;document.body.append(el);setTimeout(()=>el.remove(),3000)}
 function poll(t){
  requestAnimationFrame(poll);
- if(document.hidden||t<nextPoll)return;nextPoll=t+35;
+ if(document.hidden||(!retro&&$('#ast-retro-shell'))||t<nextPoll)return;nextPoll=t+35;
  let p;try{p=Array.from(navigator.getGamepads?.()||[]).find(x=>x&&x.connected)}catch{}
  const id=p?.id||'';
  if(id!==connected){if(id)notify(p.mapping==='standard'?'Kontroler połączony':'Kontroler wykryty · niestandardowe mapowanie');else if(connected)notify('Kontroler rozłączony');connected=id;last=[];lastDir='';document.documentElement.classList.toggle('ast-pad-connected',!!id)}

@@ -5,3 +5,5 @@
 - Existing ROM storage keys and core game IDs intentionally unchanged.
 - Release gate: browser integration, actual licensed homebrew core, physical Mario on the user's device, save compatibility.
 - Not yet delivered: universal emulator support, complete controller remapping, save-state compatibility, offline ROM assets, design system, and the other roadmap items.
+
+- Stage 4 foundation: existing verified IndexedDB/Cache ROM persistence retained; add StorageManager persistent-storage request and real origin quota estimate; controller tester, deadzone and diagnostics. These do not guarantee protection from manual browser data removal.
