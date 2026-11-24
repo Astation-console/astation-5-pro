@@ -1,0 +1,2 @@
+# ASTATION 12.0
+Rebuilt reference-inspired system pages: home, store, library, trophy game list and detail, settings, profile, notifications, side quick menu and power menu. Local vector game title art replaces unreliable remote cover URLs; original blue wave theme and existing custom wallpaper feature. Existing emulator, ROM store, profile keys, game runtimes and save-state APIs unchanged. UI is original ASTATION, not Sony firmware or bundled Sony artwork. Test includes title art decode, trophy detail and power menu.
