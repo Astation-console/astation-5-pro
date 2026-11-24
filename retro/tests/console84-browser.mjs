@@ -75,7 +75,8 @@ try{
     const frame=page.frameLocator('#ast-retro-shell iframe');
     await frame.locator('#import-btn').waitFor({state:'visible',timeout:14000});
     await frame.locator('#rom-input').waitFor({state:'attached',timeout:14000});
-    await frame.locator('#rom-input').setInputFiles({name:`synthetic-${game}.nds`,mimeType:'application/octet-stream',buffer:syntheticNDS(title,code)});
+    await frame.locator('html[data-retro-ready="1"]').waitFor({state:'attached',timeout:15000});
+  await frame.locator('#rom-input').setInputFiles({name:`synthetic-${game}.nds`,mimeType:'application/octet-stream',buffer:syntheticNDS(title,code)});
     await frame.locator('#playing-title').waitFor({state:'visible',timeout:16000});
     await frame.locator('#rom-storage-status').waitFor({state:'attached',timeout:16000});
     assert.match(await frame.locator('#rom-storage-status').textContent(),/Potwierdzono: ROM zapisany/);

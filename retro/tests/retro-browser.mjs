@@ -23,6 +23,7 @@ try {
   await page.locator('#library-grid .empty-card').waitFor();
   assert.equal(await page.locator('#import-btn').isVisible(),true);
   const data=sampleROM();
+  await page.locator('html[data-retro-ready="1"]').waitFor({state:'attached',timeout:15000});
   await page.locator('#rom-input').setInputFiles({name:'hello.nds',mimeType:'application/octet-stream',buffer:Buffer.from(data)});
   await page.locator('#library-grid .game-card').first().waitFor({timeout:20000});
   assert.match(await page.locator('.game-card h3').first().innerText(),/ASTATIONTEST/);

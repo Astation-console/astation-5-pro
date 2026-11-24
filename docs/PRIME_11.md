@@ -5,3 +5,5 @@ PRIME Game Hub adds actual per-ROM state detection, Quick Resume only when match
 Retro Center now has its own fresh PRIME stylesheet and vector DS illustration, replacing the old UI styles rather than overlaying them. Core player/FAST module unchanged. Launcher shelf sorts recent titles first; Quick Resume available only with actual matching saved state.
 
 Import readiness gate: picker disabled until existing ROM inventory initialization finishes; browser test waits for the same readiness condition and reports real import failures. System audio context is suspended during gameplay.
+
+Extended QA to verify snapshot-based resume (mock core receives the exact saved bytes), and align default core detection on touch browsers. Preserve legacy system volume and ambient preference when initializing PRIME audio.

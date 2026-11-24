@@ -48,6 +48,7 @@ try{
   // In-memory synthetic test header only. No copyrighted commercial ROM is used.
   const data=sampleROM();data.fill(0,0,12);data.set(new TextEncoder().encode('NEW MARIO'),0);data.set(new TextEncoder().encode('A2DE'),12);
   new DataView(data.buffer).setUint16(0x15e,ndsCRC16(data.subarray(0,0x15e)),true);
+  await frame.locator('html[data-retro-ready="1"]').waitFor({state:'attached',timeout:15000});
   await frame.locator('#rom-input').setInputFiles({name:'local-test.nds',mimeType:'application/octet-stream',buffer:Buffer.from(data)});
   await frame.locator('#playing-title').waitFor({state:'visible',timeout:15000});
   assert.match(await frame.locator('#playing-title').innerText(),/New Super Mario Bros/);
