@@ -1,6 +1,6 @@
 import { unpackLocalFile, dbPut } from './rom.js';
 import { loadLocalROMs, persistLocalROM, deleteLocalROM } from './persistent.js';
-import { readSnapshot, writeSnapshot, getStats, saveStats } from './session-store.js?v=901';
+import { readSnapshot, writeSnapshot, getStats, saveStats } from './session-store.js?v=902';
 
 'use strict';
 const $ = selector => document.querySelector(selector);
@@ -29,7 +29,7 @@ function readSettings(){try{
  delete current.fastEnabled; // Legacy toggle no longer controls the core.
  return current;
 }catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
-const settings=readSettings();settings.mobile={enabled:false,size:1,opacity:.68,position:'bottom',mode:'dpad',filter:'original',...(settings.mobile||{})};
+const settings=readSettings();settings.autoBoost=settings.autoBoost!==false;settings.mobile={enabled:false,size:1,opacity:.68,position:'bottom',mode:'dpad',filter:'original',...(settings.mobile||{})};
 const state={games:[],volatile:new Map(),selected:null,playerUrl:null,playerReady:false,coreReady:false,view:'library',playing:null,menuWasPaused:false,saveWaiters:[],closing:false,gameStarted:false,startupTimer:null};
 const formatBytes=n=>n>1024*1024?`${(n/1048576).toFixed(1)} MiB`:`${(n/1024).toFixed(0)} KiB`;
 const safeName=s=>String(s||'Untitled').replace(/[\x00-\x1f<>]/g,'').slice(0,90);
@@ -67,6 +67,7 @@ function showPadTest90(){
  target.textContent=pad?'Przyciski: '+pad.buttons.map((b,i)=>b.pressed?i:null).filter(v=>v!==null).join(', ')+' · Analogi: '+pad.axes.map(v=>v.toFixed(2)).join(' / '):'Nie wykryto kontrolera. Naciśnij dowolny przycisk.';
 }
 function displaySettings(){
+ $('#auto-boost902').checked=settings.autoBoost;
  $('#touch90').checked=settings.mobile.enabled;$('#touch-size90').value=settings.mobile.size*100;$('#touch-opacity90').value=settings.mobile.opacity*100;$('#touch-position90').value=settings.mobile.position;$('#touch-mode90').value=settings.mobile.mode;$('#filter90').value=settings.mobile.filter;
  storageEstimate();
  $('#diagnostic90').textContent=diagnostics90();
@@ -199,14 +200,14 @@ function retryCurrent(core){
   $('#player-recovery').hidden=true;
   $('#player-loading').hidden=false;
   $('#playing-status').textContent='Ponowne ładowanie rdzenia: '+(core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+'…';
-  $('#player-frame').src='./player.html?v=901&retry='+Date.now();
+  $('#player-frame').src='./player.html?v=902&retry='+Date.now();
 }
 
 function launch(item){
  if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
  state.playing=item;sessionStats=null;canSnapshot=false;state.playerUrl=null;state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
- const frame=$('#player-frame');frame.src='./player.html?v=901';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
+ const frame=$('#player-frame');frame.src='./player.html?v=902';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
  $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie silnika DS · ROM lokalnie na urządzeniu';show('play');
  item.lastPlayed=Date.now();
  // Last-played timestamps are transient; do not risk overwriting a known-good ROM on every launch.
@@ -243,7 +244,7 @@ const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
  const d=event.data;
- if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:preferredSkip(),keys:settings.keys,performance:settings.performance,mobile:settings.mobile});}
+ if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:preferredSkip(),keys:settings.keys,performance:settings.performance,autoBoost:settings.autoBoost,mobile:settings.mobile});}
  if(d.event==='core-ready'){
    state.coreReady=true;
    $('#player-loading').hidden=true;
@@ -261,7 +262,7 @@ window.addEventListener('message',event=>{
  if(d.event==='controller-menu'&&state.gameStarted&&!state.menuWasPaused)pauseMenu(true);
  if(d.event==='snapshot-result'||d.event==='restore-result'){const req=pendingState.get(d.id);if(req){clearTimeout(req.timer);pendingState.delete(d.id);if(d.error)req.reject(Error(d.error));else req.resolve(d)}}
  if(d.event==='performance'){
-   $('#playing-status').textContent=d.fps===null?'Normalne tempo · pomiar FPS niedostępny':'Tempo rdzenia: '+d.fps+' kl./s · '+(d.frameMs??'—')+' ms/kl. · frameskip '+d.skip;
+   $('#playing-status').textContent=d.fps===null?(d.boostApplied?'Automatyczny FAST · pomiar niedostępny':'Pomiar tempa niedostępny'):(d.boostApplied?'Automatyczny FAST · ':'')+'Tempo rdzenia: '+d.fps+' kl./s · '+(d.frameMs??'—')+' ms/kl. · frameskip '+d.skip;
  }
  if(d.event==='startup-slow')recovery(d.message||'Próba uruchomienia trwa zbyt długo.');
  if(d.event==='core-error'){
@@ -278,6 +279,7 @@ window.addEventListener('message',event=>{
  if(d.event==='exited')exitToLibrary(false);
 });
 for(const [id,key,read] of [['touch90','enabled',e=>e.checked],['touch-size90','size',e=>Number(e.value)/100],['touch-opacity90','opacity',e=>Number(e.value)/100],['touch-position90','position',e=>e.value],['touch-mode90','mode',e=>e.value],['filter90','filter',e=>e.value]])$( '#'+id).addEventListener('change',e=>{settings.mobile[key]=read(e.target);saveSettings();post('mobile',{config:settings.mobile})});
+$('#auto-boost902').addEventListener('change',e=>{settings.autoBoost=e.target.checked;saveSettings();post('boost-config',{enabled:settings.autoBoost});toast(settings.autoBoost?'Automatyczny FAST włączony':'Normalne tempo gry')});
 $('#storage-persist-request').addEventListener('click',async()=>{try{if(!navigator.storage?.persist){toast('Trwały magazyn nie jest obsługiwany.',true);return}const ok=await navigator.storage.persist();toast(ok?'Przeglądarka przyznała trwały magazyn.':'Przeglądarka nie przyznała trwałego magazynu.',!ok)}catch{toast('Nie udało się uzyskać trwałego magazynu.',true)}finally{storageEstimate()}});
 $('#pad-deadzone').addEventListener('input',e=>{window.AstationController?.setDeadzone(Number(e.target.value)/100);$('#pad-deadzone-value').textContent=e.target.value+'%'});
 $('#copy-diagnostic90').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(diagnostics90());toast('Skopiowano raport.')}catch{toast('Kopiowanie niedostępne. Zaznacz tekst raportu ręcznie.',true)}});

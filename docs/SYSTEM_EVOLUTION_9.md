@@ -15,3 +15,5 @@
 - Stage 6/7 foundation: optional direct-input multitouch DS overlay (not enabled by default), persisted size/opacity/position/mode and simple color filters; TV layout, theme accents, manifest and offline shell cache. No claim of offline emulator or Smart TV compatibility; external emulator assets are not cached. PWA install requires platform support.
 
 - 9.0.1 hotfix: automatic frameskip 0 (ignore stale learned skips), native resolution on automatic profiles, suspend parent console painting/animation and reduce redundant polling. Core throughput is still not actual displayed unique FPS; physical phone performance remains unverified.
+
+- 9.0.2: user requested identical FAST behavior without holding the virtual button. Auto FAST is enabled by default using actual EmulatorJS speed API, with 3x maximum ratio (EmulatorJS default), re-applied on resume/restart, optional normal-speed setting and hidden manual FAST control. No claim of real 60 FPS; speed may exceed normal on fast devices.
