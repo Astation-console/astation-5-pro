@@ -57,6 +57,7 @@ function options(){
 }
 function notify(message){const el=document.createElement('div');el.className='ast-pad-toast';el.setAttribute('role','status');el.textContent=message;document.body.append(el);setTimeout(()=>el.remove(),3000)}
 function poll(t){
+ if(document.hidden||(!retro&&$('#ast-retro-shell'))||(retro&&visible($('#play-view'))&&!visible($('#pause-overlay'))&&!visible($('#controls-overlay')))){setTimeout(()=>requestAnimationFrame(poll),350);return}
  requestAnimationFrame(poll);
  if(document.hidden||(!retro&&$('#ast-retro-shell'))||t<nextPoll)return;nextPoll=t+35;
  let p;try{p=Array.from(navigator.getGamepads?.()||[]).find(x=>x&&x.connected)}catch{}

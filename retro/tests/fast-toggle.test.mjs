@@ -15,9 +15,13 @@ test('normal speed, no forced fast forward',()=>{
  manager.start();manager.stop();
  assert.deepEqual(calls,[['fastForward','disabled']]);
 });
-test('adaptive skip has bounds and hysteresis',()=>{
- const ctx=vm.createContext({});vm.runInContext(src,ctx);
+test('automatic profiles never drop video frames; user can choose custom settings',()=>{
+ const ctx=vm.createContext({performance:{now:()=>0},setInterval:()=>1,clearInterval(){}});
+ vm.runInContext(src,ctx);
  const f=ctx.AstationSmartPerformance.chooseSkip;
- assert.equal(f(0,40,0,2),0);assert.equal(f(0,40,0,3),1);assert.equal(f(2,40,0,3),2);
- assert.equal(f(2,60,5,0),1);assert.equal(f(0,60,5,0),0);
+ for(const fps of [15,20,30,60])for(const skip of [0,1,2,3])assert.equal(f(skip,fps,0,20),0);
+ const calls=[],gm={setVariable:(...a)=>calls.push(a)};
+ const sm=ctx.AstationSmartPerformance.create({getCore:()=>({gameManager:gm}),report(){},initial:2,adaptive:true});
+ sm.start();sm.stop();
+ assert.deepEqual(calls,[['desmume_frameskip','0'],['desmume_internal_resolution','256x192']]);
 });

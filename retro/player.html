@@ -1,7 +1,7 @@
 <!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>ASTATION RETRO — DS Core</title>
 <style>html,body{height:100%;margin:0;background:#030a15;overflow:hidden;color:#ddeeff;font-family:system-ui}#game{height:100%;width:100%;min-height:0;contain:layout paint size}#game canvas{image-rendering:auto}#waiting{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;background:linear-gradient(120deg,#08152d,#0b1c35)}#waiting small{color:#8eaac9;display:block;margin-top:12px;font-size:13px}.hide{display:none!important}</style></head><body>
 <div id="game" aria-label="Silnik emulacji Nintendo DS"></div><div id="waiting"><div><b>ASTATION RETRO</b><small>Wczytywanie rdzenia Nintendo DS…</small></div></div>
-<script src="./smart-performance.js?v=90"></script><script defer src="./mobile.js?v=90"></script>
+<script src="./smart-performance.js?v=901"></script><script defer src="./mobile.js?v=901"></script>
 <script>
 'use strict';
 let launched=false;
@@ -99,10 +99,10 @@ function start(cfg){
    // Core options may only be changed after the ROM is actually running.
    smart?.stop();
    smart=AstationSmartPerformance.create({getCore:()=>window.EJS_emulator,report:details=>post('performance',details),initial:cfg.frameskip,adaptive:cfg.performance==='balanced'||cfg.performance==='performance',active:()=>gameStarted&&!paused});
-   smart.start();window.AstationMobile?.apply(cfg.mobile);clearInterval(padTimer);padTimer=setInterval(checkPadShortcut,100);
+   smart.start();window.AstationMobile?.apply(cfg.mobile);clearInterval(padTimer);padTimer=setInterval(checkPadShortcut,250);
    setTimeout(()=>updateLayout(cfg.layout,false),600);
  };
- window.EJS_onExit=()=>{gameStarted=false;smart?.stop();post('exited')};
+ window.EJS_onExit=()=>{gameStarted=false;smart?.stop();clearInterval(padTimer);post('exited')};
  startupTimer=setTimeout(()=>{
    if(!gameStarted&&!isIOS)post('startup-slow',{message:'Gra nie rozpoczęła działania. Spróbuj lżejszego rdzenia DeSmuME 2015.'});
  },70000);

@@ -13,3 +13,5 @@
 - Added a browser test using synthetic emulator state bytes to check persistence after reload and restore handoff. This is an integration test, not proof of actual game-state restoration in real DeSmuME.
 
 - Stage 6/7 foundation: optional direct-input multitouch DS overlay (not enabled by default), persisted size/opacity/position/mode and simple color filters; TV layout, theme accents, manifest and offline shell cache. No claim of offline emulator or Smart TV compatibility; external emulator assets are not cached. PWA install requires platform support.
+
+- 9.0.1 hotfix: automatic frameskip 0 (ignore stale learned skips), native resolution on automatic profiles, suspend parent console painting/animation and reduce redundant polling. Core throughput is still not actual displayed unique FPS; physical phone performance remains unverified.

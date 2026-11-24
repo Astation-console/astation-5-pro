@@ -1,6 +1,6 @@
 import { unpackLocalFile, dbPut } from './rom.js';
 import { loadLocalROMs, persistLocalROM, deleteLocalROM } from './persistent.js';
-import { readSnapshot, writeSnapshot, getStats, saveStats } from './session-store.js?v=90';
+import { readSnapshot, writeSnapshot, getStats, saveStats } from './session-store.js?v=901';
 
 'use strict';
 const $ = selector => document.querySelector(selector);
@@ -18,13 +18,14 @@ const SETTINGS_KEY = 'astation_retro_settings_v8_' + profile;
 const IMPORT_MARK_KEY='astation_retro_lastimport_v85_'+profile+'_'+(DIRECT_GAME||'library');
 const DEFAULT_KEYS = Object.freeze({Up:'up arrow',Down:'down arrow',Left:'left arrow',Right:'right arrow',B:'z',A:'x',Y:'a',X:'s',Start:'enter',Select:'shift',L:'q',R:'e'});
 const mobileDevice=/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&innerWidth<800);
-const PERF_PRESETS={performance:{core:'desmume2015',frameskip:2},balanced:{core:mobileDevice?'desmume2015':'desmume',frameskip:mobileDevice?1:0},quality:{core:'desmume',frameskip:0}};
+const PERF_PRESETS={performance:{core:'desmume2015',frameskip:0},balanced:{core:mobileDevice?'desmume2015':'desmume',frameskip:0},quality:{core:'desmume',frameskip:0}};
 const DEFAULT_SETTINGS={...PERF_PRESETS.balanced,performance:'balanced',layout:'classic',volume:65,persist:true,keys:{...DEFAULT_KEYS}};
 function readSettings(){try{
  const data=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');
  const current={...DEFAULT_SETTINGS,...data,keys:{...DEFAULT_KEYS,...(data?.keys||{})}};
  // Upgrade untouched v8 mobile defaults once without overwriting custom settings.
  if(mobileDevice&&data&&!Object.hasOwn(data,'performance')&&data.core==='desmume'&&Number(data.frameskip)===0){current.core='desmume2015';current.frameskip=1;current.performance='balanced'}
+ if(['balanced','performance'].includes(current.performance))current.frameskip=0;
  delete current.fastEnabled; // Legacy toggle no longer controls the core.
  return current;
 }catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
@@ -198,14 +199,14 @@ function retryCurrent(core){
   $('#player-recovery').hidden=true;
   $('#player-loading').hidden=false;
   $('#playing-status').textContent='Ponowne ładowanie rdzenia: '+(core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+'…';
-  $('#player-frame').src='./player.html?v=90&retry='+Date.now();
+  $('#player-frame').src='./player.html?v=901&retry='+Date.now();
 }
 
 function launch(item){
  if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
  state.playing=item;sessionStats=null;canSnapshot=false;state.playerUrl=null;state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
- const frame=$('#player-frame');frame.src='./player.html?v=90';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
+ const frame=$('#player-frame');frame.src='./player.html?v=901';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
  $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie silnika DS · ROM lokalnie na urządzeniu';show('play');
  item.lastPlayed=Date.now();
  // Last-played timestamps are transient; do not risk overwriting a known-good ROM on every launch.
@@ -237,7 +238,7 @@ function changeLayout(){const values=['classic','side','focus'];settings.layout=
 function openSettings(){displaySettings();$('#pause-overlay').hidden=true;show('settings')}
 function exitSettings(){show(state.playing?'play':'library');if(state.playing&&state.menuWasPaused)pauseMenu(true)}
 async function quitOS(){if(state.playing&&!(await exitToLibrary(false)))return;if(parent!==window)parent.postMessage({source:'astation-retro8',event:'exit'},location.origin);else location.href='../index.html'}
-function preferredSkip(){if(!['balanced','performance'].includes(settings.performance))return settings.frameskip;try{const raw=localStorage.getItem('astation_perf90_'+profile+'_'+state.playing.sha+'_'+settings.core);if(raw!==null&&/^[012]$/.test(raw))return Number(raw)}catch{}return settings.frameskip}
+function preferredSkip(){return ['balanced','performance'].includes(settings.performance)?0:settings.frameskip}
 const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
@@ -260,8 +261,7 @@ window.addEventListener('message',event=>{
  if(d.event==='controller-menu'&&state.gameStarted&&!state.menuWasPaused)pauseMenu(true);
  if(d.event==='snapshot-result'||d.event==='restore-result'){const req=pendingState.get(d.id);if(req){clearTimeout(req.timer);pendingState.delete(d.id);if(d.error)req.reject(Error(d.error));else req.resolve(d)}}
  if(d.event==='performance'){
-   $('#playing-status').textContent=d.fps===null?'Normalne tempo · pomiar FPS niedostępny':'Normalne tempo · '+d.fps+' kl./s rdzenia · '+(d.frameMs??'—')+' ms/kl. · skip '+d.skip;
-   if(d.adaptive&&state.playing&&Number.isFinite(d.skip)){try{localStorage.setItem('astation_perf90_'+profile+'_'+state.playing.sha+'_'+settings.core,String(d.skip))}catch{}}
+   $('#playing-status').textContent=d.fps===null?'Normalne tempo · pomiar FPS niedostępny':'Tempo rdzenia: '+d.fps+' kl./s · '+(d.frameMs??'—')+' ms/kl. · frameskip '+d.skip;
  }
  if(d.event==='startup-slow')recovery(d.message||'Próba uruchomienia trwa zbyt długo.');
  if(d.event==='core-error'){
@@ -281,7 +281,7 @@ for(const [id,key,read] of [['touch90','enabled',e=>e.checked],['touch-size90','
 $('#storage-persist-request').addEventListener('click',async()=>{try{if(!navigator.storage?.persist){toast('Trwały magazyn nie jest obsługiwany.',true);return}const ok=await navigator.storage.persist();toast(ok?'Przeglądarka przyznała trwały magazyn.':'Przeglądarka nie przyznała trwałego magazynu.',!ok)}catch{toast('Nie udało się uzyskać trwałego magazynu.',true)}finally{storageEstimate()}});
 $('#pad-deadzone').addEventListener('input',e=>{window.AstationController?.setDeadzone(Number(e.target.value)/100);$('#pad-deadzone-value').textContent=e.target.value+'%'});
 $('#copy-diagnostic90').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(diagnostics90());toast('Skopiowano raport.')}catch{toast('Kopiowanie niedostępne. Zaznacz tekst raportu ręcznie.',true)}});
-setInterval(showPadTest90,150);
+setInterval(showPadTest90,500);
 $('#rom-input').addEventListener('change',e=>importROM(e.target.files?.[0]));
 $('#import-btn').addEventListener('click',()=>$('#rom-input').click());$('#import-small').addEventListener('click',()=>$('#rom-input').click());
 $('#os-back').addEventListener('click',quitOS);
