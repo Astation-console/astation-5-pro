@@ -81,7 +81,7 @@ try{
     await page.waitForFunction(code=>{const retro=document.querySelector('#ast-retro-shell iframe')?.contentWindow;const child=retro?.document.querySelector('#player-frame')?.contentWindow;return child?.__actualReceivedROM?.code===code},code,{timeout:25000});
     const received=await page.evaluate(()=>document.querySelector('#ast-retro-shell iframe').contentWindow.document.querySelector('#player-frame').contentWindow.__actualReceivedROM);
     assert.equal(received.length,0x10000);
-    await frame.locator('#os-back').click();
+    await frame.locator('#play-os-back').click();
     await page.locator('#ast-retro-shell').waitFor({state:'detached',timeout:12000});
     await page.locator('#nav-media').click();
   }
@@ -97,7 +97,7 @@ try{
     await frame.locator('#playing-title').waitFor({state:'visible',timeout:14000});
     assert.match(await frame.locator('#rom-storage-status').textContent(),/Nie musisz ponownie wybierać ZIP-a/);
     await page.waitForFunction(code=>document.querySelector('#ast-retro-shell iframe')?.contentWindow?.document.querySelector('#player-frame')?.contentWindow?.__actualReceivedROM?.code===code,code,{timeout:25000});
-    await frame.locator('#os-back').click();
+    await frame.locator('#play-os-back').click();
     await page.locator('#ast-retro-shell').waitFor({state:'detached',timeout:12000});
   }
   assert.deepEqual(errors,[],`JavaScript errors: ${errors.join('; ')}`);

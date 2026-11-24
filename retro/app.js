@@ -1,5 +1,6 @@
 import { unpackLocalFile, dbPut } from './rom.js';
 import { loadLocalROMs, persistLocalROM, deleteLocalROM } from './persistent.js';
+import { readSnapshot, writeSnapshot, getStats, saveStats } from './session-store.js?v=90';
 
 'use strict';
 const $ = selector => document.querySelector(selector);
@@ -78,18 +79,50 @@ function displaySettings(){
    wrap.append(label,key);area.append(wrap);
  }
 }
+let sessionStats=null,sessionTick=0,canSnapshot=false,pendingState=new Map(),requestId=0;
+function snapshotKey(){return profile+':'+state.playing.sha+':'+settings.core}
+function elapsed90(sec){return Math.floor(sec/3600)+' h '+Math.floor(sec%3600/60)+' min'}
+function tickSession(){
+ const now=performance.now(),delta=Math.min(2,Math.max(0,(now-sessionTick)/1000));sessionTick=now;
+ if(!state.gameStarted||!state.playing||!sessionStats||state.menuWasPaused||state.closing||state.view!=='play'||document.hidden)return;
+ try{const em=$('#player-frame').contentWindow?.EJS_emulator;if(em?.paused===true||em?.isPaused===true)return}catch{}
+ sessionStats.seconds+=delta;
+}
+function flushSession(){if(state.playing&&sessionStats)saveStats(profile,state.playing.sha,sessionStats)}
+setInterval(tickSession,1000);setInterval(flushSession,10000);
+window.addEventListener('pagehide',flushSession);
+document.addEventListener('visibilitychange',()=>{sessionTick=performance.now();flushSession()});
+function stateRequest(event,bytes){
+ if(!state.gameStarted||!canSnapshot)return Promise.reject(Error('Save States niedostępne w tym rdzeniu'));
+ const id=++requestId;
+ return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pendingState.delete(id);reject(Error('Przekroczono czas odpowiedzi rdzenia'))},3500);pendingState.set(id,{resolve,reject,timer});post(event,{id,bytes})});
+}
+async function quickSave(){const key=snapshotKey(),result=await stateRequest('snapshot');return writeSnapshot(key,result.bytes)}
+async function quickRestore(){
+ const saved=await readSnapshot(snapshotKey());if(!saved)throw Error('Brak stanu dla obecnego rdzenia');
+ await stateRequest('restore',saved.bytes);
+ // EmulatorJS loadState currently gives no proof of in-game restoration.
+ toast('Stan przekazano do rdzenia. Sprawdź, czy rozgrywka została przywrócona.');
+}
+function updateSessionSummary(){
+ const el=$('#session-summary90');if(!el)return;
+ el.textContent=sessionStats?'Czas: '+elapsed90(sessionStats.seconds)+' · Sesje: '+sessionStats.sessions:'Brak aktywnej sesji';
+ for(const action of ['snapshot','restore']){const b=$('[data-pause='+action+']');if(b)b.disabled=!canSnapshot}
+}
 function gameCard(item){
  const card=document.createElement('article');card.className='game-card';
  const meta=document.createElement('div');meta.className='meta';meta.textContent=`NINTENDO DS · ${item.info?.code||'NDS'}`;
  const title=document.createElement('h3');title.textContent=safeName(item.info?.title||item.filename);
- const info=document.createElement('p');info.textContent=`${formatBytes(item.info?.size||item.blob?.size||0)} · ${item.lastPlayed?'Ostatnio: '+new Date(item.lastPlayed).toLocaleDateString('pl-PL'):'Jeszcze nie uruchamiana'}`;
+ const stats=getStats(profile,item.sha);
+ const info=document.createElement('p');info.textContent=`${formatBytes(item.info?.size||item.blob?.size||0)} · ${stats.last?'Ostatnio: '+new Date(stats.last).toLocaleDateString('pl-PL'):'Jeszcze nie uruchamiana'}`;
+ const detail=document.createElement('p');detail.textContent='Czas gry: '+elapsed90(stats.seconds)+' · Sesje: '+stats.sessions;
  const foot=document.createElement('div');foot.className='card-footer';
  const play=document.createElement('button');play.type='button';play.textContent='Graj';play.addEventListener('click',()=>launch(item));
  const remove=document.createElement('button');remove.type='button';remove.className='del';remove.textContent='Usuń ROM';remove.addEventListener('click',async()=>{
    if(!confirm(`Usunąć grę „${safeName(item.info?.title)}” z lokalnej biblioteki? Zapisy emulatora pozostaną.`))return;
    try{await deleteLocalROM(item);state.volatile.delete(item.id);state.games=state.games.filter(g=>g.id!==item.id);renderLibrary();toast('Usunięto lokalny ROM. Zapisy emulatora pozostają.')}catch(e){toast('Błąd usuwania: '+e.message,true)}
  });
- foot.append(play,remove);card.append(meta,title,info,foot);return card;
+ foot.append(play,remove);card.append(meta,title,info,detail,foot);return card;
 }
 function renderLibrary(){
  const box=$('#library-grid');box.replaceChildren();const games=[...state.games].filter(matchesDirectROM).sort((a,b)=>(b.lastPlayed||b.imported||0)-(a.lastPlayed||a.imported||0));
@@ -167,7 +200,7 @@ function retryCurrent(core){
 function launch(item){
  if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
- state.playing=item;state.playerUrl=null;state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
+ state.playing=item;sessionStats=null;canSnapshot=false;state.playerUrl=null;state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
  const frame=$('#player-frame');frame.src='./player.html?v=90';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
  $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie silnika DS · ROM lokalnie na urządzeniu';show('play');
  item.lastPlayed=Date.now();
@@ -186,19 +219,20 @@ async function exitToLibrary(notify=true){
  if(state.closing)return;
  state.closing=true;
  try{
-   if(state.playing){post('pause');await requestSaveBeforeExit()}
+   if(state.playing){post('pause');flushSession();const saved=await requestSaveBeforeExit();if(state.gameStarted&&!saved){if(!confirm('Nie potwierdzono zapisu gry. Wyjść mimo to?')){state.menuWasPaused=true;pauseMenu(true);return false}}if(canSnapshot){try{await quickSave()}catch(e){toast('Quick Save: '+e.message,true)}}}
    const frame=$('#player-frame');frame.removeAttribute('src');$('#pause-overlay').hidden=true;$('#player-loading').hidden=true;
    if(state.playerUrl){URL.revokeObjectURL(state.playerUrl);state.playerUrl=null}
-   state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;state.playing=null;state.menuWasPaused=false;show('library');
+   state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;state.playing=null;sessionStats=null;canSnapshot=false;state.menuWasPaused=false;show('library');renderLibrary();
    if(notify)toast('Powrót do biblioteki. Zapis w grze: użyj menu EmulatorJS do kontroli danych.');
+ return true;
  }finally{state.closing=false}
 }
 
-function pauseMenu(open){$('#pause-overlay').hidden=!open;if(state.playing){post(open?'pause':'resume');state.menuWasPaused=open}}
+function pauseMenu(open){tickSession();if(open){flushSession();updateSessionSummary()}$('#pause-overlay').hidden=!open;if(state.playing){post(open?'pause':'resume');state.menuWasPaused=open}}
 function changeLayout(){const values=['classic','side','focus'];settings.layout=values[(values.indexOf(settings.layout)+1)%3];saveSettings();post('layout',{layout:settings.layout});$('#layout-select').value=settings.layout;toast('Układ: '+({classic:'Classic',side:'Side by Side',focus:'Focus'}[settings.layout]))}
 function openSettings(){displaySettings();$('#pause-overlay').hidden=true;show('settings')}
 function exitSettings(){show(state.playing?'play':'library');if(state.playing&&state.menuWasPaused)pauseMenu(true)}
-async function quitOS(){if(state.playing)await exitToLibrary(false);if(parent!==window)parent.postMessage({source:'astation-retro8',event:'exit'},location.origin);else location.href='../index.html'}
+async function quitOS(){if(state.playing&&!(await exitToLibrary(false)))return;if(parent!==window)parent.postMessage({source:'astation-retro8',event:'exit'},location.origin);else location.href='../index.html'}
 function preferredSkip(){if(!['balanced','performance'].includes(settings.performance))return settings.frameskip;try{const raw=localStorage.getItem('astation_perf90_'+profile+'_'+state.playing.sha+'_'+settings.core);if(raw!==null&&/^[012]$/.test(raw))return Number(raw)}catch{}return settings.frameskip}
 const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
@@ -215,11 +249,12 @@ window.addEventListener('message',event=>{
    },60000);
  }
  if(d.event==='game-started'){
-   state.gameStarted=true;clearStartupTimer();
+   state.gameStarted=true;canSnapshot=!!d.canSnapshot;clearStartupTimer();sessionStats=getStats(profile,state.playing.sha);sessionStats.sessions++;sessionStats.last=Date.now();sessionTick=performance.now();flushSession();
    $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
    $('#playing-status').textContent='Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki');
  }
  if(d.event==='controller-menu'&&state.gameStarted&&!state.menuWasPaused)pauseMenu(true);
+ if(d.event==='snapshot-result'||d.event==='restore-result'){const req=pendingState.get(d.id);if(req){clearTimeout(req.timer);pendingState.delete(d.id);if(d.error)req.reject(Error(d.error));else req.resolve(d)}}
  if(d.event==='performance'){
    $('#playing-status').textContent=d.fps===null?'Normalne tempo · pomiar FPS niedostępny':'Normalne tempo · '+d.fps+' kl./s rdzenia · '+(d.frameMs??'—')+' ms/kl. · skip '+d.skip;
    if(d.adaptive&&state.playing&&Number.isFinite(d.skip)){try{localStorage.setItem('astation_perf90_'+profile+'_'+state.playing.sha+'_'+settings.core,String(d.skip))}catch{}}
@@ -245,6 +280,7 @@ setInterval(showPadTest90,150);
 $('#rom-input').addEventListener('change',e=>importROM(e.target.files?.[0]));
 $('#import-btn').addEventListener('click',()=>$('#rom-input').click());$('#import-small').addEventListener('click',()=>$('#rom-input').click());
 $('#os-back').addEventListener('click',quitOS);
+$('#play-os-back').addEventListener('click',quitOS);
 $('#play-exit').addEventListener('click',()=>exitToLibrary());
 $('#play-menu').addEventListener('click',()=>pauseMenu(true));
 $('#play-fullscreen').addEventListener('click',async()=>{try{await $('.player-wrap').requestFullscreen();}catch(e){toast('Pełny ekran niedostępny: '+e.message,true)}});
@@ -260,10 +296,13 @@ for(const [selector,key,fn] of [['#core-select','core',v=>v],['#frameskip-select
 $('#volume-range').addEventListener('input',e=>$('#volume-value').textContent=e.target.value+'%');
 $('#performance-select').addEventListener('change',e=>{const mode=e.target.value;if(!PERF_PRESETS[mode])return;Object.assign(settings,PERF_PRESETS[mode],{performance:mode});saveSettings();displaySettings();toast('Tryb '+mode+' zapisany. Zastosowanie przy następnym uruchomieniu gry.')});
 $('#persist-rom').addEventListener('change',e=>{settings.persist=e.target.checked;saveSettings();toast(settings.persist?'Nowe ROM-y będą zapisane lokalnie.':'Nowe ROM-y będą tylko w bieżącej sesji.')});
-$$('[data-pause]').forEach(btn=>btn.addEventListener('click',()=>{
+$('[data-pause]').forEach(btn=>btn.addEventListener('click',async()=>{
  const action=btn.dataset.pause;
  if(action==='resume')pauseMenu(false);
  if(action==='save')post('save');
+ if(action==='os')await quitOS();
+ if(action==='snapshot'){try{const s=await quickSave();toast('Zapisano stan · '+formatBytes(s.size))}catch(e){toast(e.message,true)}}
+ if(action==='restore'){if(confirm('Wczytać stan? Niezapisany postęp może zostać utracony.')){try{await quickRestore()}catch(e){toast(e.message,true)}}}
  if(action==='layout')changeLayout();
  if(action==='controls')$('#controls-overlay').hidden=false;
  if(action==='settings')openSettings();

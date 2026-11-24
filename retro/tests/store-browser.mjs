@@ -51,7 +51,7 @@ try{
   await frame.locator('#rom-input').setInputFiles({name:'local-test.nds',mimeType:'application/octet-stream',buffer:Buffer.from(data)});
   await frame.locator('#playing-title').waitFor({state:'visible',timeout:15000});
   assert.match(await frame.locator('#playing-title').innerText(),/New Super Mario Bros/);
-  await frame.locator('#os-back').click();
+  await frame.locator('#play-os-back').click();
   await page.locator('#ast-retro-shell').waitFor({state:'detached',timeout:12000});
   await page.reload();
   await page.locator('#power-button').click();

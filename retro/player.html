@@ -44,6 +44,25 @@ async function sendSave(){
  try {const gm=window.EJS_emulator?.gameManager; if(!gm?.saveSaveFiles)throw Error('Rdzeń nie jest gotowy.');await Promise.resolve(gm.saveSaveFiles());post('save-ok');}
  catch(e){post('save-error',{message:String(e.message||e)});}
 }
+async function snapshot(id){
+ try{
+  const gm=window.EJS_emulator?.gameManager;
+  if(!gameStarted||typeof gm?.getState!=='function')throw Error('Rdzeń nie udostępnia Save State');
+  const raw=await Promise.resolve(gm.getState());
+  const bytes=raw instanceof Uint8Array?new Uint8Array(raw):raw instanceof ArrayBuffer?new Uint8Array(raw):null;
+  if(!bytes?.byteLength||bytes.byteLength>64*1024*1024)throw Error('Nieprawidłowy rozmiar stanu');
+  post('snapshot-result',{id,bytes});
+ }catch(e){post('snapshot-result',{id,error:String(e.message||e)})}
+}
+async function restore(id,bytes){
+ try{
+  const gm=window.EJS_emulator?.gameManager;
+  if(!gameStarted||typeof gm?.loadState!=='function'||!(bytes instanceof Uint8Array)||!bytes.byteLength)throw Error('Rdzeń nie udostępnia Load State');
+  const result=await Promise.resolve(gm.loadState(bytes));
+  if(result===false)throw Error('Rdzeń odrzucił stan');
+  smart?.reset();post('restore-result',{id,accepted:true});
+ }catch(e){post('restore-result',{id,error:String(e.message||e)})}
+}
 function start(cfg){
  if(launched)return;launched=true;
  window.EJS_player='#game';
@@ -76,7 +95,7 @@ function start(cfg){
  window.EJS_onGameStart=()=>{
    gameStarted=true;
    clearTimeout(startupTimer);
-   setStage('game-started');
+   setStage('game-started',{canSnapshot:typeof window.EJS_emulator?.gameManager?.getState==='function'&&typeof window.EJS_emulator?.gameManager?.loadState==='function'});
    // Core options may only be changed after the ROM is actually running.
    smart?.stop();
    smart=AstationSmartPerformance.create({getCore:()=>window.EJS_emulator,report:details=>post('performance',details),initial:cfg.frameskip,adaptive:cfg.performance==='balanced'||cfg.performance==='performance',active:()=>gameStarted&&!paused});
@@ -94,7 +113,7 @@ function start(cfg){
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==parent||event.data?.source!=='astation-retro-host')return;
  const d=event.data;
- switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':smart?.normalSpeed();break;case 'pause':paused=true;smart?.reset();window.EJS_emulator?.pause?.();break;case 'resume':paused=false;window.EJS_emulator?.play?.();smart?.reset();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();smart?.reset();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
+ switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':smart?.normalSpeed();break;case 'pause':paused=true;smart?.reset();window.EJS_emulator?.pause?.();break;case 'resume':paused=false;window.EJS_emulator?.play?.();smart?.reset();break;case 'save':sendSave();break;case 'snapshot':snapshot(d.id);break;case 'restore':restore(d.id,d.bytes);break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();smart?.reset();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
 });
 window.addEventListener('pagehide',()=>{smart?.stop();clearInterval(padTimer)});
 window.addEventListener('error',e=>{if(launched)logError(e.message||'Błąd emulacji')});
