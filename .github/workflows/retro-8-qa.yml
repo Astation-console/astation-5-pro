@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: 22
       - name: Validate NDS file format and ZIP decoder
-        run: node --test retro/tests/retro-unit.test.mjs retro/tests/store-integration.test.mjs retro/tests/fast-toggle.test.mjs
+        run: node --test retro/tests/retro-unit.test.mjs retro/tests/store-integration.test.mjs retro/tests/fast-toggle.test.mjs retro/tests/gba-format.test.mjs
       - name: Install Playwright test runner
         run: npm install --no-audit --no-fund --no-save --no-package-lock playwright@1.58.2
       - name: Install Chromium browser

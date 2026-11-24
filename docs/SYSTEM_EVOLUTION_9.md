@@ -17,3 +17,5 @@
 - Save Center: ASTATION snapshots only, per-profile inventory, export/import with ROM SHA and core validation, backup before overwrite, confirmation before deletion, system-event trophy counts derived from measured sessions. Internal emulator SRAM management remains separate. Figma file created but canvas write was blocked by Starter MCP quota.
 
 - Game Hub foundations: per-ROM Quick Resume button appears only if a matching local state exists; per-profile favorites, local screenshot gallery and export, notifications with timestamps. Canvas captures are capability-dependent; a canvas may not expose WebGL framebuffer contents.
+
+- GBA Lab: isolated official EmulatorJS gba/mGBA adapter with local single-file GBA import, header checksum screening, profile-keyed IndexedDB and save request. Header tests added; real GBA runtime compatibility still unverified. PS1 remains unimplemented; multi-file disc/BIOS support needs dedicated tests.
