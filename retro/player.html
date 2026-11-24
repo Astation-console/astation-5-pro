@@ -5,6 +5,26 @@
 'use strict';
 let launched=false;
 let startupTimer=0, gameStarted=false;
+let fastActive=false;
+// FAST ×2 is a one-tap toggle using the real EmulatorJS fast-forward API.
+function setFastMode(enabled){
+ const em=window.EJS_emulator;
+ if(!gameStarted||!em?.gameManager?.toggleFastForward){post('fast-unavailable',{message:'Najpierw uruchom grę.'});return}
+ try{
+   const active=Boolean(enabled);
+   if(typeof em.handleSpecialOptions==='function'){
+     em.handleSpecialOptions('ff-ratio','2');
+     em.handleSpecialOptions('fastForward',active?'enabled':'disabled');
+   } else {
+     em.gameManager.setFastForwardRatio?.(2);
+     em.gameManager.toggleFastForward(active?1:0);
+     em.isFastForward=active;
+   }
+   fastActive=active;
+   post('fast-state',{enabled:fastActive});
+ }catch(err){post('fast-unavailable',{message:String(err.message||err).slice(0,130)})}
+}
+
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const logError=(message)=>post('core-error',{message:String(message).slice(0,260)});
 const setStage=(stage,extra={})=>post(stage,extra);
@@ -82,7 +102,7 @@ function start(cfg){
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==parent||event.data?.source!=='astation-retro-host')return;
  const d=event.data;
- switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'pause':window.EJS_emulator?.pause?.();break;case 'resume':window.EJS_emulator?.play?.();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
+ switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':setFastMode(d.enabled);break;case 'pause':window.EJS_emulator?.pause?.();break;case 'resume':window.EJS_emulator?.play?.();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
 });
 window.addEventListener('error',e=>{if(launched)logError(e.message||'Błąd emulacji')});
 window.addEventListener('unhandledrejection',e=>{
