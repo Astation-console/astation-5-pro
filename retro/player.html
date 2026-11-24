@@ -4,7 +4,7 @@
 <script src="./smart-performance.js?v=1410"></script><script defer src="./mobile.js?v=903"></script>
 <script>
 'use strict';
-let launched=false;
+let launched=false,canvasCommands=null;
 let startupTimer=0, gameStarted=false;
 let smart=null,paused=false,padChord=false,padTimer=0;
 function checkPadShortcut(){
@@ -66,6 +66,11 @@ async function restore(id,bytes){
 function start(cfg){
  window.__astationPlayerBuild='14.1-p0';
  if(launched)return;launched=true;
+ if(cfg.softwareFallback&&cfg.romBlob instanceof Blob){
+  const probe=document.createElement('canvas'),gl=probe.getContext('webgl2')||probe.getContext('webgl');
+  if(!gl){import('../remake/ds-canvas.js').then(m=>m.mountDS(cfg,post)).then(handler=>{canvasCommands=handler;gameStarted=true}).catch(e=>logError(e.message));return}
+  gl.getExtension('WEBGL_lose_context')?.loseContext();
+ }
  window.EJS_player='#game';
  window.EJS_core=cfg.core==='desmume2015'?'desmume2015':'desmume';
  // Create this frame's own blob URL — iOS Safari can reject blob URLs created in a parent iframe.
@@ -114,7 +119,7 @@ window.addEventListener('pagehide',()=>{if(localRom)URL.revokeObjectURL(window.E
 }
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==parent||event.data?.source!=='astation-retro-host')return;
- const d=event.data;
+ const d=event.data;if(canvasCommands){canvasCommands(d).catch(e=>logError(e.message));return}
  switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'normal-speed':smart?.normalSpeed();break;case 'mobile':window.AstationMobile?.apply(d.config);break;case 'pause':paused=true;window.AstationMobile?.pause(true);smart?.reset();window.EJS_emulator?.pause?.();break;case 'resume':paused=false;window.AstationMobile?.pause(false);window.EJS_emulator?.play?.();smart?.reset();smart?.normalSpeed();break;case 'save':sendSave();break;case 'snapshot':snapshot(d.id);break;case 'restore':restore(d.id,d.bytes);break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();smart?.reset();setTimeout(()=>{if(gameStarted&&!paused)smart?.normalSpeed()},450);post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
 });
 window.addEventListener('pagehide',()=>{smart?.stop();clearInterval(padTimer)});

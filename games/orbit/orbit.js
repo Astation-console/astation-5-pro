@@ -25,5 +25,31 @@ $('#how').onclick=()=>{$('#menu-detail').textContent='Klawiatura: A/D lub strza�
 for(const b of document.querySelectorAll('[data-dir]')){b.onpointerdown=e=>{b.setPointerCapture(e.pointerId);touch.set(e.pointerId,+b.dataset.dir)};for(const v of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(v,e=>touch.delete(e.pointerId))}
 function point(e){const r=c.getBoundingClientRect(),ratio=Math.min(r.width/W,r.height/H),left=r.left+(r.width-W*ratio)/2;target=Math.max(0,Math.min(W,(e.clientX-left)/ratio))}
 c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);point(e)};c.onpointermove=e=>{if(c.hasPointerCapture(e.pointerId))point(e)};for(const n of ['pointerup','pointercancel','lostpointercapture'])c.addEventListener(n,()=>target=null);
+window.addEventListener('message',e=>{
+ if(parent===window||e.source!==parent||e.origin!==location.origin||e.data?.source!=='astation-orbit-host')return;
+ if(e.data.event==='pause')pause(true);
+ if(e.data.event==='resume')pause(false);
+ if(e.data.event==='exit'){save();send('exit')}
+});
+if(new URLSearchParams(location.search).has('autostart')){
+ document.querySelector('.top').hidden=true;document.querySelector('.top').style.display='none';reset();
+ let previous=[];
+ function menuPad(){
+  const p=Array.from(navigator.getGamepads?.()||[]).find(x=>x?.connected),buttons=p?.buttons.map(b=>b.pressed)||[];
+  if(buttons[9]&&!previous[9])pause(!paused);
+  if(buttons[0]&&!previous[0]&&($('#cover').hidden===false)){if(paused)pause(false);else reset()}
+  if(buttons[1]&&!previous[1]&&(paused||finished)){save();send('exit')}
+  previous=buttons;requestAnimationFrame(menuPad)
+ }
+ requestAnimationFrame(menuPad)
+}
+if(new URLSearchParams(location.search).get('lang')==='en'){
+ const strings=new Map([['Pauza','Pause'],['Wznów','Resume'],['PAUZA','PAUSED'],['Zagraj ponownie','Play again'],['Twój statek jest bezpieczny. Wznów, aby wrócić do rozgrywki.','Your ship is safe. Resume when you are ready.']]);
+ const translate=el=>{const v=el.textContent;if(strings.has(v))el.textContent=strings.get(v);else if(v.startsWith('Wynik:'))el.textContent=v.replace('Wynik:','Score:').replace('Rekord:','Best:').replace('Rdzenie:','Cores:')};
+ for(const el of [$('#pause'),$('#start'),$('#title'),$('#desc')]){translate(el);new MutationObserver(()=>translate(el)).observe(el,{childList:true})}
+ document.documentElement.lang='en';
+ for(const [i,label] of ['SCORE ','ENERGY ','BEST '].entries())document.querySelectorAll('.hud span')[i].firstChild.data=label;
+ document.querySelector('.footer').textContent='Arrows / A D · D-pad or left stick · Tap or drag the ship';
+}
 send('ready');window.addEventListener('pagehide',save);
 })();

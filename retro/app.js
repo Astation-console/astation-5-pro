@@ -245,7 +245,7 @@ const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
  const d=event.data;
- if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:preferredSkip(),keys:settings.keys,performance:settings.performance,mobile:settings.mobile});}
+ if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),softwareFallback:new URLSearchParams(location.search).get('shell')==='15',profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:preferredSkip(),keys:settings.keys,performance:settings.performance,mobile:settings.mobile});}
  if(d.event==='core-ready'){
    state.coreReady=true;
    $('#player-loading').hidden=true;
@@ -259,7 +259,7 @@ window.addEventListener('message',event=>{
    state.gameStarted=true;$('#playing-info').textContent=state.playing.info.code+' · NORMAL SPEED';canSnapshot=!!d.canSnapshot;clearStartupTimer();sessionStats=getStats(profile,state.playing.sha);sessionStats.sessions++;sessionStats.last=Date.now();sessionTick=performance.now();flushSession();
    if(requestedResume){requestedResume=false;if(canSnapshot){pauseMenu(true);quickRestore().then(()=>pauseMenu(false)).catch(e=>toast('Quick Resume: '+e.message,true))}else toast('Ten rdzeń nie obsługuje Quick Resume',true)}
    $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
-   $('#playing-status').textContent='Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki');
+   $('#playing-status').textContent=d.renderer==='canvas'?'Gra uruchomiona · tryb 2D · oddzielny zapis kartridża':('Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki'));
  }
  if(d.event==='controller-menu'&&state.gameStarted&&!state.menuWasPaused)pauseMenu(true);
  if(d.event==='snapshot-result'||d.event==='restore-result'){const req=pendingState.get(d.id);if(req){clearTimeout(req.timer);pendingState.delete(d.id);if(d.error)req.reject(Error(d.error));else req.resolve(d)}}
@@ -337,3 +337,9 @@ function setDirectMarioMode(){
 }
 refreshPad();setDirectMarioMode();displaySettings();show('library');profileSwitch();
 fetchLibrary().catch(e=>{storageStatus('Nie można odczytać biblioteki: '+e.message,true)}).finally(()=>{for(const id of ['rom-input','import-btn','import-small'])$('#'+id).disabled=false;document.documentElement.dataset.retroReady='1'});
+
+window.addEventListener('message',e=>{
+ if(parent===window||e.source!==parent||e.origin!==location.origin||e.data?.source!=='astation-console15')return;
+ if(e.data.event==='exit')quitOS();
+ if(e.data.event==='pause-menu'&&state.playing)pauseMenu($('#pause-overlay').hidden);
+});
