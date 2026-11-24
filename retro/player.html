@@ -6,7 +6,14 @@
 'use strict';
 let launched=false;
 let startupTimer=0, gameStarted=false;
-let smart=null,paused=false;
+let smart=null,paused=false,padChord=false,padTimer=0;
+function checkPadShortcut(){
+ if(!gameStarted||document.hidden)return;
+ let pad;try{pad=Array.from(navigator.getGamepads?.()||[]).find(p=>p?.mapping==='standard')}catch{}
+ const chord=!!(pad?.buttons[8]?.pressed&&pad?.buttons[9]?.pressed);
+ if(chord&&!padChord)post('controller-menu');
+ padChord=chord;
+}
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const logError=(message)=>post('core-error',{message:String(message).slice(0,260)});
 const setStage=(stage,extra={})=>post(stage,extra);
@@ -73,7 +80,7 @@ function start(cfg){
    // Core options may only be changed after the ROM is actually running.
    smart?.stop();
    smart=AstationSmartPerformance.create({getCore:()=>window.EJS_emulator,report:details=>post('performance',details),initial:cfg.frameskip,adaptive:cfg.performance==='balanced'||cfg.performance==='performance',active:()=>gameStarted&&!paused});
-   smart.start();
+   smart.start();clearInterval(padTimer);padTimer=setInterval(checkPadShortcut,100);
    setTimeout(()=>updateLayout(cfg.layout,false),600);
  };
  window.EJS_onExit=()=>{gameStarted=false;smart?.stop();post('exited')};
@@ -89,7 +96,7 @@ window.addEventListener('message',event=>{
  const d=event.data;
  switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':smart?.normalSpeed();break;case 'pause':paused=true;smart?.reset();window.EJS_emulator?.pause?.();break;case 'resume':paused=false;window.EJS_emulator?.play?.();smart?.reset();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();smart?.reset();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
 });
-window.addEventListener('pagehide',()=>smart?.stop());
+window.addEventListener('pagehide',()=>{smart?.stop();clearInterval(padTimer)});
 window.addEventListener('error',e=>{if(launched)logError(e.message||'Błąd emulacji')});
 window.addEventListener('unhandledrejection',e=>{
   if(launched&&!gameStarted)logError(e.reason?.message||e.reason||'Nie udało się rozpocząć emulacji');

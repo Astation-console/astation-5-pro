@@ -1,0 +1,2 @@
+html.ast-pad-nav button:focus,html.ast-pad-nav a:focus,html.ast-pad-nav [tabindex]:focus,html.ast-pad-nav select:focus,html.ast-pad-nav input:focus{outline:3px solid #82d8ff!important;outline-offset:3px!important}
+.ast-pad-toast{position:fixed;z-index:99999;top:max(16px,env(safe-area-inset-top));right:16px;background:#142c47;color:#e7f5ff;border:1px solid #73c7ef;padding:14px 20px;border-radius:14px;font:600 14px system-ui;box-shadow:0 8px 28px #0008;pointer-events:none}

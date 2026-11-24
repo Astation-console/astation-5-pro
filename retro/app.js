@@ -194,6 +194,7 @@ window.addEventListener('message',event=>{
    $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
    $('#playing-status').textContent='Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki');
  }
+ if(d.event==='controller-menu'&&state.gameStarted&&!state.menuWasPaused)pauseMenu(true);
  if(d.event==='performance'){
    $('#playing-status').textContent=d.fps===null?'Normalne tempo · pomiar FPS niedostępny':'Normalne tempo · '+d.fps+' kl./s rdzenia · '+(d.frameMs??'—')+' ms/kl. · skip '+d.skip;
    if(d.adaptive&&state.playing&&Number.isFinite(d.skip)){try{localStorage.setItem('astation_perf90_'+profile+'_'+state.playing.sha+'_'+settings.core,String(d.skip))}catch{}}
