@@ -45,11 +45,12 @@ try{
     canvasCount:document.querySelectorAll('canvas').length,
     emulator:window.EJS_emulator?.constructor?.name
   }));
-  assert.equal(info.build,'9.0.3');
+  assert.equal(info.build,'14.1-p0');
   assert.equal(info.hasInput,true);
   assert.equal(info.core,'desmume');
   assert.equal(info.started,true);
   assert.ok(info.canvasCount>=1,'Actual DS game renderer must create canvas');
+  const tempo=await iframe.locator('body').evaluate(async()=>{const em=window.EJS_emulator,gm=em?.gameManager;const start=gm?.getFrameNum?.(),t=performance.now();await new Promise(r=>setTimeout(r,2500));const end=gm?.getFrameNum?.();return {fastFlag:em?.isFastForward===true,frames:Number.isFinite(start)&&Number.isFinite(end)?end-start:null,elapsedMs:performance.now()-t}});assert.equal(tempo.fastFlag,false,'No automatic fast-forward on real core');console.log('REAL CORE FRAME COUNTER (not display FPS)',JSON.stringify(tempo));
   await page.screenshot({path:'/tmp/astation-retro8-homebrew.png'}).catch(()=>{});
   console.log('PASS: actual DeSmuME WASM core booted permissively-licensed DS program',JSON.stringify({...info,seconds:Math.round((Date.now()-timer)/1000),pageerrors:errors.slice(0,3)}));
 } finally {await browser?.close();await new Promise(res=>server.close(res))}
