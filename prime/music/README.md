@@ -1,0 +1,2 @@
+# Bundled game music
+This folder is intentionally missing the binary asset until an authorized copy can be uploaded. The automatic Mario theme loader expects `mario-theme.mp3` here. Local profile overrides take priority. If the asset is missing or cannot be decoded, the UI uses its existing original theme and its real name. The browser tests supply a synthetic fixture, not the Qumu recording. Do not promote this candidate as a finished soundtrack update without the actual audio asset and successful regression.
