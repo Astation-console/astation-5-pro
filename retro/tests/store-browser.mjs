@@ -20,7 +20,7 @@ try{
   const origin=`http://127.0.0.1:${server.address().port}`;
   await page.route('https://cdnjs.cloudflare.com/**',route=>route.abort());
   await page.route('https://cdn.emulatorjs.org/**',route=>route.abort());
-  await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
+  await page.goto(origin+'/legacy.html',{waitUntil:'domcontentloaded'});
   assert.equal(await page.locator('#choose').isVisible(),false,'profile picker must stay hidden until boot completes');
   await page.locator('#power-button').click();
   await page.locator('#enter-profile').waitFor({state:'visible',timeout:12000});

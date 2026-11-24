@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const os=readFileSync('index.html','utf8');
+const os=readFileSync('legacy.html','utf8');
 const bridge=readFileSync('retro/bridge.js','utf8');
 const player=readFileSync('retro/player.html','utf8');
 const app=readFileSync('retro/app.js','utf8');

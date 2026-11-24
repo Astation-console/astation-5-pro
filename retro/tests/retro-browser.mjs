@@ -51,7 +51,7 @@ try {
   assert.equal(errors.length,0,'browser errors: '+errors.join(';'));
   console.log('PASS: real browser DOM, ROM import, local blob handoff, pause, layouts, save API, IndexedDB persistence');
   // Verify OS bridge without touching existing system internals.
-  await page.goto(origin+'/index.html',{waitUntil:'domcontentloaded'});
+  await page.goto(origin+'/legacy.html',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>!!window.AstationRetro?.open);
   assert.equal(await page.locator('#retro-nav').count(),0,'no uninstalled RETRO shortcut');
   await page.evaluate(()=>window.AstationRetro.open());

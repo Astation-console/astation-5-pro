@@ -1,7 +1,7 @@
 name: ASTATION RETRO 8 — browser integration QA
 on:
   push:
-    branches: [retro-8-integration, retro-8-ios-fix, retro-8-2-store-fps, mario-store-integration, astation-8-4-console-edition, main, rom-persistence-8-5, retro-8-6-fast-toggle, system-evolution-9, remake-10]
+    branches: [retro-8-integration, retro-8-ios-fix, retro-8-2-store-fps, mario-store-integration, astation-8-4-console-edition, main, rom-persistence-8-5, retro-8-6-fast-toggle, system-evolution-9, remake-10, prime-rebuild]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,6 +20,8 @@ jobs:
         run: npm install --no-audit --no-fund --no-save --no-package-lock playwright@1.58.2
       - name: Install Chromium browser
         run: npx playwright install --with-deps chromium
+      - name: PRIME new shell, profile migration, local DS and arcade gameplay
+        run: node prime/tests/browser.mjs
       - name: OS X remake layout and navigation (desktop, portrait, landscape)
         run: node retro/tests/remake-browser.mjs
       - name: ASTATION RETRO integration in browser (mock loader — no commercial ROM)

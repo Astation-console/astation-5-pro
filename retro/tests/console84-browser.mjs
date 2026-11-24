@@ -50,7 +50,7 @@ try{
           window.EJS_ready?.();window.EJS_onGameStart?.();
        }).catch(e=>{window.__testROMError=String(e);});
     `}):r.abort());
-  await page.goto(base+'/index.html',{waitUntil:'domcontentloaded'});
+  await page.goto(base+'/legacy.html',{waitUntil:'domcontentloaded'});
   await page.locator('#power-button').click();
   await page.locator('#enter-profile').waitFor({state:'visible',timeout:15000});
   await page.locator('#enter-profile').click();
