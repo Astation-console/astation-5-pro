@@ -9,3 +9,5 @@
 - Stage 4 foundation: existing verified IndexedDB/Cache ROM persistence retained; add StorageManager persistent-storage request and real origin quota estimate; controller tester, deadzone and diagnostics. These do not guarantee protection from manual browser data removal.
 
 - Stage 5: fix hidden OS return in play mode; local per-ROM/session statistics, separate IndexedDB state slot, manual Quick Save/Resume, snapshot on exit where supported. Existing SRAM storage untouched. Restore API returns no verified in-game result; manual restore is explicitly described as handed to core. Real-core save-state compatibility not yet verified.
+
+- Added a browser test using synthetic emulator state bytes to check persistence after reload and restore handoff. This is an integration test, not proof of actual game-state restoration in real DeSmuME.

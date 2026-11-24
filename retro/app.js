@@ -116,16 +116,19 @@ function gameCard(item){
  const stats=getStats(profile,item.sha);
  const info=document.createElement('p');info.textContent=`${formatBytes(item.info?.size||item.blob?.size||0)} · ${stats.last?'Ostatnio: '+new Date(stats.last).toLocaleDateString('pl-PL'):'Jeszcze nie uruchamiana'}`;
  const detail=document.createElement('p');detail.textContent='Czas gry: '+elapsed90(stats.seconds)+' · Sesje: '+stats.sessions;
+ const savedInfo=document.createElement('p');savedInfo.textContent='Sprawdzanie Quick Save…';
  const foot=document.createElement('div');foot.className='card-footer';
  const play=document.createElement('button');play.type='button';play.textContent='Graj';play.addEventListener('click',()=>launch(item));
  const remove=document.createElement('button');remove.type='button';remove.className='del';remove.textContent='Usuń ROM';remove.addEventListener('click',async()=>{
    if(!confirm(`Usunąć grę „${safeName(item.info?.title)}” z lokalnej biblioteki? Zapisy emulatora pozostaną.`))return;
    try{await deleteLocalROM(item);state.volatile.delete(item.id);state.games=state.games.filter(g=>g.id!==item.id);renderLibrary();toast('Usunięto lokalny ROM. Zapisy emulatora pozostają.')}catch(e){toast('Błąd usuwania: '+e.message,true)}
  });
- foot.append(play,remove);card.append(meta,title,info,detail,foot);return card;
+ foot.append(play,remove);card.append(meta,title,info,detail,savedInfo,foot);
+ readSnapshot(profile+':'+item.sha+':'+settings.core).then(s=>{savedInfo.textContent=s?'Quick Save: '+new Date(s.date).toLocaleString('pl-PL')+' · '+formatBytes(s.size):'Quick Save: brak stanu dla tego rdzenia'}).catch(()=>{savedInfo.textContent='Quick Save: magazyn niedostępny'});
+ return card;
 }
 function renderLibrary(){
- const box=$('#library-grid');box.replaceChildren();const games=[...state.games].filter(matchesDirectROM).sort((a,b)=>(b.lastPlayed||b.imported||0)-(a.lastPlayed||a.imported||0));
+ const box=$('#library-grid');box.replaceChildren();const games=[...state.games].filter(matchesDirectROM).sort((a,b)=>(getStats(profile,b.sha).last||b.imported||0)-(getStats(profile,a.sha).last||a.imported||0));
  $('#library-count').textContent=games.length?`${games.length} ${games.length===1?'gra':'gry'} · profil ${profile}`:`Brak gier · profil ${profile}`;
  if(!games.length){const empty=document.createElement('div');empty.className='empty-card';empty.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h4"/></svg><strong>Twoja biblioteka jest pusta</strong><span>Wybierz własny plik gry (.nds lub .zip), aby rozpocząć rozgrywkę.</span>';box.append(empty);return}
  for(const game of games)box.append(gameCard(game));

@@ -18,7 +18,7 @@ try {
   const page=await browser.newPage({viewport:{width:1300,height:850}});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('https://cdnjs.cloudflare.com/**',r=>r.abort());
-  await page.route('https://cdn.emulatorjs.org/stable/data/loader.js',r=>r.fulfill({status:200,contentType:'text/javascript',body:"window.EJS_emulator={pause(){},play(){},setVolume(){},handleSpecialOptions(k,v){window.__boostOptions??={};window.__boostOptions[k]=v},gameManager:{setVariable(){},saveSaveFiles(){},restart(){}}};window.EJS_ready();setTimeout(()=>window.EJS_onGameStart(),1200);"}));
+  await page.route('https://cdn.emulatorjs.org/stable/data/loader.js',r=>r.fulfill({status:200,contentType:'text/javascript',body:"window.EJS_emulator={pause(){},play(){},setVolume(){},handleSpecialOptions(k,v){window.__boostOptions??={};window.__boostOptions[k]=v},gameManager:{setVariable(){},saveSaveFiles(){},restart(){},getState(){return new Uint8Array([1,2,3,4])},loadState(bytes){window.__loadedState=Array.from(bytes)}}};window.EJS_ready();setTimeout(()=>window.EJS_onGameStart(),1200);"}));
   await page.goto(origin+'/retro/index.html?profile=qa',{waitUntil:'domcontentloaded'});
   await page.locator('#library-grid .empty-card').waitFor();
   assert.equal(await page.locator('#import-btn').isVisible(),true);
@@ -35,9 +35,19 @@ try {
   assert.equal(await page.locator('#fast-toggle').count(),0);
 
   await page.locator('#play-menu').click();assert.equal(await page.locator('#pause-overlay').isVisible(),true);
-  await page.locator('[data-pause=save]').click();await page.locator('[data-pause=layout]').click();await page.locator('[data-pause=resume]').click();
+  await page.locator('[data-pause=save]').click();
+  await page.locator('[data-pause=snapshot]').click();
+  await page.waitForFunction(()=>document.querySelector('#toast')?.textContent?.includes('Zapisano stan'));
+  page.once('dialog',d=>d.accept());await page.locator('[data-pause=restore]').click();
+  await page.waitForFunction(()=>document.querySelector('#player-frame')?.contentWindow?.__loadedState?.join(',')==='1,2,3,4');
+  await page.locator('[data-pause=layout]').click();await page.locator('[data-pause=resume]').click();
   await page.locator('#play-exit').click();await page.locator('#library-view').waitFor({state:'visible',timeout:10000});
   await page.reload();await page.locator('#library-grid .game-card').first().waitFor({timeout:10000});
+  assert.match(await page.locator('.game-card').first().innerText(),/Sesje: 1/);
+  await page.getByRole('button',{name:'Graj'}).click();
+  await page.waitForFunction(()=>document.querySelector('#playing-status')?.textContent?.includes('Gra uruchomiona')||document.querySelector('#playing-status')?.textContent?.includes('Normalne tempo'));
+  await page.locator('#play-menu').click();page.once('dialog',d=>d.accept());await page.locator('[data-pause=restore]').click();
+  await page.waitForFunction(()=>document.querySelector('#player-frame')?.contentWindow?.__loadedState?.join(',')==='1,2,3,4');
   assert.equal(errors.length,0,'browser errors: '+errors.join(';'));
   console.log('PASS: real browser DOM, ROM import, local blob handoff, pause, layouts, save API, IndexedDB persistence');
   // Verify OS bridge without touching existing system internals.
