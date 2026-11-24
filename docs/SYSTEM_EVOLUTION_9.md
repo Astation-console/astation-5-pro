@@ -11,3 +11,5 @@
 - Stage 5: fix hidden OS return in play mode; local per-ROM/session statistics, separate IndexedDB state slot, manual Quick Save/Resume, snapshot on exit where supported. Existing SRAM storage untouched. Restore API returns no verified in-game result; manual restore is explicitly described as handed to core. Real-core save-state compatibility not yet verified.
 
 - Added a browser test using synthetic emulator state bytes to check persistence after reload and restore handoff. This is an integration test, not proof of actual game-state restoration in real DeSmuME.
+
+- Stage 6/7 foundation: optional direct-input multitouch DS overlay (not enabled by default), persisted size/opacity/position/mode and simple color filters; TV layout, theme accents, manifest and offline shell cache. No claim of offline emulator or Smart TV compatibility; external emulator assets are not cached. PWA install requires platform support.

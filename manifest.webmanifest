@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "ASTATION 5 PRO",
+  "short_name": "ASTATION",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#081322",
+  "theme_color": "#081322",
+  "icons": [
+    {
+      "src": "./system/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

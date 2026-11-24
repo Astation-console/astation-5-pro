@@ -1,7 +1,7 @@
 <!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>ASTATION RETRO — DS Core</title>
 <style>html,body{height:100%;margin:0;background:#030a15;overflow:hidden;color:#ddeeff;font-family:system-ui}#game{height:100%;width:100%;min-height:0;contain:layout paint size}#game canvas{image-rendering:auto}#waiting{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;background:linear-gradient(120deg,#08152d,#0b1c35)}#waiting small{color:#8eaac9;display:block;margin-top:12px;font-size:13px}.hide{display:none!important}</style></head><body>
 <div id="game" aria-label="Silnik emulacji Nintendo DS"></div><div id="waiting"><div><b>ASTATION RETRO</b><small>Wczytywanie rdzenia Nintendo DS…</small></div></div>
-<script src="./smart-performance.js?v=90"></script>
+<script src="./smart-performance.js?v=90"></script><script defer src="./mobile.js?v=90"></script>
 <script>
 'use strict';
 let launched=false;
@@ -99,7 +99,7 @@ function start(cfg){
    // Core options may only be changed after the ROM is actually running.
    smart?.stop();
    smart=AstationSmartPerformance.create({getCore:()=>window.EJS_emulator,report:details=>post('performance',details),initial:cfg.frameskip,adaptive:cfg.performance==='balanced'||cfg.performance==='performance',active:()=>gameStarted&&!paused});
-   smart.start();clearInterval(padTimer);padTimer=setInterval(checkPadShortcut,100);
+   smart.start();window.AstationMobile?.apply(cfg.mobile);clearInterval(padTimer);padTimer=setInterval(checkPadShortcut,100);
    setTimeout(()=>updateLayout(cfg.layout,false),600);
  };
  window.EJS_onExit=()=>{gameStarted=false;smart?.stop();post('exited')};
@@ -113,7 +113,7 @@ function start(cfg){
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==parent||event.data?.source!=='astation-retro-host')return;
  const d=event.data;
- switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':smart?.normalSpeed();break;case 'pause':paused=true;smart?.reset();window.EJS_emulator?.pause?.();break;case 'resume':paused=false;window.EJS_emulator?.play?.();smart?.reset();break;case 'save':sendSave();break;case 'snapshot':snapshot(d.id);break;case 'restore':restore(d.id,d.bytes);break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();smart?.reset();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
+ switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':smart?.normalSpeed();break;case 'mobile':window.AstationMobile?.apply(d.config);break;case 'pause':paused=true;window.AstationMobile?.pause(true);smart?.reset();window.EJS_emulator?.pause?.();break;case 'resume':paused=false;window.AstationMobile?.pause(false);window.EJS_emulator?.play?.();smart?.reset();break;case 'save':sendSave();break;case 'snapshot':snapshot(d.id);break;case 'restore':restore(d.id,d.bytes);break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();smart?.reset();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
 });
 window.addEventListener('pagehide',()=>{smart?.stop();clearInterval(padTimer)});
 window.addEventListener('error',e=>{if(launched)logError(e.message||'Błąd emulacji')});

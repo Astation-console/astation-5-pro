@@ -28,7 +28,7 @@ function readSettings(){try{
  delete current.fastEnabled; // Legacy toggle no longer controls the core.
  return current;
 }catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
-const settings=readSettings();
+const settings=readSettings();settings.mobile={enabled:false,size:1,opacity:.68,position:'bottom',mode:'dpad',filter:'original',...(settings.mobile||{})};
 const state={games:[],volatile:new Map(),selected:null,playerUrl:null,playerReady:false,coreReady:false,view:'library',playing:null,menuWasPaused:false,saveWaiters:[],closing:false,gameStarted:false,startupTimer:null};
 const formatBytes=n=>n>1024*1024?`${(n/1048576).toFixed(1)} MiB`:`${(n/1024).toFixed(0)} KiB`;
 const safeName=s=>String(s||'Untitled').replace(/[\x00-\x1f<>]/g,'').slice(0,90);
@@ -66,6 +66,7 @@ function showPadTest90(){
  target.textContent=pad?'Przyciski: '+pad.buttons.map((b,i)=>b.pressed?i:null).filter(v=>v!==null).join(', ')+' · Analogi: '+pad.axes.map(v=>v.toFixed(2)).join(' / '):'Nie wykryto kontrolera. Naciśnij dowolny przycisk.';
 }
 function displaySettings(){
+ $('#touch90').checked=settings.mobile.enabled;$('#touch-size90').value=settings.mobile.size*100;$('#touch-opacity90').value=settings.mobile.opacity*100;$('#touch-position90').value=settings.mobile.position;$('#touch-mode90').value=settings.mobile.mode;$('#filter90').value=settings.mobile.filter;
  storageEstimate();
  $('#diagnostic90').textContent=diagnostics90();
  const dz=Math.round((window.AstationController?.deadzone??.35)*100);
@@ -241,7 +242,7 @@ const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
  const d=event.data;
- if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:preferredSkip(),keys:settings.keys,performance:settings.performance});}
+ if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:preferredSkip(),keys:settings.keys,performance:settings.performance,mobile:settings.mobile});}
  if(d.event==='core-ready'){
    state.coreReady=true;
    $('#player-loading').hidden=true;
@@ -276,6 +277,7 @@ window.addEventListener('message',event=>{
  if(d.event==='layout-unsupported')toast(d.message||'Układ można zmienić w ustawieniach EmulatorJS.');
  if(d.event==='exited')exitToLibrary(false);
 });
+for(const [id,key,read] of [['touch90','enabled',e=>e.checked],['touch-size90','size',e=>Number(e.value)/100],['touch-opacity90','opacity',e=>Number(e.value)/100],['touch-position90','position',e=>e.value],['touch-mode90','mode',e=>e.value],['filter90','filter',e=>e.value]])$( '#'+id).addEventListener('change',e=>{settings.mobile[key]=read(e.target);saveSettings();post('mobile',{config:settings.mobile})});
 $('#storage-persist-request').addEventListener('click',async()=>{try{if(!navigator.storage?.persist){toast('Trwały magazyn nie jest obsługiwany.',true);return}const ok=await navigator.storage.persist();toast(ok?'Przeglądarka przyznała trwały magazyn.':'Przeglądarka nie przyznała trwałego magazynu.',!ok)}catch{toast('Nie udało się uzyskać trwałego magazynu.',true)}finally{storageEstimate()}});
 $('#pad-deadzone').addEventListener('input',e=>{window.AstationController?.setDeadzone(Number(e.target.value)/100);$('#pad-deadzone-value').textContent=e.target.value+'%'});
 $('#copy-diagnostic90').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(diagnostics90());toast('Skopiowano raport.')}catch{toast('Kopiowanie niedostępne. Zaznacz tekst raportu ręcznie.',true)}});
