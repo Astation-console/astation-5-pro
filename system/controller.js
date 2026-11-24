@@ -15,6 +15,7 @@ function scope(){
    return visible($('#settings-view'))?$('#settings-view'):document.body;
  }
  if($('#ast-retro-shell'))return null;
+ if(visible($('#ast90-dialog')))return $('#ast90-dialog');
  if(visible($('#control.open')))return $('#control');
  if(visible($('#panel')))return $('#panel');
  if(visible($('#sleep-screen')))return $('#sleep-screen');
@@ -47,6 +48,7 @@ function move(root,dir){
 function click(s){const x=$(s);if(visible(x)){x.click();return true}return false}
 function back(){
  if(retro){if(click('#controls-close')||click('#settings-close'))return;if(visible($('#pause-overlay'))){click('[data-pause=resume]');return}click('#os-back');return}
+ if(click('#ast90-close'))return;
  if(click('#control.open [data-action=control]'))return;
  if(click('#panel:not(.hidden) [data-action=closepanel]'))return;
  if(visible($('#pause-overlay'))&&click('#game-pause'))return;

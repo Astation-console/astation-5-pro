@@ -20,6 +20,8 @@ jobs:
         run: npm install --no-audit --no-fund --no-save --no-package-lock playwright@1.58.2
       - name: Install Chromium browser
         run: npx playwright install --with-deps chromium
+      - name: OS X remake layout and navigation (desktop, portrait, landscape)
+        run: node retro/tests/remake-browser.mjs
       - name: ASTATION RETRO integration in browser (mock loader — no commercial ROM)
         run: node retro/tests/retro-browser.mjs
       - name: ASTATION Store New Super Mario Bros. local ROM launcher (desktop/mobile)
