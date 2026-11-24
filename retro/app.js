@@ -1,6 +1,6 @@
 import { unpackLocalFile, dbPut } from './rom.js';
 import { loadLocalROMs, persistLocalROM, deleteLocalROM } from './persistent.js';
-import { readSnapshot, writeSnapshot, getStats, saveStats } from './session-store.js?v=90';
+import { readSnapshot, writeSnapshot, getStats, saveStats, removeSnapshot, backupSnapshot, restoreBackup, snapshotInventory } from './session-store.js?v=90';
 
 'use strict';
 const $ = selector => document.querySelector(selector);
@@ -66,6 +66,7 @@ function showPadTest90(){
  target.textContent=pad?'Przyciski: '+pad.buttons.map((b,i)=>b.pressed?i:null).filter(v=>v!==null).join(', ')+' · Analogi: '+pad.axes.map(v=>v.toFixed(2)).join(' / '):'Nie wykryto kontrolera. Naciśnij dowolny przycisk.';
 }
 function displaySettings(){
+ renderSaveCenter90();renderStats90();
  $('#touch90').checked=settings.mobile.enabled;$('#touch-size90').value=settings.mobile.size*100;$('#touch-opacity90').value=settings.mobile.opacity*100;$('#touch-position90').value=settings.mobile.position;$('#touch-mode90').value=settings.mobile.mode;$('#filter90').value=settings.mobile.filter;
  storageEstimate();
  $('#diagnostic90').textContent=diagnostics90();
@@ -81,6 +82,41 @@ function displaySettings(){
  }
 }
 let sessionStats=null,sessionTick=0,canSnapshot=false,pendingState=new Map(),requestId=0;
+let importTarget90=null;
+const createBtn90=(label,action)=>{const b=document.createElement('button');b.type='button';b.className='secondary slim';b.textContent=label;b.addEventListener('click',async()=>{b.disabled=true;try{await action()}catch(e){toast(e.message||String(e),true)}finally{b.disabled=false}});return b};
+function download90(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),30000)}
+async function exportState90(key){
+ const s=await readSnapshot(key);if(!s)throw Error('Brak stanu');
+ const meta=JSON.stringify({format:'ASTATION_STATE_1',rom:key.split(':')[1],core:key.split(':')[2],size:s.size});
+ const prefix=new TextEncoder().encode(meta+'\n');download90(new Blob([prefix,s.bytes],{type:'application/octet-stream'}),'astation-'+key.split(':')[1].slice(0,12)+'.aststate');
+}
+async function renderSaveCenter90(){
+ const area=$('#save-center90');if(!area)return;area.textContent='Wczytywanie...';
+ try{
+ const stored=await snapshotInventory(profile);const keys=new Set(stored.map(k=>k.replace(/:backup$/,'')));
+ for(const item of state.games)keys.add(profile+':'+item.sha+':'+settings.core);
+ area.replaceChildren();
+ if(!keys.size){area.textContent='Brak lokalnych gier i stanów.';return}
+ for(const key of keys){
+  const [owner,sha,core]=key.split(':');if(owner!==profile||!/^[a-f0-9]{64}$/i.test(sha)||!['desmume','desmume2015'].includes(core))continue;
+  const [s,backup]=await Promise.all([readSnapshot(key),readSnapshot(key+':backup')]);
+  const item=state.games.find(g=>g.sha===sha),row=document.createElement('div');row.className='key-assign';row.style.display='block';
+  const title=document.createElement('p');title.textContent=(item?safeName(item.info?.title||item.filename):sha.slice(0,12))+' · '+core;
+  const meta=document.createElement('p');meta.textContent=s?new Date(s.date).toLocaleString('pl-PL')+' · '+formatBytes(s.size):'Brak Quick Save';if(backup)meta.textContent+=' · Kopia zapasowa';
+  row.append(title,meta);
+  if(s){row.append(createBtn90('Eksport',()=>exportState90(key)),createBtn90('Kopia',async()=>{await backupSnapshot(key);await renderSaveCenter90()}),createBtn90('Usuń stan',async()=>{if(confirm('Usunąć ten Quick Save? Zwykły zapis gry pozostaje.')){await removeSnapshot(key);await renderSaveCenter90()}}))}
+  if(backup)row.append(createBtn90('Przywróć kopię',async()=>{if(confirm('Zastąpić bieżący stan kopią?')){await restoreBackup(key);await renderSaveCenter90()}}));
+  row.append(createBtn90('Import',()=>{importTarget90=key;$('#state-import90').click()}));area.append(row);
+ }
+ }catch(e){area.textContent='Magazyn stanów niedostępny: '+e.message}
+}
+function renderStats90(){
+ const el=$('#stats-center90');if(!el)return;
+ let seconds=0,sessions=0,bronze=0,silver=0,gold=0;
+ for(const item of state.games){const st=getStats(profile,item.sha);seconds+=st.seconds;sessions+=st.sessions;if(st.sessions>0)bronze++;if(st.seconds>=600)silver++;if(st.seconds>=3600)gold++}
+ el.textContent='Czas: '+elapsed90(seconds)+' · Sesje: '+sessions+' · Bronze (pierwsza sesja): '+bronze+' · Silver (10 min): '+silver+' · Gold (1 h): '+gold;
+}
+
 function snapshotKey(){return profile+':'+state.playing.sha+':'+settings.core}
 function elapsed90(sec){return Math.floor(sec/3600)+' h '+Math.floor(sec%3600/60)+' min'}
 function tickSession(){
@@ -98,7 +134,7 @@ function stateRequest(event,bytes){
  const id=++requestId;
  return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pendingState.delete(id);reject(Error('Przekroczono czas odpowiedzi rdzenia'))},3500);pendingState.set(id,{resolve,reject,timer});post(event,{id,bytes})});
 }
-async function quickSave(){const key=snapshotKey(),result=await stateRequest('snapshot');return writeSnapshot(key,result.bytes)}
+async function quickSave(){const key=snapshotKey(),result=await stateRequest('snapshot');const old=await readSnapshot(key);if(old)await backupSnapshot(key);return writeSnapshot(key,result.bytes)}
 async function quickRestore(){
  const saved=await readSnapshot(snapshotKey());if(!saved)throw Error('Brak stanu dla obecnego rdzenia');
  await stateRequest('restore',saved.bytes);
@@ -278,6 +314,17 @@ window.addEventListener('message',event=>{
  if(d.event==='exited')exitToLibrary(false);
 });
 for(const [id,key,read] of [['touch90','enabled',e=>e.checked],['touch-size90','size',e=>Number(e.value)/100],['touch-opacity90','opacity',e=>Number(e.value)/100],['touch-position90','position',e=>e.value],['touch-mode90','mode',e=>e.value],['filter90','filter',e=>e.value]])$( '#'+id).addEventListener('change',e=>{settings.mobile[key]=read(e.target);saveSettings();post('mobile',{config:settings.mobile})});
+$('#refresh-saves90').addEventListener('click',renderSaveCenter90);
+$('#state-import90').addEventListener('change',async e=>{try{
+ const file=e.target.files?.[0],key=importTarget90;importTarget90=null;
+ if(!file||!key)return;if(file.size>64*1024*1024+2048||file.size<10)throw Error('Nieprawidłowy rozmiar pliku');
+ const bytes=new Uint8Array(await file.arrayBuffer()),nl=bytes.indexOf(10);
+ if(nl<1||nl>2048)throw Error('Nieprawidłowy nagłówek');
+ const meta=JSON.parse(new TextDecoder().decode(bytes.slice(0,nl))),payload=bytes.slice(nl+1);
+ if(meta.format!=='ASTATION_STATE_1'||meta.rom!==key.split(':')[1]||meta.core!==key.split(':')[2]||meta.size!==payload.length)throw Error('Stan nie pasuje do ROM-u lub rdzenia');
+ if(!confirm('Zaimportować i zastąpić Quick Save?'))return;
+ const old=await readSnapshot(key);if(old)await backupSnapshot(key);await writeSnapshot(key,payload);await renderSaveCenter90();toast('Zaimportowano stan');
+ }catch(err){toast(err.message,true)}finally{e.target.value=''}});
 $('#storage-persist-request').addEventListener('click',async()=>{try{if(!navigator.storage?.persist){toast('Trwały magazyn nie jest obsługiwany.',true);return}const ok=await navigator.storage.persist();toast(ok?'Przeglądarka przyznała trwały magazyn.':'Przeglądarka nie przyznała trwałego magazynu.',!ok)}catch{toast('Nie udało się uzyskać trwałego magazynu.',true)}finally{storageEstimate()}});
 $('#pad-deadzone').addEventListener('input',e=>{window.AstationController?.setDeadzone(Number(e.target.value)/100);$('#pad-deadzone-value').textContent=e.target.value+'%'});
 $('#copy-diagnostic90').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(diagnostics90());toast('Skopiowano raport.')}catch{toast('Kopiowanie niedostępne. Zaznacz tekst raportu ręcznie.',true)}});

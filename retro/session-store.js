@@ -15,3 +15,7 @@ export const removeSnapshot=key=>operation('readwrite',s=>s.delete(key));
 export function statsKey(profile,sha){return 'astation_session90_'+profile+'_'+sha}
 export function getStats(profile,sha){try{const v=JSON.parse(localStorage.getItem(statsKey(profile,sha))||'{}');return {seconds:Math.max(0,Number(v.seconds)||0),sessions:Math.max(0,Number(v.sessions)||0),last:Math.max(0,Number(v.last)||0)}}catch{return {seconds:0,sessions:0,last:0}}}
 export function saveStats(profile,sha,value){try{localStorage.setItem(statsKey(profile,sha),JSON.stringify(value));return true}catch{return false}}
+
+export async function backupSnapshot(key){const s=await readSnapshot(key);if(!s)throw Error('No snapshot');await operation('readwrite',o=>o.put(s,key+':backup'));return s}
+export async function restoreBackup(key){const s=await readSnapshot(key+':backup');if(!s)throw Error('No backup');return writeSnapshot(key,s.bytes)}
+export async function snapshotInventory(profile){const db=await open();try{return await new Promise((resolve,reject)=>{const req=db.transaction('snapshots','readonly').objectStore('snapshots').getAllKeys();req.onsuccess=()=>resolve(req.result.filter(k=>typeof k==='string'&&k.startsWith(profile+':')));req.onerror=()=>reject(req.error)})}finally{db.close()}}
