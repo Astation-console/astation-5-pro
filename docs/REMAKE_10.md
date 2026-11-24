@@ -3,3 +3,5 @@ Rebuilt shell styling, responsive portrait/landscape layouts, startup/profile, h
 Second commit: instant launcher registration rather than fake new-game download progress; actual storage in settings and storage panel, clearer local profile backup semantics, corrected DS store category, controller focus for System panel, responsive browser QA. Legacy queued updates remain labelled simulated. Existing games and engine unchanged.
 
 Third commit: original playable Orbit Rush arcade game, independent canvas renderer, touch/keyboard/gamepad controls, per-profile record, measured time and trophies, store and library integration. No commercial assets in the new title. DS player code untouched.
+
+Added Orbit offline shell resources, per-run time accounting and browser smoke tests for the actual arcade loop, pause, exit and score.

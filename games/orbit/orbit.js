@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s),c=$('#game'),g=c.getContext('2d'),W=800,H=4
 let best=0;try{best=+localStorage.getItem(key)||0}catch{}$('#best').textContent=best;
 let ship=400,objects=[],stars=Array.from({length:100},(_,i)=>({x:(i*173)%800,y:(i*113)%480,z:.5+(i%4)*.45})),score=0,life=3,time=0,runTime=0,spawn=0,inv=0,active=false,paused=false,finished=false,last=0,keys=new Set(),touch=new Map(),target=null,combo=0,collected=0,lastSent=0;
 const send=(event,extra={})=>parent.postMessage({source:'astation-orbit10',event,...extra},location.origin);
-function reset(){ship=400;objects=[];score=0;life=3;time=0;runTime=0;spawn=.25;inv=0;active=true;paused=false;finished=false;combo=0;collected=0;lastSent=0;target=null;$('#cover').hidden=true;$('#pause').textContent='Pauza';hud()}
+function reset(){ship=400;objects=[];score=0;life=3;time=0;runTime=0;spawn=.25;inv=0;active=true;paused=false;finished=false;combo=0;collected=0;lastSent=0;target=null;$('#cover').hidden=true;$('#pause').textContent='Pauza';hud();send('run-start')}
 function hud(){$('#score').textContent=Math.floor(score);$('#life').textContent=life;$('#best').textContent=best}
 function save(){const n=Math.floor(score);if(n>best){best=n;try{localStorage.setItem(key,String(n))}catch{}}send('stats',{score:n,seconds:Math.floor(runTime),collected,life,finished});hud()}
 function pause(v){if(!active||finished)return;paused=v;$('#pause').textContent=v?'Wznów':'Pauza';$('#cover').hidden=!v;if(v){$('#title').textContent='PAUZA';$('#desc').textContent='Twój statek jest bezpieczny. Wznów, aby wrócić do rozgrywki.';$('#start').textContent='Wznów';save()}}
