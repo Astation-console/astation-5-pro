@@ -3,3 +3,5 @@ Independent frontend in prime/: state, views, controller, catalog, audio, app. R
 PRIME Game Hub adds actual per-ROM state detection, Quick Resume only when matching snapshot exists, binary export/import with SHA/core validation, and backup before import. Original SRAM is separate; state restoration uses existing core API and requires gameplay verification.
 
 Retro Center now has its own fresh PRIME stylesheet and vector DS illustration, replacing the old UI styles rather than overlaying them. Core player/FAST module unchanged. Launcher shelf sorts recent titles first; Quick Resume available only with actual matching saved state.
+
+Import readiness gate: picker disabled until existing ROM inventory initialization finishes; browser test waits for the same readiness condition and reports real import failures. System audio context is suspended during gameplay.

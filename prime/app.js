@@ -22,7 +22,7 @@ function closeControl(){modal='';render()}
 function toggleControl(){if(screen!=='shell'||game)return;modal=modal==='control'?'':'control';audio.play(modal?'panel':'back');render(true)}
 function back(){if(modal){closeControl();return}if(screen==='profiles'){screen='boot';render();return}if(screen!=='shell')return;if(view==='hub')go(backView);else if(view!=='home')go('home');else toggleControl()}
 function boot(){audio.setGame(false);audio.unlock().then(()=>audio.play('boot')).catch(()=>{});screen='profiles';render()}
-function choose(id){if(!S.switchProfile(id))return;screen='shell';view='home';modal='';selected=S.profile.installed.find(x=>byId(x))||games[0].id;roms={};retroStats={};prefs();audio.play('confirm');render();refreshROMs()}
+function choose(id){if(!S.switchProfile(id))return;audio.setGame(false);screen='shell';view='home';modal='';selected=S.profile.installed.find(x=>byId(x))||games[0].id;roms={};retroStats={};prefs();audio.play('confirm');render();refreshROMs()}
 function createProfile(){const n=prompt('Nazwa nowego profilu (maks. 22 znaki)');if(n===null)return;try{choose(S.createProfile(n))}catch(e){notify('Nie utworzono profilu',e.message,'error',false)}}
 function install(id){const g=byId(id);if(!g)return;S.markInstalled(id);selected=id;notify('Dodano do biblioteki',g.title,'install');openHub(id)}
 function favorite(id){const f=S.profile.prime.favorites;if(f.includes(id))S.profile.prime.favorites=f.filter(x=>x!==id);else f.push(id);store();audio.play('confirm');render()}

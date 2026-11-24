@@ -335,4 +335,5 @@ function setDirectMarioMode(){
  const brand=$('.brand strong');if(brand)brand.innerHTML='ASTATION <em>GAMES</em>';
  const b=$('#play-exit span');if(b)b.textContent='Karta gry';
 }
-refreshPad();setDirectMarioMode();fetchLibrary();displaySettings();show('library');profileSwitch();
+refreshPad();setDirectMarioMode();displaySettings();show('library');profileSwitch();
+fetchLibrary().catch(e=>{storageStatus('Nie można odczytać biblioteki: '+e.message,true)}).finally(()=>{for(const id of ['rom-input','import-btn','import-small'])$('#'+id).disabled=false;document.documentElement.dataset.retroReady='1'});
