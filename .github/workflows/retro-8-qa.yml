@@ -1,7 +1,7 @@
 name: ASTATION RETRO 8 — browser integration QA
 on:
   push:
-    branches: [retro-8-integration, retro-8-ios-fix, retro-8-2-store-fps, mario-store-integration, astation-8-4-console-edition, main, rom-persistence-8-5, retro-8-6-fast-toggle, system-evolution-9, remake-10, prime-rebuild, console-reference, p0-normal-speed, game-theme-audio]
+    branches: [retro-8-integration, retro-8-ios-fix, retro-8-2-store-fps, mario-store-integration, astation-8-4-console-edition, main, rom-persistence-8-5, retro-8-6-fast-toggle, system-evolution-9, remake-10, prime-rebuild, console-reference, p0-normal-speed, game-theme-audio, local-game-soundtracks]
   workflow_dispatch:
 permissions:
   contents: read
