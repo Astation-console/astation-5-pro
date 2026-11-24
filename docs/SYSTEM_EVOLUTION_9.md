@@ -15,3 +15,5 @@
 - Stage 6/7 foundation: optional direct-input multitouch DS overlay (not enabled by default), persisted size/opacity/position/mode and simple color filters; TV layout, theme accents, manifest and offline shell cache. No claim of offline emulator or Smart TV compatibility; external emulator assets are not cached. PWA install requires platform support.
 
 - Save Center: ASTATION snapshots only, per-profile inventory, export/import with ROM SHA and core validation, backup before overwrite, confirmation before deletion, system-event trophy counts derived from measured sessions. Internal emulator SRAM management remains separate. Figma file created but canvas write was blocked by Starter MCP quota.
+
+- Game Hub foundations: per-ROM Quick Resume button appears only if a matching local state exists; per-profile favorites, local screenshot gallery and export, notifications with timestamps. Canvas captures are capability-dependent; a canvas may not expose WebGL framebuffer contents.

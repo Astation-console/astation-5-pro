@@ -1,0 +1,6 @@
+// User-generated PNG screenshots, kept locally by profile.
+function open(){return new Promise((resolve,reject)=>{const q=indexedDB.open('astation-captures90',1);q.onupgradeneeded=()=>q.result.createObjectStore('shots',{keyPath:'id'});q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);q.onblocked=()=>reject(Error('Storage blocked'))})}
+async function op(mode,f){const db=await open();try{return await new Promise((resolve,reject)=>{const t=db.transaction('shots',mode),q=f(t.objectStore('shots'));t.oncomplete=()=>resolve(q.result);t.onabort=()=>reject(t.error||Error('Aborted'));t.onerror=()=>reject(t.error)})}finally{db.close()}}
+export async function addCapture(profile,sha,title,blob){if(!(blob instanceof Blob)||blob.type!=='image/png'||blob.size<8||blob.size>20*1024*1024)throw Error('Invalid PNG');const id=profile+':'+crypto.randomUUID();await op('readwrite',s=>s.put({id,profile,sha,title,date:Date.now(),blob}));return id}
+export async function listCaptures(profile){const records=await op('readonly',s=>s.getAll());return records.filter(r=>r.profile===profile).sort((a,b)=>b.date-a.date)}
+export const deleteCapture=(profile,id)=>{if(!id.startsWith(profile+':'))throw Error('Wrong profile');return op('readwrite',s=>s.delete(id))};

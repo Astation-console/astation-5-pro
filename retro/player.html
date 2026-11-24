@@ -44,6 +44,19 @@ async function sendSave(){
  try {const gm=window.EJS_emulator?.gameManager; if(!gm?.saveSaveFiles)throw Error('Rdzeń nie jest gotowy.');await Promise.resolve(gm.saveSaveFiles());post('save-ok');}
  catch(e){post('save-error',{message:String(e.message||e)});}
 }
+async function capture(id){
+ try{
+ const gm=window.EJS_emulator?.gameManager;if(!gameStarted)throw Error('Gra nieaktywna');
+ let blob;
+ // The core screenshot API may wait for another emulated frame while paused.
+ // Use current canvas directly instead; if unreadable report the limitation.
+ const canvas=[...document.querySelectorAll('#game canvas')].filter(c=>c.width&&c.height).sort((a,b)=>b.width*b.height-a.width*a.height)[0];
+ if(!canvas?.toBlob)throw Error('Zrzut niedostępny w tym rdzeniu');
+ blob=await new Promise((resolve,reject)=>{canvas.toBlob(v=>v?resolve(v):reject(Error('Nie udało się odczytać obrazu')),'image/png')});
+ if(!blob||blob.size>20*1024*1024)throw Error('Nieprawidłowy zrzut');
+ post('capture-result',{id,blob});
+ }catch(e){post('capture-result',{id,error:String(e.message||e)})}
+}
 async function snapshot(id){
  try{
   const gm=window.EJS_emulator?.gameManager;
@@ -113,7 +126,7 @@ function start(cfg){
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==parent||event.data?.source!=='astation-retro-host')return;
  const d=event.data;
- switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':smart?.normalSpeed();break;case 'mobile':window.AstationMobile?.apply(d.config);break;case 'pause':paused=true;window.AstationMobile?.pause(true);smart?.reset();window.EJS_emulator?.pause?.();break;case 'resume':paused=false;window.AstationMobile?.pause(false);window.EJS_emulator?.play?.();smart?.reset();break;case 'save':sendSave();break;case 'snapshot':snapshot(d.id);break;case 'restore':restore(d.id,d.bytes);break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();smart?.reset();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
+ switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':smart?.normalSpeed();break;case 'mobile':window.AstationMobile?.apply(d.config);break;case 'pause':paused=true;window.AstationMobile?.pause(true);smart?.reset();window.EJS_emulator?.pause?.();break;case 'resume':paused=false;window.AstationMobile?.pause(false);window.EJS_emulator?.play?.();smart?.reset();break;case 'save':sendSave();break;case 'capture':capture(d.id);break;case 'snapshot':snapshot(d.id);break;case 'restore':restore(d.id,d.bytes);break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();smart?.reset();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
 });
 window.addEventListener('pagehide',()=>{smart?.stop();clearInterval(padTimer)});
 window.addEventListener('error',e=>{if(launched)logError(e.message||'Błąd emulacji')});

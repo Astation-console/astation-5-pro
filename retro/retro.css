@@ -45,3 +45,5 @@ body.playing-mode .game-meta b{white-space:nowrap;text-overflow:ellipsis;overflo
 @media (orientation:landscape) and (max-height:520px){body.playing-mode .game-foot{display:none}body.playing-mode .game-meta span{display:none}body.playing-mode .play-actions .glass{padding:7px 10px}body.playing-mode .play-header .quiet{padding:5px 8px}}
 
 .play-actions #play-os-back{padding:9px 12px}.pause-links button:disabled{opacity:.45;cursor:not-allowed}.game-card p{overflow-wrap:anywhere}
+
+.gallery-item90{display:grid;gap:6px;margin:12px 0;padding:12px;border:1px solid #789abc44;border-radius:12px}.gallery-item90 img{display:block;width:100%;max-height:220px;object-fit:contain;background:#020711}.gallery-item90 p{font-size:12px;overflow-wrap:anywhere}
