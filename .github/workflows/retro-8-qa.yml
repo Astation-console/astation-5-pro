@@ -22,6 +22,13 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: PRIME new shell, profile migration, local DS and arcade gameplay
         run: node prime/tests/browser.mjs
+      - name: Upload PRIME UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prime-interface-screens
+          path: prime-test-screens/
+          if-no-files-found: ignore
       - name: OS X remake layout and navigation (desktop, portrait, landscape)
         run: node retro/tests/remake-browser.mjs
       - name: ASTATION RETRO integration in browser (mock loader — no commercial ROM)
