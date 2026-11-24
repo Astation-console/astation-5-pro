@@ -299,7 +299,7 @@ for(const [selector,key,fn] of [['#core-select','core',v=>v],['#frameskip-select
 $('#volume-range').addEventListener('input',e=>$('#volume-value').textContent=e.target.value+'%');
 $('#performance-select').addEventListener('change',e=>{const mode=e.target.value;if(!PERF_PRESETS[mode])return;Object.assign(settings,PERF_PRESETS[mode],{performance:mode});saveSettings();displaySettings();toast('Tryb '+mode+' zapisany. Zastosowanie przy następnym uruchomieniu gry.')});
 $('#persist-rom').addEventListener('change',e=>{settings.persist=e.target.checked;saveSettings();toast(settings.persist?'Nowe ROM-y będą zapisane lokalnie.':'Nowe ROM-y będą tylko w bieżącej sesji.')});
-$('[data-pause]').forEach(btn=>btn.addEventListener('click',async()=>{
+document.querySelectorAll('[data-pause]').forEach(btn=>btn.addEventListener('click',async()=>{
  const action=btn.dataset.pause;
  if(action==='resume')pauseMenu(false);
  if(action==='save')post('save');
