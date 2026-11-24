@@ -1,0 +1,16 @@
+// PRIME uses the existing profile vault without deleting or rewriting unknown legacy fields.
+export const KEY='astation_profiles_v7';
+export const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};
+const defaults=()=>({name:'Player One',avatar:0,lang:'pl',installed:[],recent:[],stats:{},trophies:{},history:[],notifications:[],prime:{favorites:[],notes:[],last:{},audio:{master:65,ui:75,music:35,game:65,enabled:true},theme:'midnight',motion:true,tv:false,deadzone:.35}});
+export function prepareVault(raw,legacy={}){if(raw?.version===7&&Array.isArray(raw.accounts)&&raw.accounts.length&&raw.saves&&typeof raw.saves==='object'){return {...raw,active:raw.accounts.some(a=>a.id===raw.active)?raw.active:raw.accounts[0].id}}const initial={...defaults(),...legacy};return {version:7,active:'legacy',accounts:[{id:'legacy',name:initial.name||'Player One',createdAt:Date.now()}],saves:{legacy:initial}}}
+export function normalize(raw={}){const d=defaults();const p=raw.prime||{};return {...d,...raw,installed:Array.isArray(raw.installed)?[...new Set(raw.installed)]:[],recent:Array.isArray(raw.recent)?raw.recent:[],stats:raw.stats||{},trophies:raw.trophies||{},history:Array.isArray(raw.history)?raw.history:[],prime:{...d.prime,...p,favorites:Array.isArray(p.favorites)?p.favorites:[],notes:Array.isArray(p.notes)?p.notes:[],last:p.last||{},audio:{...d.prime.audio,...p.audio}}}}
+export let vault=prepareVault(read(KEY,null),read('astation_pro_v2',read('astation_pro_v2_backup',{})));
+export let profile=normalize(vault.saves[vault.active]);
+export function save(){vault.saves[vault.active]=profile;const a=vault.accounts.find(x=>x.id===vault.active);if(a){a.name=profile.name;a.lastUsed=Date.now()}try{localStorage.setItem(KEY,JSON.stringify(vault));localStorage.setItem('astation_pro_v2',JSON.stringify(profile));return true}catch{return false}}
+export function switchProfile(id){if(!vault.accounts.some(a=>a.id===id))return false;save();vault.active=id;profile=normalize(vault.saves[id]);save();return true}
+export function createProfile(name){name=String(name||'').trim().slice(0,22);if(!name)throw Error('Podaj nazwę profilu');const id='p-'+crypto.randomUUID().replaceAll('-','').slice(0,20);vault.accounts.push({id,name,createdAt:Date.now()});vault.saves[id]={...defaults(),name};switchProfile(id);return id}
+export function note(title,body){profile.prime.notes.unshift({title:String(title),body:String(body),at:Date.now()});profile.prime.notes=profile.prime.notes.slice(0,60);save()}
+export function markInstalled(id){if(!profile.installed.includes(id))profile.installed.push(id);save()}
+export function recordLaunch(id){profile.recent=[id,...profile.recent.filter(x=>x!==id)].slice(0,12);profile.prime.last[id]=Date.now();save()}
+export function stat(id){return profile.stats[id]||(profile.stats[id]={played:0,best:0,progress:0,level:1})}
+export function earn(id,index){const list=profile.trophies[id]||(profile.trophies[id]=[]);if(list.includes(index))return false;list.push(index);profile.history.unshift({id,index,time:Date.now()});save();return true}
