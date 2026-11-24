@@ -1,3 +1,5 @@
 # ASTATION OS X / Remake 10
 Rebuilt shell styling, responsive portrait/landscape layouts, startup/profile, home, store, library, settings, control center and Retro UI. Existing game launchers, ROM storage, profile saves and 9.0.3 FAST input latch preserved exactly. System settings use actual origin storage estimate. Friends/parties are explicitly offline, not simulated. Existing legacy download queue remains simulated and labelled as such. No new game engine or hardware-level FPS claim.
 Second commit: instant launcher registration rather than fake new-game download progress; actual storage in settings and storage panel, clearer local profile backup semantics, corrected DS store category, controller focus for System panel, responsive browser QA. Legacy queued updates remain labelled simulated. Existing games and engine unchanged.
+
+Third commit: original playable Orbit Rush arcade game, independent canvas renderer, touch/keyboard/gamepad controls, per-profile record, measured time and trophies, store and library integration. No commercial assets in the new title. DS player code untouched.
