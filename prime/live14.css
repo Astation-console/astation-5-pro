@@ -1,0 +1,24 @@
+/* The selected game themes the existing console, never replaces its layout. */
+#prime:has(.live-home){background-image:linear-gradient(180deg,#03102650 0%,transparent 40%,#02091642 100%),var(--console-wall);background-position:center;background-size:cover;isolation:isolate}
+#prime:has(.live-home) .reference-functions,#prime:has(.live-home) #view,#prime:has(.live-home) .system-footer{position:relative;z-index:2}
+.theme-transition{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(110deg,#071b35d9,transparent);animation:theme-reveal .42s ease-out forwards}
+@keyframes theme-reveal{from{opacity:.9}to{opacity:0}}
+.live-home .shelf-tile.chosen{border-color:var(--live-accent);box-shadow:0 0 12px color-mix(in srgb,var(--live-accent) 62%,transparent)}
+.live-home .selected-command .primary{background:color-mix(in srgb,var(--live-accent) 17%,#051a2cd6);border-color:var(--live-accent);color:white;transition:background .2s}
+.live-home .selected-command .primary:focus-visible{outline:2px solid white;outline-offset:2px}
+.live-home .title-meta{display:block;color:#eff9ffcf;font-size:clamp(10px,1.3vw,16px);margin-top:5px;text-shadow:0 1px 5px #000}
+.live-home .selected-description h1{font-size:clamp(20px,3vw,42px);text-shadow:0 2px 5px #000a}
+.live-home .overview-toggle .chevron{color:var(--live-accent)}
+#prime[data-game-theme=retro] .live-home .selected-command .primary{background:#175435d9}
+#prime[data-game-theme=retro_cod] .live-home .selected-command .primary{background:#312923d9}
+#prime[data-game-theme=world] .live-home .selected-command .primary{background:#32245cd9}
+#prime[data-game-theme=orbit] .live-home .selected-command .primary{background:#102e56d9}
+.live-home .reference-corner button{background:#03152c90;border:1px solid #d7eaff30}
+.live-home.overview-open .activity-area{border-top:2px solid var(--live-accent)}
+.live-home .detail-art{background-image:linear-gradient(90deg,#071021ed,#07102155 80%),var(--detail-art)}
+.view.store .store-promo{background-size:cover;background-position:center;box-shadow:0 4px 14px #001b6c60}
+.view.store .game-card:focus-visible,.view.library .game-card:focus-visible{outline:2px solid white;outline-offset:-2px}
+.view.store .collection-content .results-label{padding-top:5px;border-top:1px solid #b9dcff42}
+.view.hub .hub-banner{background-size:cover;background-position:center}.view.hub .hub-info h1{font-weight:300}.view.hub .hub-info .actions{gap:8px}
+@media(max-height:520px) and (orientation:landscape){.live-home .selected-description h1{font-size:23px}.live-home .title-meta{font-size:11px}.live-home .selected-command .primary{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.theme-transition{display:none}}.no-motion .theme-transition{display:none}
