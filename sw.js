@@ -1,6 +1,6 @@
 /* ASTATION 9.0 offline shell. Never cache or remove the user's ROM/save databases. */
-const CACHE='astation-shell-90-r4';
-const urls=['./index.html','./manifest.webmanifest','./system/icon.svg','./system/controller.js?v=903','./system/controller.css?v=903','./system/evolution.js?v=903','./system/evolution.css?v=903','./retro/bridge.js?v=903','./retro/index.html','./retro/app.js?v=903','./retro/retro.css?v=903','./retro/player.html?v=903','./retro/smart-performance.js?v=903','./retro/session-store.js?v=903','./retro/rom.js','./retro/persistent.js','./retro/mobile.js?v=903'];
+const CACHE='astation-shell-90-remake10';
+const urls=['./index.html','./manifest.webmanifest','./system/icon.svg','./system/controller.js?v=903','./system/controller.css?v=903','./system/evolution.js?v=903','./system/evolution.css?v=903','./retro/bridge.js?v=903','./retro/index.html','./retro/app.js?v=903','./retro/retro.css?v=903','./retro/player.html?v=903','./retro/smart-performance.js?v=903','./retro/session-store.js?v=903','./retro/rom.js','./retro/persistent.js','./retro/mobile.js?v=903','./system/remake.css?v=1000','./retro/remake.css?v=1000'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(urls))));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys()){if(k.startsWith('astation-shell-90-')&&k!==CACHE)await caches.delete(k)}await self.clients.claim()})()));
 self.addEventListener('message',e=>{if(e.data?.type==='ASTATION_OFFLINE_STATUS')e.waitUntil((async()=>{const c=await caches.open(CACHE);const checks=await Promise.all(urls.map(u=>c.match(u)));e.ports[0]?.postMessage({ready:checks.every(Boolean),shell:true,emulatorOffline:false})})())});

@@ -1,0 +1,2 @@
+# ASTATION OS X / Remake 10
+Rebuilt shell styling, responsive portrait/landscape layouts, startup/profile, home, store, library, settings, control center and Retro UI. Existing game launchers, ROM storage, profile saves and 9.0.3 FAST input latch preserved exactly. System settings use actual origin storage estimate. Friends/parties are explicitly offline, not simulated. Existing legacy download queue remains simulated and labelled as such. No new game engine or hardware-level FPS claim.
