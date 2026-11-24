@@ -17,3 +17,5 @@
 - 9.0.1 hotfix: automatic frameskip 0 (ignore stale learned skips), native resolution on automatic profiles, suspend parent console painting/animation and reduce redundant polling. Core throughput is still not actual displayed unique FPS; physical phone performance remains unverified.
 
 - 9.0.2: user requested identical FAST behavior without holding the virtual button. Auto FAST is enabled by default using actual EmulatorJS speed API, with 3x maximum ratio (EmulatorJS default), re-applied on resume/restart, optional normal-speed setting and hidden manual FAST control. No claim of real 60 FPS; speed may exceed normal on fast devices.
+
+- 9.0.3: emulate the exact held FAST input (27,1), protect it from input release, restore on resume, periodically reassert. Keep original FAST ratio instead of overriding it. Fresh release URLs and network-first no-store cache. A real phone FPS result still requires physical test.

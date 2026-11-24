@@ -38,11 +38,15 @@ try{
     const frame=document.querySelector('#player-frame');
     return !!(frame?.contentWindow?.EJS_emulator?.started);
   },null,{timeout:150000,polling:500});
+  await iframe.locator('body').evaluate(()=>new Promise(r=>setTimeout(r,1600)));
   const info=await iframe.locator('body').evaluate(()=>({
+    build:window.__astationPlayerBuild,hasInput:typeof window.EJS_emulator?.gameManager?.simulateInput==='function',
     core:window.EJS_core,started:window.EJS_emulator?.started,
     canvasCount:document.querySelectorAll('canvas').length,
     emulator:window.EJS_emulator?.constructor?.name
   }));
+  assert.equal(info.build,'9.0.3');
+  assert.equal(info.hasInput,true);
   assert.equal(info.core,'desmume');
   assert.equal(info.started,true);
   assert.ok(info.canvasCount>=1,'Actual DS game renderer must create canvas');

@@ -73,6 +73,7 @@ try{
     await page.locator('#ast-retro-shell iframe').waitFor({timeout:10000});
     assert.match(await page.locator('#ast-retro-shell iframe').getAttribute('src'),new RegExp('game='+game));
     const frame=page.frameLocator('#ast-retro-shell iframe');
+    await frame.locator('#import-btn').waitFor({state:'visible',timeout:14000});
     await frame.locator('#rom-input').waitFor({state:'attached',timeout:14000});
     await frame.locator('#rom-input').setInputFiles({name:`synthetic-${game}.nds`,mimeType:'application/octet-stream',buffer:syntheticNDS(title,code)});
     await frame.locator('#playing-title').waitFor({state:'visible',timeout:16000});

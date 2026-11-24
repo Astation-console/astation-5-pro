@@ -1,6 +1,6 @@
 import { unpackLocalFile, dbPut } from './rom.js';
 import { loadLocalROMs, persistLocalROM, deleteLocalROM } from './persistent.js';
-import { readSnapshot, writeSnapshot, getStats, saveStats } from './session-store.js?v=902';
+import { readSnapshot, writeSnapshot, getStats, saveStats } from './session-store.js?v=903';
 
 'use strict';
 const $ = selector => document.querySelector(selector);
@@ -29,7 +29,7 @@ function readSettings(){try{
  delete current.fastEnabled; // Legacy toggle no longer controls the core.
  return current;
 }catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
-const settings=readSettings();settings.autoBoost=settings.autoBoost!==false;settings.mobile={enabled:false,size:1,opacity:.68,position:'bottom',mode:'dpad',filter:'original',...(settings.mobile||{})};
+const settings=readSettings();if(settings.boostMigration903!==true){settings.autoBoost=true;settings.boostMigration903=true;}else settings.autoBoost=settings.autoBoost!==false;settings.mobile={enabled:false,size:1,opacity:.68,position:'bottom',mode:'dpad',filter:'original',...(settings.mobile||{})};
 const state={games:[],volatile:new Map(),selected:null,playerUrl:null,playerReady:false,coreReady:false,view:'library',playing:null,menuWasPaused:false,saveWaiters:[],closing:false,gameStarted:false,startupTimer:null};
 const formatBytes=n=>n>1024*1024?`${(n/1048576).toFixed(1)} MiB`:`${(n/1024).toFixed(0)} KiB`;
 const safeName=s=>String(s||'Untitled').replace(/[\x00-\x1f<>]/g,'').slice(0,90);
@@ -200,14 +200,14 @@ function retryCurrent(core){
   $('#player-recovery').hidden=true;
   $('#player-loading').hidden=false;
   $('#playing-status').textContent='Ponowne ładowanie rdzenia: '+(core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+'…';
-  $('#player-frame').src='./player.html?v=902&retry='+Date.now();
+  $('#player-frame').src='./player.html?v=903&retry='+Date.now();
 }
 
 function launch(item){
  if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
  state.playing=item;sessionStats=null;canSnapshot=false;state.playerUrl=null;state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
- const frame=$('#player-frame');frame.src='./player.html?v=902';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
+ const frame=$('#player-frame');frame.src='./player.html?v=903';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
  $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie silnika DS · ROM lokalnie na urządzeniu';show('play');
  item.lastPlayed=Date.now();
  // Last-played timestamps are transient; do not risk overwriting a known-good ROM on every launch.
@@ -255,7 +255,7 @@ window.addEventListener('message',event=>{
    },60000);
  }
  if(d.event==='game-started'){
-   state.gameStarted=true;canSnapshot=!!d.canSnapshot;clearStartupTimer();sessionStats=getStats(profile,state.playing.sha);sessionStats.sessions++;sessionStats.last=Date.now();sessionTick=performance.now();flushSession();
+   state.gameStarted=true;$('#playing-info').textContent=state.playing.info.code+' · AUTO FAST 9.0.3';canSnapshot=!!d.canSnapshot;clearStartupTimer();sessionStats=getStats(profile,state.playing.sha);sessionStats.sessions++;sessionStats.last=Date.now();sessionTick=performance.now();flushSession();
    $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
    $('#playing-status').textContent='Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki');
  }
@@ -279,7 +279,7 @@ window.addEventListener('message',event=>{
  if(d.event==='exited')exitToLibrary(false);
 });
 for(const [id,key,read] of [['touch90','enabled',e=>e.checked],['touch-size90','size',e=>Number(e.value)/100],['touch-opacity90','opacity',e=>Number(e.value)/100],['touch-position90','position',e=>e.value],['touch-mode90','mode',e=>e.value],['filter90','filter',e=>e.value]])$( '#'+id).addEventListener('change',e=>{settings.mobile[key]=read(e.target);saveSettings();post('mobile',{config:settings.mobile})});
-$('#auto-boost902').addEventListener('change',e=>{settings.autoBoost=e.target.checked;saveSettings();post('boost-config',{enabled:settings.autoBoost});toast(settings.autoBoost?'Automatyczny FAST włączony':'Normalne tempo gry')});
+$('#auto-boost902').addEventListener('change',e=>{settings.boostMigration903=true;settings.autoBoost=e.target.checked;saveSettings();post('boost-config',{enabled:settings.autoBoost});toast(settings.autoBoost?'Automatyczny FAST włączony':'Normalne tempo gry')});
 $('#storage-persist-request').addEventListener('click',async()=>{try{if(!navigator.storage?.persist){toast('Trwały magazyn nie jest obsługiwany.',true);return}const ok=await navigator.storage.persist();toast(ok?'Przeglądarka przyznała trwały magazyn.':'Przeglądarka nie przyznała trwałego magazynu.',!ok)}catch{toast('Nie udało się uzyskać trwałego magazynu.',true)}finally{storageEstimate()}});
 $('#pad-deadzone').addEventListener('input',e=>{window.AstationController?.setDeadzone(Number(e.target.value)/100);$('#pad-deadzone-value').textContent=e.target.value+'%'});
 $('#copy-diagnostic90').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(diagnostics90());toast('Skopiowano raport.')}catch{toast('Kopiowanie niedostępne. Zaznacz tekst raportu ręcznie.',true)}});
