@@ -136,14 +136,14 @@ function retryCurrent(core){
   $('#player-recovery').hidden=true;
   $('#player-loading').hidden=false;
   $('#playing-status').textContent='Ponowne ładowanie rdzenia: '+(core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+'…';
-  $('#player-frame').src='./player.html?v=87&retry='+Date.now();
+  $('#player-frame').src='./player.html?v=90&retry='+Date.now();
 }
 
 function launch(item){
  if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
  state.playing=item;state.playerUrl=null;state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
- const frame=$('#player-frame');frame.src='./player.html?v=87';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
+ const frame=$('#player-frame');frame.src='./player.html?v=90';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
  $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie silnika DS · ROM lokalnie na urządzeniu';show('play');
  item.lastPlayed=Date.now();
  // Last-played timestamps are transient; do not risk overwriting a known-good ROM on every launch.
@@ -174,11 +174,12 @@ function changeLayout(){const values=['classic','side','focus'];settings.layout=
 function openSettings(){displaySettings();$('#pause-overlay').hidden=true;show('settings')}
 function exitSettings(){show(state.playing?'play':'library');if(state.playing&&state.menuWasPaused)pauseMenu(true)}
 async function quitOS(){if(state.playing)await exitToLibrary(false);if(parent!==window)parent.postMessage({source:'astation-retro8',event:'exit'},location.origin);else location.href='../index.html'}
+function preferredSkip(){if(!['balanced','performance'].includes(settings.performance))return settings.frameskip;try{const raw=localStorage.getItem('astation_perf90_'+profile+'_'+state.playing.sha+'_'+settings.core);if(raw!==null&&/^[012]$/.test(raw))return Number(raw)}catch{}return settings.frameskip}
 const sources=['astation-retro-player'];
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==$('#player-frame').contentWindow||!sources.includes(event.data?.source))return;
  const d=event.data;
- if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:settings.frameskip,keys:settings.keys,performance:settings.performance});}
+ if(d.event==='player-ready'&&state.playing){state.playerReady=true;post('start',{romBlob:activeBlob(state.playing),profile,sha:state.playing.sha,core:settings.core,layout:settings.layout,volume:settings.volume/100,frameskip:preferredSkip(),keys:settings.keys,performance:settings.performance});}
  if(d.event==='core-ready'){
    state.coreReady=true;
    $('#player-loading').hidden=true;
@@ -193,8 +194,10 @@ window.addEventListener('message',event=>{
    $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
    $('#playing-status').textContent='Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki');
  }
- if(d.event==='fast-state'){$('#playing-status').textContent=d.enabled?'Gra uruchomiona · Auto Boost ×2':'Gra uruchomiona · normalna prędkość'}
- if(d.event==='fast-unavailable'){$('#playing-status').textContent='Gra uruchomiona · Auto Boost niedostępny';}
+ if(d.event==='performance'){
+   $('#playing-status').textContent=d.fps===null?'Normalne tempo · pomiar FPS niedostępny':'Normalne tempo · '+d.fps+' kl./s rdzenia · '+(d.frameMs??'—')+' ms/kl. · skip '+d.skip;
+   if(d.adaptive&&state.playing&&Number.isFinite(d.skip)){try{localStorage.setItem('astation_perf90_'+profile+'_'+state.playing.sha+'_'+settings.core,String(d.skip))}catch{}}
+ }
  if(d.event==='startup-slow')recovery(d.message||'Próba uruchomienia trwa zbyt długo.');
  if(d.event==='core-error'){
    $('#playing-status').textContent='Błąd uruchamiania emulatora';

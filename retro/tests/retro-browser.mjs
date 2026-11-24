@@ -31,9 +31,8 @@ try {
   assert.equal(await page.frameLocator('#player-frame').locator('body').evaluate(()=>window.EJS_gameUrl.startsWith('blob:')),true);
   await page.waitForFunction(()=>document.querySelector('#playing-status')?.textContent?.includes('Gra uruchomiona'),null,{timeout:10000});
   assert.equal(await page.locator('#player-recovery').isVisible(),false,'no premature error overlay');
-  await page.waitForFunction(()=>document.querySelector('#player-frame').contentWindow.__boostOptions?.fastForward==='enabled');
+  await page.waitForFunction(()=>document.querySelector('#player-frame').contentWindow.__boostOptions?.fastForward==='disabled');
   assert.equal(await page.locator('#fast-toggle').count(),0);
-  assert.equal(await page.frameLocator('#player-frame').locator('body').evaluate(()=>window.__boostOptions['ff-ratio']),'2');
 
   await page.locator('#play-menu').click();assert.equal(await page.locator('#pause-overlay').isVisible(),true);
   await page.locator('[data-pause=save]').click();await page.locator('[data-pause=layout]').click();await page.locator('[data-pause=resume]').click();
