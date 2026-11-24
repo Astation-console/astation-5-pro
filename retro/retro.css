@@ -31,4 +31,15 @@
 /* 8.5: user-visible verified persistence status, not a disappearing toast. */
 .storage-status{margin:0 0 16px;padding:15px 18px;border-radius:15px;border:1px solid #4ebfb57a;background:#0b383ac9;color:#c3fff3;font-size:13px;font-weight:650;line-height:1.5}.storage-status.storage-error{border-color:#e89a649c;background:#51251e;color:#fff0d9}
 
-#fast-toggle{white-space:nowrap;background:#1c405f;color:#e3f7ff;border:1px solid #4b8eb2;font-weight:850}#fast-toggle.fast-on{background:#126e56;color:#d4ffe9;border-color:#46efba;box-shadow:0 0 15px #2dda9640}@media(max-width:600px){#fast-toggle{font-size:11px;padding:9px 8px;min-width:86px}}
+
+/* 8.7: gameplay-first layout. Leave console chrome outside active gameplay. */
+body.playing-mode .topbar{display:none}
+body.playing-mode .retro-app{background:#03070e;min-height:0}
+body.playing-mode .play-view{height:100dvh;min-height:0}
+body.playing-mode .play-header{flex:none;padding:6px max(10px,env(safe-area-inset-right)) 6px max(10px,env(safe-area-inset-left));gap:8px;background:#08121f}
+body.playing-mode .player-wrap{min-height:0;flex:1;isolation:isolate;contain:layout paint;touch-action:none}
+body.playing-mode .game-foot{flex:none;padding:5px 12px;background:#08121f}
+body.playing-mode .modal-cover{backdrop-filter:none}
+body.playing-mode .game-meta{min-width:0}
+body.playing-mode .game-meta b{white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+@media (orientation:landscape) and (max-height:520px){body.playing-mode .game-foot{display:none}body.playing-mode .game-meta span{display:none}body.playing-mode .play-actions .glass{padding:7px 10px}body.playing-mode .play-header .quiet{padding:5px 8px}}

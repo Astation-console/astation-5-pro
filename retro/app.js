@@ -18,12 +18,13 @@ const IMPORT_MARK_KEY='astation_retro_lastimport_v85_'+profile+'_'+(DIRECT_GAME|
 const DEFAULT_KEYS = Object.freeze({Up:'up arrow',Down:'down arrow',Left:'left arrow',Right:'right arrow',B:'z',A:'x',Y:'a',X:'s',Start:'enter',Select:'shift',L:'q',R:'e'});
 const mobileDevice=/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)||(matchMedia('(pointer:coarse)').matches&&innerWidth<800);
 const PERF_PRESETS={performance:{core:'desmume2015',frameskip:2},balanced:{core:mobileDevice?'desmume2015':'desmume',frameskip:mobileDevice?1:0},quality:{core:'desmume',frameskip:0}};
-const DEFAULT_SETTINGS={...PERF_PRESETS.balanced,performance:'balanced',layout:'classic',volume:65,persist:true,fastEnabled:false,keys:{...DEFAULT_KEYS}};
+const DEFAULT_SETTINGS={...PERF_PRESETS.balanced,performance:'balanced',layout:'classic',volume:65,persist:true,keys:{...DEFAULT_KEYS}};
 function readSettings(){try{
  const data=JSON.parse(localStorage.getItem(SETTINGS_KEY)||'null');
  const current={...DEFAULT_SETTINGS,...data,keys:{...DEFAULT_KEYS,...(data?.keys||{})}};
  // Upgrade untouched v8 mobile defaults once without overwriting custom settings.
  if(mobileDevice&&data&&!Object.hasOwn(data,'performance')&&data.core==='desmume'&&Number(data.frameskip)===0){current.core='desmume2015';current.frameskip=1;current.performance='balanced'}
+ delete current.fastEnabled; // Legacy toggle no longer controls the core.
  return current;
 }catch{return {...DEFAULT_SETTINGS,keys:{...DEFAULT_KEYS}}}}
 const settings=readSettings();
@@ -38,24 +39,11 @@ function storedBefore(){try{return !!localStorage.getItem(IMPORT_MARK_KEY)}catch
 function storageStatus(message,problem=false){const tag=$('#rom-storage-status');if(!tag)return;tag.hidden=false;tag.classList.toggle('storage-error',problem);tag.textContent=message}
 
 function post(event,extra={}){const frame=$('#player-frame').contentWindow;if(!state.playerReady||!frame)return;frame.postMessage({source:'astation-retro-host',event,...extra},location.origin)}
-function updateFastButton(){
- const button=$('#fast-toggle');if(!button)return;
- const enabled=!!settings.fastEnabled;
- button.textContent=enabled?'FAST ×2 · ON':'FAST ×2 · OFF';
- button.classList.toggle('fast-on',enabled);
- button.setAttribute('aria-pressed',String(enabled));
-}
-function toggleFast(){
- if(!state.playing||!state.gameStarted){toast('Uruchom grę, aby użyć FAST.',true);return}
- settings.fastEnabled=!settings.fastEnabled;
- saveSettings();updateFastButton();post('fast',{enabled:settings.fastEnabled});
-}
-function show(view){state.view=view;for(const name of ['library','play','settings'])$('#'+name+'-view').hidden=view!==name}
+function show(view){state.view=view;document.body.classList.toggle('playing-mode',view==='play');for(const name of ['library','play','settings'])$('#'+name+'-view').hidden=view!==name}
 function profileSwitch(){// Prevent accidental cross-profile ROM access when the parent console changes users.
  if(window.parent===window)return;
 }
 function displaySettings(){
- updateFastButton();
  $('#core-select').value=settings.core;$('#frameskip-select').value=String(settings.frameskip);$('#performance-select').value=settings.performance||'custom';$('#layout-select').value=settings.layout;$('#volume-range').value=settings.volume;$('#volume-value').textContent=settings.volume+'%';$('#persist-rom').checked=settings.persist;
  const area=$('#key-mappings');area.replaceChildren();
  for(const name of ['Up','Down','Left','Right','B','A','Y','X','Start','Select','L','R']){
@@ -148,14 +136,14 @@ function retryCurrent(core){
   $('#player-recovery').hidden=true;
   $('#player-loading').hidden=false;
   $('#playing-status').textContent='Ponowne ładowanie rdzenia: '+(core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+'…';
-  $('#player-frame').src='./player.html?retry='+Date.now();
+  $('#player-frame').src='./player.html?v=87&retry='+Date.now();
 }
 
 function launch(item){
  if(state.playing){toast('Najpierw zamknij poprzednią grę.',true);return}
  const blob=activeBlob(item);if(!blob){toast('Brak ROM-u w tej sesji. Zaimportuj plik ponownie.',true);return}
  state.playing=item;state.playerUrl=null;state.playerReady=false;state.coreReady=false;state.gameStarted=false;clearStartupTimer();$('#player-recovery').hidden=true;
- const frame=$('#player-frame');frame.src='./player.html';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
+ const frame=$('#player-frame');frame.src='./player.html?v=87';$('#playing-title').textContent=DIRECT_GAME?DIRECT_TITLES[DIRECT_GAME]:safeName(item.info?.title||item.filename);$('#playing-info').textContent=item.info.code+' · '+formatBytes(item.info.size);
  $('#player-loading').hidden=false;$('#playing-status').textContent='Ładowanie silnika DS · ROM lokalnie na urządzeniu';show('play');
  item.lastPlayed=Date.now();
  // Last-played timestamps are transient; do not risk overwriting a known-good ROM on every launch.
@@ -202,13 +190,11 @@ window.addEventListener('message',event=>{
  }
  if(d.event==='game-started'){
    state.gameStarted=true;clearStartupTimer();
-   if(settings.fastEnabled)post('fast',{enabled:true});
-   updateFastButton();
    $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
    $('#playing-status').textContent='Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki');
  }
- if(d.event==='fast-state'){updateFastButton();$('#playing-status').textContent=d.enabled?'Gra uruchomiona · FAST ×2':'Gra uruchomiona · normalna prędkość'}
- if(d.event==='fast-unavailable'){settings.fastEnabled=false;saveSettings();updateFastButton();toast(d.message||'FAST nie jest dostępny',true)}
+ if(d.event==='fast-state'){$('#playing-status').textContent=d.enabled?'Gra uruchomiona · Auto Boost ×2':'Gra uruchomiona · normalna prędkość'}
+ if(d.event==='fast-unavailable'){$('#playing-status').textContent='Gra uruchomiona · Auto Boost niedostępny';}
  if(d.event==='startup-slow')recovery(d.message||'Próba uruchomienia trwa zbyt długo.');
  if(d.event==='core-error'){
    $('#playing-status').textContent='Błąd uruchamiania emulatora';
@@ -228,7 +214,6 @@ $('#import-btn').addEventListener('click',()=>$('#rom-input').click());$('#impor
 $('#os-back').addEventListener('click',quitOS);
 $('#play-exit').addEventListener('click',()=>exitToLibrary());
 $('#play-menu').addEventListener('click',()=>pauseMenu(true));
-$('#fast-toggle').addEventListener('click',toggleFast);
 $('#play-fullscreen').addEventListener('click',async()=>{try{await $('.player-wrap').requestFullscreen();}catch(e){toast('Pełny ekran niedostępny: '+e.message,true)}});
 $('#layout-cycle').addEventListener('click',changeLayout);
 $('#retry-light-core').addEventListener('click',()=>retryCurrent('desmume2015'));

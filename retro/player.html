@@ -1,28 +1,30 @@
 <!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>ASTATION RETRO — DS Core</title>
-<style>html,body{height:100%;margin:0;background:#030a15;overflow:hidden;color:#ddeeff;font-family:system-ui}#game{height:100%;width:100%;min-height:260px;contain:layout paint size}#game canvas{image-rendering:auto}#waiting{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;background:linear-gradient(120deg,#08152d,#0b1c35)}#waiting small{color:#8eaac9;display:block;margin-top:12px;font-size:13px}.hide{display:none!important}</style></head><body>
+<style>html,body{height:100%;margin:0;background:#030a15;overflow:hidden;color:#ddeeff;font-family:system-ui}#game{height:100%;width:100%;min-height:0;contain:layout paint size}#game canvas{image-rendering:auto}#waiting{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;background:linear-gradient(120deg,#08152d,#0b1c35)}#waiting small{color:#8eaac9;display:block;margin-top:12px;font-size:13px}.hide{display:none!important}</style></head><body>
 <div id="game" aria-label="Silnik emulacji Nintendo DS"></div><div id="waiting"><div><b>ASTATION RETRO</b><small>Wczytywanie rdzenia Nintendo DS…</small></div></div>
 <script>
 'use strict';
 let launched=false;
 let startupTimer=0, gameStarted=false;
-let fastActive=false;
-// FAST ×2 is a one-tap toggle using the real EmulatorJS fast-forward API.
-function setFastMode(enabled){
+// Always-on FAST: apply directly to the running core, even with old host settings.
+let boostTimer=0;
+function enableAutomaticBoost(attempt=0){
+ clearTimeout(boostTimer);
+ if(!gameStarted)return;
  const em=window.EJS_emulator;
- if(!gameStarted||!em?.gameManager?.toggleFastForward){post('fast-unavailable',{message:'Najpierw uruchom grę.'});return}
  try{
-   const active=Boolean(enabled);
-   if(typeof em.handleSpecialOptions==='function'){
+   if(typeof em?.handleSpecialOptions==='function'){
      em.handleSpecialOptions('ff-ratio','2');
-     em.handleSpecialOptions('fastForward',active?'enabled':'disabled');
-   } else {
+     em.handleSpecialOptions('fastForward','enabled');
+   }else if(typeof em?.gameManager?.toggleFastForward==='function'){
      em.gameManager.setFastForwardRatio?.(2);
-     em.gameManager.toggleFastForward(active?1:0);
-     em.isFastForward=active;
-   }
-   fastActive=active;
-   post('fast-state',{enabled:fastActive});
- }catch(err){post('fast-unavailable',{message:String(err.message||err).slice(0,130)})}
+     em.gameManager.toggleFastForward(1);
+     em.isFastForward=true;
+   }else throw Error('FAST API unavailable');
+   post('fast-state',{enabled:true});
+ }catch(err){
+   if(attempt<5){boostTimer=setTimeout(()=>enableAutomaticBoost(attempt+1),300);return}
+   post('fast-unavailable',{message:String(err.message||err).slice(0,130)});
+ }
 }
 
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -89,9 +91,10 @@ function start(cfg){
    clearTimeout(startupTimer);
    setStage('game-started');
    // Core options may only be changed after the ROM is actually running.
+   enableAutomaticBoost();
    setTimeout(()=>updateLayout(cfg.layout,false),600);
  };
- window.EJS_onExit=()=>post('exited');
+ window.EJS_onExit=()=>{gameStarted=false;clearTimeout(boostTimer);post('exited')};
  startupTimer=setTimeout(()=>{
    if(!gameStarted&&!isIOS)post('startup-slow',{message:'Gra nie rozpoczęła działania. Spróbuj lżejszego rdzenia DeSmuME 2015.'});
  },70000);
@@ -102,7 +105,7 @@ function start(cfg){
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||event.source!==parent||event.data?.source!=='astation-retro-host')return;
  const d=event.data;
- switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':setFastMode(d.enabled);break;case 'pause':window.EJS_emulator?.pause?.();break;case 'resume':window.EJS_emulator?.play?.();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
+ switch(d.event){case 'start':start(d);break;case 'layout':updateLayout(d.layout,true);break;case 'fast':if(d.enabled)enableAutomaticBoost();break;case 'pause':window.EJS_emulator?.pause?.();break;case 'resume':window.EJS_emulator?.play?.();enableAutomaticBoost();break;case 'save':sendSave();break;case 'volume':window.EJS_emulator?.setVolume?.(Math.max(0,Math.min(1,+d.value)));break;case 'restart':if(window.EJS_emulator?.gameManager?.restart){window.EJS_emulator.gameManager.restart();boostTimer=setTimeout(()=>enableAutomaticBoost(),400);post('restart-ok')}else post('core-error',{message:'Restart jest niedostępny w obecnym rdzeniu'});break;case 'fullscreen':window.EJS_emulator?.toggleFullscreen?.(true);break;}
 });
 window.addEventListener('error',e=>{if(launched)logError(e.message||'Błąd emulacji')});
 window.addEventListener('unhandledrejection',e=>{

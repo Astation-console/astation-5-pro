@@ -6,7 +6,7 @@
     if(shell)return;
     shell=document.createElement('section');shell.id='ast-retro-shell';shell.setAttribute('aria-label',options.game==='mario'?'New Super Mario Bros. — Nintendo DS':options.game==='cod'?'Call of Duty: Black Ops — Nintendo DS':'ASTATION RETRO — emulator Nintendo DS');
     shell.style.cssText='position:fixed;inset:0;z-index:8000;background:#030a15;display:flex;flex-direction:column;animation:retroOpen .24s ease-out';
-    const frame=document.createElement('iframe');frame.title=options.game==='mario'?'New Super Mario Bros. — Nintendo DS':'ASTATION RETRO — Nintendo DS';frame.src='./retro/index.html?profile='+encodeURIComponent(profile())+(options.game==='mario'?'&game=mario':options.game==='cod'?'&game=cod':'');frame.allow='fullscreen;autoplay;gamepad';frame.style.cssText='border:0;flex:1;width:100%;min-height:0';
+    const frame=document.createElement('iframe');frame.title=options.game==='mario'?'New Super Mario Bros. — Nintendo DS':'ASTATION RETRO — Nintendo DS';frame.src='./retro/index.html?v=87&profile='+encodeURIComponent(profile())+(options.game==='mario'?'&game=mario':options.game==='cod'?'&game=cod':'');frame.allow='fullscreen;autoplay;gamepad';frame.style.cssText='border:0;flex:1;width:100%;min-height:0';
     shell.append(frame);document.body.append(shell);
     document.documentElement.classList.add('retro-is-open');
   }
