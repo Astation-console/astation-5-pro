@@ -7,6 +7,7 @@ const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
 const parsedProfile = new URLSearchParams(location.search).get('profile') || 'legacy';
 const profile = /^[\w-]{1,40}$/.test(parsedProfile) ? parsedProfile : 'legacy';
+let requestedResume=new URLSearchParams(location.search).get('resume')==='1';
 const DIRECT_GAME = ['mario','cod'].includes(new URLSearchParams(location.search).get('game')) ? new URLSearchParams(location.search).get('game') : null;
 const DIRECT_TITLES={mario:'New Super Mario Bros.',cod:'Call of Duty: Black Ops'};
 const matchesDirectROM=item=>{
@@ -256,6 +257,7 @@ window.addEventListener('message',event=>{
  }
  if(d.event==='game-started'){
    state.gameStarted=true;$('#playing-info').textContent=state.playing.info.code+' · AUTO FAST 9.0.3';canSnapshot=!!d.canSnapshot;clearStartupTimer();sessionStats=getStats(profile,state.playing.sha);sessionStats.sessions++;sessionStats.last=Date.now();sessionTick=performance.now();flushSession();
+   if(requestedResume){requestedResume=false;if(canSnapshot){pauseMenu(true);quickRestore().then(()=>pauseMenu(false)).catch(e=>toast('Quick Resume: '+e.message,true))}else toast('Ten rdzeń nie obsługuje Quick Resume',true)}
    $('#player-recovery').hidden=true;$('#player-loading').hidden=true;
    $('#playing-status').textContent='Gra uruchomiona · '+(settings.core==='desmume2015'?'DeSmuME 2015':'DeSmuME')+' WebAssembly · '+(settings.frameskip?'pomijanie '+settings.frameskip+' klatek':'pełne klatki');
  }
