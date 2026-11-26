@@ -378,7 +378,171 @@ function buildMinifigureFactory(T, renderer, mat) {
     }
     root.userData={arms,legs,jets,head,torso,hips,visor:null};return root;
   }
+
+  // ARMORY REMAKE: independent original prints, closed molded shells and a
+  // shared eight-part animation contract. No recoloring of another character.
+  const suitSpecs={
+    mark1:{base:0x898d8e,face:'#a6a9a8',shade:'#646c70',edge:'#d0d1c7',accent:'#ad9370',line:'#252b2d',body:'#a0a3a0',rough:.42,metal:.18,
+      head:[[-.265,.255,.262],[-.234,.319,.305],[-.17,.365,.334],[.05,.379,.345],[.29,.364,.337],[.40,.326,.300],[.46,.258,.252],[.48,.145,.145]],power:.45},
+    mark2:{base:0xb7c1c8,face:'#c8d0d3',shade:'#81929f',edge:'#e6ecef',accent:'#9aadb9',line:'#35434d',body:'#b5c1ca',rough:.32,metal:.26,
+      head:[[-.245,.235,.231],[-.215,.302,.280],[-.13,.354,.315],[.095,.374,.344],[.29,.363,.337],[.425,.329,.309],[.485,.265,.253],[.51,.152,.146]],power:.60},
+    mark3:{base:0xa41e2c,face:'#e1b75f',shade:'#a47838',edge:'#f6d78c',accent:'#e4ba5f',line:'#46252b',body:'#b22b39',rough:.34,metal:.15,
+      head:[[-.256,.255,.25],[-.228,.318,.300],[-.12,.363,.328],[.07,.379,.348],[.27,.377,.35],[.416,.339,.315],[.484,.278,.259],[.516,.151,.142]],power:.54},
+    war:{base:0x444b53,face:'#9fa9b1',shade:'#596671',edge:'#d3dade',accent:'#737f88',line:'#202730',body:'#454c56',rough:.42,metal:.20,
+      head:[[-.265,.263,.250],[-.230,.329,.298],[-.115,.374,.327],[.12,.393,.348],[.30,.388,.34],[.405,.353,.31],[.461,.270,.25],[.488,.16,.15]],power:.40}
+  };
+  const suitArtCache=new Map();
+  function suitArt(id){
+    if(suitArtCache.has(id))return suitArtCache.get(id);
+    const S=suitSpecs[id],L=S.line,A=S.accent,E=S.edge,D=S.shade,F=S.face,C=S.body,heavy=id==='mark1',war=id==='war',redSuit=id==='mark3';
+    function rivet(o,x,y,r=.012){o(x,y,r,r,D,L,.005);o(x-.003,y-.004,r*.35,r*.35,E,null)}
+    function wear(p){if(!heavy)return;
+      for(const [x,y,a] of [[.09,.11,.04],[.33,.21,.025],[.83,.38,.05],[.19,.55,.055],[.58,.77,.035],[.79,.90,.04],[.45,.045,.025]]){p([[x,y],[x+a,y-.008],[x+a*.72,y+.025],[x+.005,y+.035]],A,L,.003);p([[x+.003,y+.004],[x+a*.65,y-.002]],null,E,.005)}
+    }
+    const mask=makeInk((q,p,o,m)=>{
+      // Closed molded face: silhouette, eye sockets, nose bridge and jaw.
+      if(heavy){
+        p([[.09,.05],[.28,.018],[.73,.025],[.91,.09],[.95,.32],[.91,.62],[.85,.90],[.67,.96],[.28,.95],[.13,.88],[.07,.63],[.05,.29]],F,L,.024);
+        m([[.09,.16],[.18,.11],[.16,.36],[.19,.60],[.29,.75],[.25,.91],[.13,.84],[.08,.62]],D,L,.012);
+        m([[.17,.10],[.34,.045],[.44,.07]],null,E,.016);
+        m([[.17,.31],[.44,.36],[.43,.49],[.16,.46]],L,E,.023);
+        m([[.195,.344],[.414,.382],[.409,.443],[.19,.422]],'#151b1d',null);
+        p([[.47,.34],[.53,.34],[.55,.55],[.50,.61],[.45,.55]],D,L,.01);
+        p([[.29,.71],[.39,.67],[.61,.67],[.71,.71],[.68,.78],[.32,.78]],L,E,.013);
+        for(let i=0;i<3;i++)p([[.39+i*.10,.68],[.39+i*.10,.77]],null,D,.014);
+        p([[.19,.58],[.35,.61],[.50,.58],[.65,.61],[.81,.58]],null,L,.012);
+        wear(p);rivet(o,.13,.23,.013);rivet(o,.86,.23,.013);
+      }else{
+        const top=war?.10:.065;
+        p([[.12,.13],[.25,top],[.39,top],[.42,.22],[.58,.22],[.61,top],[.75,top],[.88,.13],[.95,.36],[.89,.61],[.76,.78],[.72,.91],[.59,.95],[.50,.89],[.41,.95],[.28,.91],[.24,.78],[.11,.61],[.05,.36]],F,L,.023);
+        m([[.12,.19],[.23,.10],[.33,.10]],null,E,.015);
+        m([[.11,.52],[.18,.57],[.30,.74],[.34,.85],[.28,.86],[.22,.71],[.12,.62]],D,L,.010);
+        m([[.15,.34],[.45,.38],[.43,.49],[.17,.48]],L,E,.019);
+        m([[.18,.375],[.424,.404],[.412,.458],[.191,.449]],war?'#e59c8b':'#d8f7ff','#395b6b',.006);
+        p([[.45,.38],[.50,.35],[.55,.38],[.54,.54],[.50,.58],[.46,.54]],F,L,.008);
+        p([[.31,.74],[.40,.76],[.60,.76],[.69,.74],[.66,.81],[.34,.81]],D,L,.015);
+        m([[.35,.86],[.42,.89],[.46,.87]],null,E,.010);
+        if(war){m([[.11,.23],[.23,.19],[.26,.30],[.13,.32]],D,L,.014);p([[.36,.61],[.50,.64],[.64,.61]],null,L,.018)}
+      }
+    },heavy?'#929795':redSuit?'#a52635':war?'#424953':'#b2bdc5');
+    const torso=makeInk((q,p,o,m)=>{
+      if(heavy){
+        p([[.06,.045],[.31,.015],[.41,.13],[.35,.29],[.17,.32],[.06,.23]],D,L,.020);
+        p([[.67,.03],[.93,.07],[.94,.29],[.72,.32],[.60,.16]],F,L,.020);
+        p([[.08,.35],[.23,.28],[.37,.35],[.40,.52],[.22,.66],[.09,.59]],F,L,.021);
+        p([[.64,.33],[.82,.31],[.93,.45],[.90,.66],[.72,.64],[.60,.51]],D,L,.021);
+        p([[.20,.65],[.37,.57],[.54,.61],[.71,.56],[.81,.75],[.68,.92],[.29,.93],[.13,.80]],F,L,.025);
+        for(let i=0;i<3;i++)p([[.40,.49+i*.045],[.60,.49+i*.045]],null,L,.011);
+        p([[.05,.50],[.17,.48],[.27,.55],[.25,.61],[.14,.54],[.06,.57]],A,L,.013);
+        p([[.74,.65],[.84,.56],[.96,.53],[.96,.60],[.86,.62],[.78,.73]],A,L,.013);
+        for(let i=0;i<5;i++)rivet(o,.09+i*.17,.065,.011);
+        [[.09,.38],[.23,.32],[.32,.58],[.86,.39],[.85,.73],[.25,.88],[.68,.88]].forEach(([x,y])=>rivet(o,x,y,.014));wear(p);
+      }else{
+        m([[.045,.045],[.31,.025],[.43,.15],[.33,.28],[.14,.29],[.05,.19]],F,L,.021);
+        m([[.085,.072],[.27,.055],[.36,.14]],null,E,.011);
+        m([[.04,.33],[.18,.29],[.32,.37],[.37,.48],[.21,.56],[.06,.49]],redSuit?A:D,L,.021);
+        m([[.10,.36],[.18,.345],[.29,.41],[.26,.48],[.17,.49]],F,L,.009);
+        m([[.06,.57],[.23,.60],[.37,.69],[.32,.76],[.13,.72]],D,L,.016);
+        for(let i=0;i<3;i++){let y=.62+i*.096;p([[.32,y],[.50,y+.035],[.68,y],[.64,y+.075],[.50,y+.10],[.36,y+.075]],redSuit?(i%2?'#a82434':'#c33b46'):F,L,.015)}
+        m([[.07,.78],[.17,.76],[.28,.81],[.36,.92],[.13,.94],[.055,.89]],redSuit?A:D,L,.016);
+        if(war){m([[.07,.07],[.24,.07],[.29,.18],[.11,.19]],'#6b7781',L,.014);for(let i=0;i<3;i++)m([[.10,.33+i*.065],[.24,.35+i*.065]],null,E,.009)}
+        else if(!redSuit){for(let i=0;i<3;i++)m([[.10,.11+i*.065],[.15,.11+i*.065]],null,L,.010)}
+      }
+      const ry=heavy?.38:.34;
+      o(.5,ry,.142,.15,L,E,.014);o(.5,ry,.115,.12,D,L,.012);o(.5,ry,.083,.087,'#d5f5fc','#528a9a',.010);
+      o(.5,ry,.065,.068,'#edfaff',null);
+      for(let i=0;i<8;i++){let a=i*Math.PI/4;p([[.5+Math.cos(a)*.12,ry+Math.sin(a)*.125],[.5+Math.cos(a)*.139,ry+Math.sin(a)*.143]],null,E,.009)}
+      p([[.02,.955],[.98,.955]],null,L,.025);
+    },C);
+    const back=makeInk((q,p,o,m)=>{
+      m([[.045,.045],[.32,.035],[.40,.15],[.31,.36],[.09,.34]],F,L,.018);
+      m([[.10,.40],[.23,.38],[.34,.48],[.28,.67],[.10,.65]],D,L,.019);
+      p([[.36,.12],[.64,.12],[.66,.54],[.59,.76],[.41,.76],[.34,.54]],D,L,.017);
+      for(let i=0;i<6;i++)p([[.39,.25+i*.07],[.61,.25+i*.07]],null,L,.014);
+      m([[.07,.71],[.21,.70],[.33,.79],[.36,.93],[.08,.94]],F,L,.017);
+      m([[.095,.77],[.19,.75],[.27,.81]],null,E,.010);if(heavy)wear(p);
+    },C);
+    const hip=makeInk((q,p,o,m)=>{p([[.02,.13],[.29,.10],[.37,.34],[.32,.86],[.02,.88]],F,L,.036);p([[.98,.13],[.71,.10],[.63,.34],[.68,.86],[.98,.88]],F,L,.036);p([[.35,.12],[.65,.12],[.59,.88],[.41,.88]],D,L,.032);for(let i=0;i<3;i++)p([[.09+i*.07,.30],[.09+i*.07,.64]],null,L,.022)},C);
+    function legPrint(side){return makeInk((q,p,o,m)=>{
+      p([[.06,.035],[.91,.035],[.95,.27],[.70,.35],[.25,.34],[.05,.25]],F,L,.023);
+      p([[.10,.08],[.36,.07],[.43,.19],[.36,.30],[.17,.27]],heavy?A:D,L,.014);
+      p([[.49,.08],[.86,.08],[.84,.25],[.61,.31],[.53,.22]],D,L,.014);
+      p([[.09,.37],[.29,.34],[.38,.43],[.63,.43],[.72,.34],[.90,.37],[.82,.56],[.63,.61],[.36,.61],[.18,.56]],D,L,.023);
+      p([[.30,.40],[.70,.40],[.64,.52],[.36,.52]],F,L,.013);
+      p([[.09,.60],[.27,.60],[.40,.70],[.60,.70],[.73,.60],[.91,.60],[.90,.81],[.10,.81]],redSuit?A:F,L,.019);
+      p([[.18,.65],[.29,.65],[.39,.75],[.28,.77]],D,L,.012);
+      p([[.82,.65],[.71,.65],[.61,.75],[.72,.77]],D,L,.012);
+      p([[.05,.85],[.95,.85],[.95,.98],[.05,.98]],D,L,.018);
+      p([[.13,.89],[.87,.89],[.76,.95],[.24,.95]],F,L,.012);
+      if(heavy){wear(p);const x=side<0?.20:.77;rivet(o,x,.16,.022);rivet(o,x,.22,.017);p([[x,.20],[x+.07,.34],[x-.02,.46]],null,L,.017)}
+      if(war){p([[.15,.13],[.33,.13],[.33,.23],[.15,.23]],L,E,.010)}
+    },C)}
+    const arm=makeInk((q,p,o,m)=>{p([[.11,.06],[.89,.06],[.81,.34],[.64,.40],[.36,.40],[.19,.34]],F,L,.022);p([[.22,.44],[.78,.44],[.88,.72],[.78,.90],[.22,.90],[.12,.72]],D,L,.022);p([[.29,.52],[.71,.52],[.69,.73],[.31,.73]],redSuit?A:F,L,.016);if(heavy)wear(p)},C);
+    const result={mask,torso,back,hip,legs:[legPrint(-1),legPrint(1)],arm};suitArtCache.set(id,result);return result;
+  }
+  function suitShell(parent,rows,power,base,front,back=null,frontArc=Math.PI*.43){
+    const n=mobileGPU?40:64,pos=[],uv=[],indices=[[],[],[]];
+    const yMin=rows[0][0],range=rows[rows.length-1][0]-yMin;
+    for(let j=0;j<rows.length;j++){
+      const [y,rx,rz,cx=0,cz=0]=rows[j];
+      for(let i=0;i<=n;i++){
+        const a=(i/n*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a),sx=Math.sign(si)*Math.pow(Math.abs(si),power),sz=Math.sign(co)*Math.pow(Math.abs(co),power);
+        pos.push(cx+rx*sx,y,cz+rz*sz);uv.push((sx+1)*.5,(y-yMin)/range);
+        if(j&&i<n){const k=(j-1)*(n+1)+i,t=k+n+1,angle=Math.abs(a+Math.PI/n);
+          const dst=front&&angle<frontArc?1:back&&angle>Math.PI-frontArc?2:0;indices[dst].push(k,k+1,t,k+1,t+1,t)}
+      }
+    }
+    for(const j of [0,rows.length-1]){const k=pos.length/3,[y,,,cx=0,cz=0]=rows[j];pos.push(cx,y,cz);uv.push(.5,.5);
+      for(let i=0;i<n;i++){let a=j*(n+1)+i;if(j)indices[0].push(k,a,a+1);else indices[0].push(k,a+1,a)}}
+    const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.setIndex(indices.flat());let offset=0;
+    for(let i=0;i<3;i++){if(indices[i].length)geo.addGroup(offset,indices[i].length,i);offset+=indices[i].length}geo.computeVertexNormals();
+    // Stitch duplicated seam normals, preventing the dark line down the back.
+    const normals=geo.attributes.normal;for(let j=0;j<rows.length;j++){let a=j*(n+1),b=a+n;let x=normals.getX(a)+normals.getX(b),y=normals.getY(a)+normals.getY(b),z=normals.getZ(a)+normals.getZ(b),l=Math.hypot(x,y,z)||1;normals.setXYZ(a,x/l,y/l,z/l);normals.setXYZ(b,x/l,y/l,z/l)}
+    return piece(parent,geo,[base,front?.material||base,back?.material||base]);
+  }
+  function newArmor(id){
+    const S=suitSpecs[id],A=suitArt(id),root=new T.Group(),body=abs(S.base,S.rough,S.metal,.32),dark=abs(id==='mark3'?0x641b25:id==='war'?0x252a30:0x535b60,.40,.15,.22),trim=abs(id==='mark3'?0xd2a74e:id==='war'?0x8997a0:0xb4bdc2,.36,.2,.28);
+    const torso=group(root,0,.97),head=group(root,0,2.035);
+    const heavy=id==='mark1',war=id==='war',armoredWide=heavy||war;
+    const torsoRows=[[.004,.419,.238],[.027,.444,.261],[.065,.451,.270],[.29,.412,.256],[.63,.362,.237],[.715,.337,.221],[.757,.306,.202]];
+    suitShell(torso,torsoRows,.27,body,A.torso,A.back,Math.PI*.48);
+    const reactor=group(torso,0,.757-(heavy?.38:.34)*.753,.267);const rim=piece(reactor,new T.TorusGeometry(.076,.009,6,24),dark);rim.castShadow=false;const light=piece(reactor,new T.CircleGeometry(.057,24),eyeMaterial,0,0,.012);light.castShadow=false;
+    drum(root,0,1.765,0,.148,.12,body);
+    const hips=group(root,0,.87);
+    suitShell(hips,[[0,.415,.232],[.022,.445,.255],[.078,.445,.255],[.09,.419,.239]],.28,body,A.hip,null,Math.PI*.48);
+    let visor=null;
+    const helmet=suitShell(head,S.head,S.power,body,A.mask,null,Math.PI*.47);
+    if(id==='mark3'){
+      const front=helmet.geometry.groups.find(g=>g.materialIndex===1),rear=helmet.geometry.groups.find(g=>g.materialIndex===0),fg=helmet.geometry.clone();
+      helmet.geometry.setDrawRange(rear.start,rear.count);fg.setDrawRange(front.start,front.count);
+      visor=group(head,0,.35,-.03);piece(visor,fg,helmet.material,0,-.35,.03);
+      suitShell(head,[[-.21,.22,.19],[-.16,.268,.217],[.16,.268,.22],[.23,.21,.18]],.90,abs(0xeabe96,.44),tonyPrint);
+    }
+    for(const side of [-1,1]){
+      const x=side*(S.head[3][1]-.011),hinge=drum(head,x,.045,-.047,heavy?.126:.108,.045,dark);hinge.rotation.z=Math.PI/2;
+      const cap=drum(head,x+side*.028,.045,-.047,heavy?.099:.078,.022,trim);cap.rotation.z=Math.PI/2;
+      if(heavy){const cheek=softBox(head,.066,.19,.16,.019,body,x-side*.018,-.10,.09);cheek.rotation.z=side*.15}
+    }
+    const arms=[],legs=[],jets=[];
+    for(const side of [-1,1]){
+      const arm=group(root,side*.395,1.62,0);
+      suitShell(arm,[[-.55,.117,.128,side*.146,.040],[-.53,.137,.141,side*.145,.04],[-.42,.140,.146,side*.132,.03],[-.24,.150,.154,side*.093,.009],[-.10,.157,.158,side*.042,-.006],[.052,.124,.137,side*.014,-.013],[.084,.075,.086,side*.006,-.012]],.86,body,A.arm,null,Math.PI*.40);
+      if(armoredWide){const shoulder=softBox(arm,war?.29:.26,.18,.30,.035,trim,side*.073,-.08,-.025);shoulder.rotation.z=side*.12}
+      drum(arm,side*.146,-.572,.043,.093,.092,body);const hand=clipHand(arm,side*.146,body);hand.position.y=-.70;hand.position.z=.055;
+      arms.push(arm);
+      const leg=group(root,side*.227,.855,0);
+      suitShell(leg,[[-.832,.189,.258,0,.055],[-.815,.208,.279,0,.055],[-.690,.209,.279,0,.055],[-.655,.206,.234,0,.004],[-.42,.204,.220,0,-.003],[-.19,.206,.237,0,-.014],[-.073,.194,.235,0,-.017],[-.025,.158,.193,0,-.018]],.26,body,A.legs[side<0?0:1],null,Math.PI*.48);
+      for(const y of [-.28,-.57]){const ring=piece(leg,new T.TorusGeometry(.073,.010,6,16),body,0,y,-.228);ring.rotation.y=Math.PI;const hole=piece(leg,new T.CircleGeometry(.064,16),dark,0,y,-.232);hole.rotation.y=Math.PI}
+      const nozzle=drum(leg,0,-.829,.015,.097,.025,dark);nozzle.castShadow=false;jets.push(jet(leg));legs.push(leg);
+    }
+    // War Machine has a distinct non-weapon toy sensor backpack silhouette.
+    if(war){softBox(torso,.49,.44,.18,.05,dark,0,.50,-.24);softBox(torso,.24,.23,.22,.035,trim,-.23,.81,-.19)}
+    root.userData={arms,legs,jets,head,torso,hips,visor};return root;
+  }
   function figure(armor) {
+    return armor?newArmor('mark3'):sculptTony();
+  }
+  function legacyArmor(armor) {
     if(!armor)return sculptTony();
     const root=new T.Group(), skin=abs(0xeabe96,.34,0,.48), maroon=abs(0x981b29,.25,.08,.74), black=abs(0x171722,.29,0,.62);
     const body=armor?maroon:black, tr=armor?ironPrint:tonyPrint;
@@ -458,34 +622,7 @@ function buildMinifigureFactory(T, renderer, mat) {
       u.torso.clear();tonyPart(u.torso,[[.01,.43,.24,.035],[.04,.445,.26,.035],[.70,.35,.23,.035],[.76,.32,.21,.03]],navy,pepperShirt);
       u.arms.forEach(a=>{if(a.children[1]?.isMesh)a.children[1].material=navy});return root;
     }
-    const root=figure(true),u=root.userData,steel=abs(0x77828b,.34,.35,.4),dark=abs(0x303842,.43,.22,.27),ironGray=abs(0x50555a,.48,.25,.2),silver=abs(0xa3aab0,.3,.35,.3),glowBlue=new T.MeshBasicMaterial({color:0xa4e7ff});
-    if(name==='mark1'){
-      // A bulky improvised suit: slotted face grille, overlapping steel plates,
-      // asymmetrical shoulder shields and external rivets.
-      flattenMaterial(root,ironGray);u.head.clear();u.visor=null;
-      molded(u.head,[[-.27,.27,.27],[-.22,.36,.34],[.05,.39,.35],[.31,.36,.34],[.43,.29,.28],[.47,.18,.17]],.46,dark,null);const shellDepth=(x,y)=>.349-Math.abs(x)*.15-Math.max(0,y-.29)*.20;curvedPatch(u.head,[[-.31,.26],[-.23,.40],[.20,.40],[.31,.28],[.30,-.16],[.20,-.23],[-.21,-.23],[-.31,-.14]],steel,.016,shellDepth,2);
-      for(let i=0;i<5;i++)plate(u.head,0,-.085+i*.034,.377,.30-i*.014,.014,.016,.004,dark);for(const side of [-1,1]){const hinge=drum(u.head,side*.367,.04,-.035,.106,.04,steel);hinge.rotation.z=Math.PI/2;const ring=drum(u.head,side*.386,.04,-.035,.062,.029,dark);ring.rotation.z=Math.PI/2;}plate(u.head,0,.30,.352,.42,.045,.038,.012,ironGray);
-      for(let side of [-1,1]){plate(u.head,side*.16,.22,.380,.22,.075,.02,.008,dark);plate(u.head,side*.16,.22,.396,.16,.032,.012,.004,glowBlue)}
-      const armorDepth=(x,y)=>.275+Math.max(0,.035-Math.abs(x)*.04);curvedPatch(u.torso,[[-.36,.11],[-.36,.53],[-.28,.69],[.28,.69],[.36,.53],[.36,.11],[.25,.04],[-.25,.04]],steel,.021,armorDepth,2);for(let i=0;i<3;i++)curvedPatch(u.torso,[[-.28,.12+i*.12],[.28,.12+i*.12],[.26,.18+i*.12],[-.26,.18+i*.12]],i%2?dark:ironGray,.036,armorDepth,1);
-      const ring=piece(u.torso,new T.TorusGeometry(.10,.025,8,24),dark,0,.49,.352);piece(u.torso,new T.CircleGeometry(.076,24),glowBlue,0,.49,.365);
-      for(const side of [-1,1]){const a=u.arms[side<0?0:1],l=u.legs[side<0?0:1];plate(a,side*.13,-.08,.01,.30,.28,.37,.035,steel);plate(a,side*.14,-.36,.11,.25,.30,.16,.024,dark);plate(l,0,-.35,.22,.33,.45,.13,.022,steel);for(let y of [.16,.60]){let r=drum(u.torso,side*.29,y,.344,.029,.022,dark);r.rotation.x=Math.PI/2}}
-    } else if(name==='mark2'){
-      flattenMaterial(root,silver);u.head.clear();u.visor=null;
-      molded(u.head,helmetRows,.53,silver,null);faceplate(u.head);
-      // Replace gold face paint by silver without altering shared Mark III materials.
-      u.head.traverse(o=>{if(o.isMesh){if(o.material===goldMask||o.material===goldEdge)o.material=silver;else if(o.material===darkGold)o.material=steel}});
-      for(const side of [-1,1]){const a=u.arms[side<0?0:1],l=u.legs[side<0?0:1];plate(a,side*.14,-.34,.13,.21,.26,.07,.022,steel);plate(l,0,-.38,.235,.26,.42,.05,.015,steel)}
-      piece(u.torso,new T.TorusGeometry(.09,.018,8,32),dark,0,.47,.28);piece(u.torso,new T.CircleGeometry(.072,32),glowBlue,0,.47,.30);
-    } else if(name==='war'){
-      flattenMaterial(root,dark);u.head.clear();u.visor=null;
-      molded(u.head,helmetRows,.53,dark,null);faceplate(u.head);
-      u.head.traverse(o=>{if(o.isMesh){if(o.material===goldMask||o.material===goldEdge)o.material=steel;else if(o.material===darkGold)o.material=dark}});
-      plate(u.torso,0,.40,.27,.66,.54,.08,.04,steel);piece(u.torso,new T.CircleGeometry(.085,24),glowBlue,0,.47,.325);
-      for(const side of [-1,1]){let a=u.arms[side<0?0:1],l=u.legs[side<0?0:1];plate(a,side*.10,-.04,.01,.36,.29,.39,.035,steel);plate(l,0,-.46,.24,.31,.30,.10,.02,steel);}
-      // Toy-style shoulder energy module, distinct silhouette without real weapon detail.
-      const module=group(u.torso,-.39,.81,-.17);plate(module,0,0,0,.28,.30,.48,.045,dark);plate(module,0,0,.25,.18,.17,.08,.02,steel);piece(module,new T.CircleGeometry(.059,20),glowBlue,0,0,.30);
-    }
-    u.jets.forEach(j=>{j.traverse(o=>{if(o.isMesh)o.material=glowBlue});j.visible=false});return root;
+    return newArmor(suitSpecs[name]?name:'mark3');
   }
   figure.variant=variant;
   return figure;

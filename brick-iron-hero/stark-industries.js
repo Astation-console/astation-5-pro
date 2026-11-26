@@ -29,14 +29,9 @@ function createStarkIndustries(B){
    const x=-7.7+i*2.25,z=-7.0,g=group(workshop,x,0,z);
    brick(0,.23,0,1.65,.45,1.48,0x26394d,g);box(0,1.55,-.62,1.5,2.35,.16,0x1e354b,g);
    for(const side of [-1,1]){box(side*.78,1.45,0,.10,2.15,1.32,0x355675,g);glow(side*.73,1.5,.56,.055,1.95,.06,0x54bde9,g)}
-   const colors=[0x686b6b,0xa7b1bc,0xb42232,0x39424b],color=colors[i],visor=i===2?0xd6a847:0x9eafb8;
-   const bust=group(g,0,.50,0);
-   const torso=new T.Mesh(new T.CylinderGeometry(.35,.46,.74,4),mat(color,.25));torso.rotation.y=Math.PI/4;torso.position.y=1.0;bust.add(torso);
-   const helmet=new T.Mesh(new T.SphereGeometry(.37,16,12),mat(color,.25));helmet.scale.set(1,1.06,.86);helmet.position.y=1.72;bust.add(helmet);
-   box(0,1.72,.29,.47,.38,.11,visor,bust,.3);glow(0,1.78,.36,.36,.05,.02,0x94eaff,bust);
-   for(const side of [-1,1]){const arm=cylinder(side*.49,1.03,0,.13,.57,color,bust,.2);arm.rotation.z=side*.16;box(side*.22,.35,0,.36,.60,.40,color,bust,.2)}
+   const display=figure.variant(id);display.scale.setScalar(.78);display.position.set(0,.47,-.05);display.rotation.y=0;g.add(display);
    label(g,names[id].replace('Iron Man ','').toUpperCase(),0,2.75,.13,1.45);batchRigid(g);
-   extras.push({type:'suit',id,g,x,z,range:1.65});
+   extras.push({type:'suit',id,g,x,z,range:1.65,display});
  }
  const pc=group(workshop,-7,0,0);brick(0,.55,0,1.8,1.1,1,0x364b60,pc);box(0,1.39,-.25,1.25,.54,.12,0x192d40,pc);glow(0,1.4,-.17,1.08,.43,.025,0x419fc4,pc);addHolo(pc,0,2.05,0);label(pc,'TERMINAL',0,2.68,0,1.5);extras.push({type:'terminal',g:pc,x:-7,z:0,range:2});
  const build=group(workshop,6,0,8);brick(0,.15,0,2.8,.26,2.3,0x465368,build);for(let i=0;i<9;i++)brick(Math.sin(i*2.4)*.85,.42+(i%3)*.13,Math.cos(i*2.4)*.70,.37,.19,.35,i%2?0xc4a340:0x3289bb,build);label(build,'BUDUJ',0,1.65,0,1.5);extras.push({type:'build',g:build,x:6,z:8,range:2.3});
