@@ -47,7 +47,7 @@ body.playing:not(.cinematic) #pauseGame{display:block}body.paused #pauseGame{dis
 <div id="levelScreen" class="menu-screen hidden"><h2>Wybór poziomu</h2><button class="level-tile" id="levelOne"><span class="level-num">01</span><span><strong>Narodziny Mark III</strong><small>Warsztat Starka · misja fabularna</small></span></button><p class="locked-level">Kolejne rozdziały — w przygotowaniu</p><button class="menu-choice back-choice" data-back>Wstecz</button></div>
 <div id="optionsScreen" class="menu-screen hidden"><h2>Ustawienia</h2><div class="settings-row"><span>Dubbing</span><button id="menuVoice">WŁ.</button></div><div id="voiceTests"><button id="testJarvis">TEST JARVIS</button><button id="testTony">TEST TONY</button></div><details id="extras"><summary>Ustawienia dubbingu</summary><label for="tonyVoice" class="voiceLabel">GŁOS ZAPASOWY TONY’EGO</label><select id="tonyVoice"><option value="">Automatycznie — naturalny polski</option></select><div id="packControls"><button id="importPack">WCZYTAJ DUBBING</button><input id="packFile" type="file" accept=".json,application/json" hidden><small id="packStatus">JARVIS: 5/5 • Tony: 4/4 nagrań</small></div></details><button class="menu-choice back-choice" data-back>Wstecz</button></div>
 <div id="confirmScreen" class="menu-screen hidden"><h2>Nowa gra?</h2><p>Rozpoczęcie nowej gry zastąpi dotychczasowy zapis misji.</p><button class="menu-choice" id="confirmNew">Rozpocznij od nowa</button><button class="menu-choice back-choice" data-back>Anuluj</button></div>
-<p id="err"></p></div><div class="title-footer"><span>FAN GAME · BUILD 0.7.0</span><span class="title-controls"><b>↵</b> Wybierz　<b>Esc</b> Wstecz</span></div></div><div id="trailerScreen" class="hidden"><div class="trailer-bar top"></div><div class="trailer-bar bottom"></div><div id="trailerText"></div><button id="skipTrailer">POMIŃ ▶</button></div><div id="pauseOverlay" class="hidden"><div class="pause-panel"><h2>PAUZA</h2><button class="menu-choice" id="resumeGame">Wznów grę</button><button class="menu-choice" id="saveReturn">Zapisz i wróć do menu</button></div></div>
+<p id="err"></p></div><div class="title-footer"><span>FAN GAME · BUILD 0.7.1</span><span class="title-controls"><b>↵</b> Wybierz　<b>Esc</b> Wstecz</span></div></div><div id="trailerScreen" class="hidden"><div class="trailer-bar top"></div><div class="trailer-bar bottom"></div><div id="trailerText"></div><button id="skipTrailer">POMIŃ ▶</button></div><div id="pauseOverlay" class="hidden"><div class="pause-panel"><h2>PAUZA</h2><button class="menu-choice" id="resumeGame">Wznów grę</button><button class="menu-choice" id="saveReturn">Zapisz i wróć do menu</button></div></div>
 <script>window.addEventListener('error',function(e){var el=document.getElementById('err');if(el)el.textContent='Błąd gry: '+(e.message||'Nie udało się załadować zasobu');});</script><script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script><script src="./figures.js?v=060"></script><script src="./workshop.js?v=060"></script><script>
 (()=>{'use strict';const $=x=>document.getElementById(x);if(!window.THREE){$('err').textContent='Nie udało się załadować silnika 3D. Sprawdź internet i odśwież stronę.';return}
 const T=THREE, scene=new T.Scene();scene.background=new T.Color(0x87a9ba);scene.fog=new T.Fog(0x87a9ba,38,100);
@@ -134,10 +134,10 @@ function makeRings(){
     scene.add(ring);rings.push(ring);
   });
 }
-function action(){if(!started||cut||paused)return;hitTimer=.38;sfx("click");let near=crates.filter(c=>c.live).sort((a,b)=>player.position.distanceTo(a.g.position)-player.position.distanceTo(b.g.position))[0];if(near&&Math.hypot(player.position.x-near.x,player.position.z-near.z)<2.6){near.live=false;scene.remove(near.g);stud(near.x,near.z,.48,true);for(let i=0;i<5;i++){let a=i*1.26;stud(near.x+Math.cos(a)*1.1,near.z+Math.sin(a)*1.1);let d=new T.Group();d.position.set(near.x,.6,near.z);scene.add(d);brick(0,0,0,.35,.20,.35,i%2?0xbc742d:0xe1a045,d);debris.push({d,v:new T.Vector3(Math.cos(a)*3,3+Math.random()*3,Math.sin(a)*3),age:0})}return}
+function action(){if(!started||cut||paused)return;hitTimer=.38;anim.hitSide=1-anim.hitSide;sfx("click");let near=crates.filter(c=>c.live).sort((a,b)=>player.position.distanceTo(a.g.position)-player.position.distanceTo(b.g.position))[0];if(near&&Math.hypot(player.position.x-near.x,player.position.z-near.z)<2.6){near.live=false;scene.remove(near.g);stud(near.x,near.z,.48,true);for(let i=0;i<5;i++){let a=i*1.26;stud(near.x+Math.cos(a)*1.1,near.z+Math.sin(a)*1.1);let d=new T.Group();d.position.set(near.x,.6,near.z);scene.add(d);brick(0,0,0,.35,.20,.35,i%2?0xbc742d:0xe1a045,d);debris.push({d,v:new T.Vector3(Math.cos(a)*3,3+Math.random()*3,Math.sin(a)*3),age:0})}return}
 if(stage===1&&Math.hypot(player.position.x-7,player.position.z+6)<3){beginCut('armor');return}notice(stage===0?'Podejdź bliżej skrzyni':stage===1?'Podejdź do platformy':'Przeleć przez bramy')}
-function jump(){if(!started||cut)return;if(flying){flying=false;vy=0}else if(player.position.y<.05){vy=7.5;sfx("jump")}}
-function flight(){if(!started||cut)return;if(!armored){notice('Najpierw zbuduj pancerz');return}flying=!flying;sfx(flying?'power':'click');notice(flying?'TRYB LOTU':'LĄDOWANIE')}
+function jump(){if(!started||cut||paused)return;if(flying){flying=false;vy=0}else if(player.position.y<.05){vy=7.5;sfx("jump")}}
+function flight(){if(!started||cut||paused)return;if(!armored){notice('Najpierw zbuduj pancerz');return}flying=!flying;sfx(flying?'power':'click');notice(flying?'TRYB LOTU':'LĄDOWANIE')}
 $('act').onclick=action;$('fly').onclick=flight;$('jump').onclick=jump;$('swap').onclick=()=>{if(!started||cut)return;if(!built){notice('Pancerz jeszcze niedostępny');return}suit(!armored)};
 $('view').onclick=()=>{if(!started||cut)return;showFront=!showFront;notice(showFront?'WIDOK POSTACI':'KAMERA GRY')};let joy={x:0,y:0},pointer=null,keys={};const stick=$('stick'),knob=$('knob');function move(e){let r=stick.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,rad=r.width*.32,k=Math.max(1,Math.hypot(dx,dy)/rad);joy.x=dx/k/rad;joy.y=dy/k/rad;knob.style.transform='translate('+dx/k+'px,'+dy/k+'px)'}
 stick.onpointerdown=e=>{pointer=e.pointerId;stick.setPointerCapture(pointer);move(e)};stick.onpointermove=e=>{if(e.pointerId===pointer)move(e)};function release(){pointer=null;joy.x=joy.y=0;knob.style.transform='none'}stick.onpointerup=release;stick.onpointercancel=release;stick.onlostpointercapture=release;
@@ -363,15 +363,80 @@ function titleFrame(t){
 function trailerFrame(now){let t=(now-trailerStart)/1000;if(t>=10.5){endTrailer();return}titleFrame(t);let p=player.position;let u=t<3.5?t/3.5:t<7?(t-3.5)/3.5:(t-7)/3.5;if(t<3.5){camera.position.set(p.x+2.7-u*1.2,2.0,p.z+4.8-u*.9);camera.lookAt(p.x-.2,1.25,p.z);$('trailerText').textContent='WARSZTAT STARKA'}else if(t<7){camera.position.set(p.x+1.6-u*.7,1.82,p.z+2.9-u*.45);camera.lookAt(p.x+.38,1.65,p.z+.18);iron.userData.arms[1].rotation.x=-.7-u*.65;$('trailerText').textContent='NARODZINY MARK III'}else{let q=Math.sin(u*Math.PI);iron.position.y=.08+.75*q;iron.userData.jets.forEach(j=>{j.visible=true;j.scale.y=.65+q*.5});camera.position.set(p.x-1.8+u*1.2,2.1+q*.5,p.z+4.1);camera.lookAt(p.x+.4,1.55+q*.3,p.z);$('trailerText').textContent='BRICK IRON HERO'}drawWorkshop()}
 let gamepadLatch={};function pollMenuPad(){if(started&&!paused||!navigator.getGamepads)return;let p=[...navigator.getGamepads()].find(Boolean);if(!p){gamepadLatch={};return}let actions={ArrowUp:!!p.buttons[12]?.pressed||p.axes[1]<-.65,ArrowDown:!!p.buttons[13]?.pressed||p.axes[1]>.65,Enter:!!p.buttons[0]?.pressed,Escape:!!p.buttons[1]?.pressed};for(let k in actions){if(actions[k]&&!gamepadLatch[k])menuInput(k);gamepadLatch[k]=actions[k]}}
 function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}addEventListener('resize',resize);
-let prev=performance.now(),clock=0,showFront=false;camera.position.set(0,10,18);function frame(now){requestAnimationFrame(frame);let dt=Math.min((now-prev)/1000,.04);prev=now;clock+=dt;if(!started){pollMenuPad();if(trailerStart!==null)trailerFrame(now);else titleFrame(clock);return;}if(paused){pollMenuPad();return}if(cut){cinemaFrame(dt);return}if(now-lastAutosave>2500){lastAutosave=now;saveCheckpoint()}if(now>noticeUntil)$('msg').style.display='none';let vx=joy.x+(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0),vz=joy.y+(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0),mag=Math.hypot(vx,vz);if(!started)mag=vx=vz=0;let n=Math.max(1,mag),speed=flying?8:5.3,blend=1-Math.exp(-dt*(mag>.08?11:15));motionX+=(vx/n*speed-motionX)*blend;motionZ+=(vz/n*speed-motionZ)*blend;player.position.x=T.MathUtils.clamp(player.position.x+motionX*dt,-10.5,10.5);player.position.z=T.MathUtils.clamp(player.position.z+motionZ*dt,-9.7,12);if(mag>.08){let a=Math.atan2(vx,vz),diff=Math.atan2(Math.sin(a-player.rotation.y),Math.cos(a-player.rotation.y));player.rotation.y+=diff*(1-Math.exp(-dt*13))}
-if(flying){player.position.y+=(2.5-player.position.y)*Math.min(1,dt*5);vy=0}else{vy-=19*dt;player.position.y=Math.max(0,player.position.y+vy*dt);if(player.position.y===0)vy=0}
-let fig=armored?iron:tony;hitTimer=Math.max(0,hitTimer-dt);let gait=T.MathUtils.clamp(Math.hypot(motionX,motionZ)/(flying?8:5.3),0,1);walkBlend+=(gait-walkBlend)*(1-Math.exp(-dt*12));walkPhase+=dt*(5+walkBlend*8);let air=player.position.y>.06&&!flying;if(wasAir&&!air&&!flying){landPulse=.24;sfx('metal')}wasAir=air;landPulse=Math.max(0,landPulse-dt);let landing=landPulse>0?Math.sin(landPulse/.24*Math.PI):0;let ease=1-Math.exp(-dt*15),lerp=(a,b)=>a+(b-a)*ease;let swing=Math.sin(walkPhase),opposite=Math.cos(walkPhase);let pitch=flying?-.15-.35*walkBlend:air?(vy>0?-.13:.10):-.09*walkBlend;
-fig.position.y=lerp(fig.position.y,.098+(flying?Math.sin(clock*5)*.035:air?0:Math.abs(swing)*walkBlend*.075-landing*.08));fig.rotation.x=lerp(fig.rotation.x,pitch);fig.rotation.z=lerp(fig.rotation.z,flying?-.10*vx:opposite*.025*walkBlend);fig.scale.y=lerp(fig.scale.y,1-landing*.045);
-fig.userData.arms.forEach((a,i)=>{let side=i?1:-1;let pose=flying?.32+.4*walkBlend:air?(vy>0?-1.4:-.75):side*swing*walkBlend*.83+Math.sin(clock*2+i)*.035;if(hitTimer>0&&i===1){let u=1-hitTimer/.38;pose=u<.25?.65*smooth(u/.25):u<.52?.65-2.6*smooth((u-.25)/.27):-1.95*(1-smooth((u-.52)/.48))}a.rotation.x=lerp(a.rotation.x,pose);a.rotation.z=lerp(a.rotation.z,side*(.08+(flying?.20:air?.24:0)))});
-fig.userData.legs.forEach((a,i)=>{let side=i?1:-1;let pose=flying?.11:air?(i?-.35:.55):-side*swing*walkBlend*.77; a.rotation.x=lerp(a.rotation.x,pose);a.rotation.z=lerp(a.rotation.z,0)});
-iron.userData.jets.forEach((j,i)=>{j.visible=flying&&armored;j.scale.y=.72+.30*walkBlend+Math.sin(clock*36+i)*.13});
+// Procedural minifigure animation director: rigid limbs, independent body/head,
+ // phase-driven stride, weight shifts and spring-smoothed aerial poses.
+const anim={gait:0,phase:0,flight:0,air:0,run:0,land:0,takeoff:0,turn:0,prevYaw:0,wasFlight:false,wasAir:false,hitSide:1,trailClock:0,fig:null,footHeight:0};
+const groundY=.085;
+const mixA=(a,b,t)=>a+(b-a)*t;
+const damp=(a,b,dt,k)=>mixA(a,b,1-Math.exp(-k*dt));
+const clamp01=v=>T.MathUtils.clamp(v,0,1);
+const sin2=v=>Math.sin(v);
+const pose=(obj,x,y,z,dt,k=17)=>{if(!obj)return;obj.rotation.x=damp(obj.rotation.x,x,dt,k);obj.rotation.y=damp(obj.rotation.y,y,dt,k);obj.rotation.z=damp(obj.rotation.z,z,dt,k)};
+const trailGroup=new T.Group();scene.add(trailGroup);
+const trailGeom=new T.SphereGeometry(.09,6,4);
+const trails=Array.from({length:30},(_,i)=>{let m=new T.Mesh(trailGeom,new T.MeshBasicMaterial({color:i%3===0?0xefffff:0x53ceff,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending}));m.visible=false;trailGroup.add(m);return{m,life:0,max:1,vel:new T.Vector3()}});
+let trailCursor=0;const emitPos=new T.Vector3(),localDir=new T.Vector3(),quat=new T.Quaternion();
+function emitTrail(jet,amount){const p=trails[trailCursor++%trails.length];jet.getWorldPosition(emitPos);jet.getWorldQuaternion(quat);localDir.set(0,-1,0).applyQuaternion(quat).normalize();p.m.position.copy(emitPos).addScaledVector(localDir,.22);p.vel.copy(localDir).multiplyScalar(2.4+amount*3.8);p.life=p.max=.30+amount*.23;p.m.scale.set(.75,.95,.75);p.m.visible=true;p.m.material.opacity=.65;}
+function clearTrails(){for(let p of trails){p.life=0;p.m.visible=false}anim.trailClock=0}
+function tickTrails(dt,fig,speed){for(let p of trails){if(!p.m.visible)continue;p.life-=dt;if(p.life<=0){p.m.visible=false;continue}let q=p.life/p.max;p.m.position.addScaledVector(p.vel,dt);p.m.scale.setScalar(.6+(1-q)*1.7);p.m.material.opacity=q*q*.56}if(flying&&armored){anim.trailClock+=dt;if(anim.trailClock>=.05){anim.trailClock%=.05;fig.updateMatrixWorld(true);for(let j of fig.userData.jets)emitTrail(j,speed)}}else anim.trailClock=0}
+function updatePose(fig,dt,t,vx,vz,gait,vertical){
+ const airborne=!flying&&player.position.y>.075;
+ if(anim.fig!==fig){anim.fig=fig;anim.prevYaw=player.rotation.y;anim.turn=0;fig.scale.set(1,1,1)}
+ const yawDelta=Math.atan2(Math.sin(player.rotation.y-anim.prevYaw),Math.cos(player.rotation.y-anim.prevYaw));anim.prevYaw=player.rotation.y;
+ anim.turn=damp(anim.turn,T.MathUtils.clamp(yawDelta/Math.max(.008,dt)*.055,-.28,.28),dt,9);
+ if(flying&&!anim.wasFlight)anim.takeoff=.47;
+ if(!flying&&anim.wasFlight)anim.air=1;
+ if(anim.wasAir&&!airborne&&!flying){anim.land=.31;sfx('metal')}
+ anim.wasFlight=flying;anim.wasAir=airborne;
+ anim.takeoff=Math.max(0,anim.takeoff-dt);anim.land=Math.max(0,anim.land-dt);
+ anim.gait=damp(anim.gait,gait,dt,gait>anim.gait?12:17);
+ anim.run=damp(anim.run,smooth((gait-.55)/.40),dt,10);
+ anim.air=damp(anim.air,airborne?1:0,dt,17);
+ anim.flight=damp(anim.flight,flying?1:0,dt,7.5);
+ anim.phase=(anim.phase+dt*(4.2+5.9*anim.gait)*Math.min(1,anim.gait*3.4))%(Math.PI*2);
+ const phase=anim.phase,amp=anim.gait,run=anim.run,f=anim.flight,a=anim.air,ground=(1-f)*(1-a);
+ const wave=Math.sin(phase),sideWave=Math.cos(phase),idle=(1-amp)*ground;
+ const step=Math.abs(Math.sin(phase)),land=anim.land>0?Math.sin(Math.PI*(1-anim.land/.31)):0;
+ const take=anim.takeoff>0?Math.sin(Math.PI*(1-anim.takeoff/.47)):0;
+ const rise=clamp01((vertical+1)/8),airPitch=mixA(.20,-.10,rise);
+ // The forward axis of the minifigure is +Z, so a positive pitch leans forward.
+ const flightPitch=.12+amp*.94-.24*take;
+ const pitch=mixA((.035+.10*run)*amp+land*.21,airPitch,a);
+ const bank=-anim.turn*(.35+.65*amp);
+ pose(fig,mixA(pitch,flightPitch,f),0,mixA(sideWave*.035*amp+bank*.25,bank,f),dt,11);
+ fig.scale.set(1,1,1);
+ let lift=groundY+ground*(step*.075*amp+Math.sin(t*2.2)*.009*idle-land*.065)+f*(Math.sin(t*4.6)*.055+take*.065);
+ // Raise the pitched flight pose enough to keep the boots out of the floor on takeoff.
+ lift+=f*Math.max(0,Math.sin(flightPitch))*.24;
+ fig.position.y=damp(fig.position.y,lift,dt,16);
+ const ud=fig.userData;
+ pose(ud.torso,ground*(wave*.028*amp+land*.035),ground*sideWave*.045*amp,ground*sideWave*.024*amp,dt,14);
+ pose(ud.head,mixA(ground*(-.035*amp+Math.sin(t*1.9)*.025*idle)+a*(-.07),-flightPitch*.55,f),ground*(sideWave*.055*amp+Math.sin(t*.85)*.11*idle)+anim.turn*.18,-bank*.32,dt,12);
+ for(let i=0;i<2;i++){
+   const side=i?1:-1, p=phase+i*Math.PI;
+   // Piecewise stride gives a longer planted-foot stance and faster swing-through.
+   const stride=Math.sin(p)*(.54+.32*run)+Math.sin(p*2)*.085*run;
+   const legGround=stride*amp+land*(i?.16:-.16);
+   const legAir=i?mixA(-.45,-.19,rise):mixA(.21,.54,rise);
+   const legFlight=.09+.06*amp+side*.035*Math.sin(t*3);
+   pose(ud.legs[i],mixA(mixA(legGround,legAir,a),legFlight,f),f*side*.035,0,dt,20);
+   let armGround=-Math.sin(p+.12)*amp*(.52+.32*run)+Math.sin(t*2.3+i*.9)*idle*.045;
+   let armAir=mixA(-.62,-1.38,rise)+side*.09;
+   let armFlight=.30+amp*.63-.44*take+side*anim.turn*.32;
+   let ax=mixA(mixA(armGround,armAir,a),armFlight,f),az=side*(.035+amp*.025+f*(.15+.09*amp)+a*.20),ay=f*side*.08;
+   if(hitTimer>0&&i===anim.hitSide){let u=clamp01(1-hitTimer/.38);let strike=u<.23?mixA(ax,.72,smooth(u/.23)):u<.55?mixA(.72,-1.75,smooth((u-.23)/.32)):mixA(-1.75,ax,smooth((u-.55)/.45));ax=strike;az+=side*Math.sin(Math.PI*u)*.16;}
+   pose(ud.arms[i],ax,ay,az,dt,hitTimer>0?29:19);
+ }
+ // Helmet is held closed in gameplay; cutscene logic still owns its opening animation.
+ if(ud.visor)ud.visor.rotation.x=damp(ud.visor.rotation.x,0,dt,12);
+ iron.userData.jets.forEach((j,i)=>{j.visible=armored&&(flying||f>.08);const pulse=1+.12*Math.sin(t*47+i*2.1);j.scale.set(.72+f*.38,Math.max(.03,f*(.56+.82*amp+.42*take)*pulse),.72+f*.38)});
+ tickTrails(dt,fig,amp);
+}
+let prev=performance.now(),clock=0,showFront=false;camera.position.set(0,10,18);function frame(now){requestAnimationFrame(frame);let dt=Math.min((now-prev)/1000,.04);prev=now;clock+=dt;if(!started){pollMenuPad();if(trailerStart!==null)trailerFrame(now);else titleFrame(clock);return;}if(paused){pollMenuPad();return}if(cut){clearTrails();cinemaFrame(dt);return}if(now-lastAutosave>2500){lastAutosave=now;saveCheckpoint()}if(now>noticeUntil)$('msg').style.display='none';let vx=joy.x+(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0),vz=joy.y+(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0),mag=Math.hypot(vx,vz);if(!started)mag=vx=vz=0;let n=Math.max(1,mag),speed=flying?8:5.3,blend=1-Math.exp(-dt*(mag>.08?11:15));motionX+=(vx/n*speed-motionX)*blend;motionZ+=(vz/n*speed-motionZ)*blend;player.position.x=T.MathUtils.clamp(player.position.x+motionX*dt,-10.5,10.5);player.position.z=T.MathUtils.clamp(player.position.z+motionZ*dt,-9.7,12);if(mag>.08){let a=Math.atan2(vx,vz),diff=Math.atan2(Math.sin(a-player.rotation.y),Math.cos(a-player.rotation.y));player.rotation.y+=diff*(1-Math.exp(-dt*13))}
+if(flying){player.position.y+=(2.5-player.position.y)*(1-Math.exp(-dt*3.7));vy=0}else{vy-=19*dt;player.position.y=Math.max(0,player.position.y+vy*dt);if(player.position.y===0)vy=0}
+let fig=armored?iron:tony;hitTimer=Math.max(0,hitTimer-dt);let gait=T.MathUtils.clamp(Math.hypot(motionX,motionZ)/(flying?8:5.3),0,1);updatePose(fig,dt,clock,vx,vz,gait,vy);
 for(let i=studs.length-1;i>=0;i--){let s=studs[i];s.g.rotation.y+=dt*2.5;s.g.position.y=s.y+Math.sin(clock*3+i)*.08;if(started&&Math.hypot(s.g.position.x-player.position.x,s.g.position.z-player.position.z)<1.05&&player.position.y<1.1){scene.remove(s.g);studs.splice(i,1);score+=s.energy?100:10;playPickup();if(s.energy){cells++;if(cells===6){stage=1;notice('Wszystkie części! Zbuduj Mark III.')}}hud()}}
 if(stage===2&&flying&&rings[ringIndex]&&player.position.distanceTo(rings[ringIndex].position)<1.65){scene.remove(rings[ringIndex]);ringIndex++;score+=200;if(ringIndex===5){stage=3;score+=1000;beginCut('outro')}else{rings[ringIndex].material.color.setHex(0xffd557);rings[ringIndex].material.emissive.setHex(0xffa52b);notice('BRAMA '+ringIndex+'/5')}hud()}
 for(let i=debris.length-1;i>=0;i--){let o=debris[i];o.age+=dt;o.v.y-=10*dt;o.d.position.addScaledVector(o.v,dt);o.d.rotation.x+=dt*4;if(o.age>1){scene.remove(o.d);debris.splice(i,1)}}
-let dist=innerWidth<innerHeight?6.95:5.85;let dest=showFront?new T.Vector3(player.position.x+Math.sin(player.rotation.y)*5,player.position.y+2.5,player.position.z+Math.cos(player.rotation.y)*5):new T.Vector3(player.position.x,player.position.y+dist*.66,player.position.z+dist);camera.position.lerp(dest,Math.min(1,dt*6));camera.lookAt(player.position.x,player.position.y+1.25,player.position.z+(showFront?0:-2));drawWorkshop()}hud();$('start').disabled=false;$('start').textContent='Nowa gra';try{if(localStorage.getItem('brick-voice-enabled')==='0'){voiceOn=false;$('menuVoice').textContent='WYŁ.';$('voiceToggle').textContent='GŁOS: OFF'}}catch(e){}updateSaveInfo();markMenu(0);requestAnimationFrame(frame)
+let dist=(innerWidth<innerHeight?6.95:5.85)+anim.flight*anim.gait*.85;let dest=showFront?new T.Vector3(player.position.x+Math.sin(player.rotation.y)*5,player.position.y+2.5,player.position.z+Math.cos(player.rotation.y)*5):new T.Vector3(player.position.x,player.position.y+dist*.66,player.position.z+dist);camera.position.lerp(dest,1-Math.exp(-dt*6));lens(damp(camera.fov,44+anim.flight*anim.gait*5,dt,5));camera.lookAt(player.position.x,player.position.y+1.25-anim.flight*.18,player.position.z+(showFront?0:-2));drawWorkshop()}hud();$('start').disabled=false;$('start').textContent='Nowa gra';try{if(localStorage.getItem('brick-voice-enabled')==='0'){voiceOn=false;$('menuVoice').textContent='WYŁ.';$('voiceToggle').textContent='GŁOS: OFF'}}catch(e){}updateSaveInfo();markMenu(0);requestAnimationFrame(frame)
 })();</script></body></html>
