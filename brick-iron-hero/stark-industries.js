@@ -264,7 +264,7 @@ function createStarkIndustries(B){
    const c=storyCut;
    $('starkCut').classList.remove('hidden');document.body.classList.add('cinematic');
    $('starkCutTitle').textContent=which==='intro'?'01 · UCIECZKA Z JASKINI':which==='armor'?'01 · NARODZINY MARK I':'01 · POWRÓT DO DOMU';B.release();
-   if(which==='intro'){player.position.set(-.65,.1,10.1);if(yinsen){yinsen.position.set(2.0,.1,8.6);yinsen.rotation.y=-.4}}
+   if(which==='intro'){player.position.set(-3.6,.78,10.87);if(yinsen){yinsen.position.set(-.30,.10,9.35);yinsen.rotation.y=-1.4}}
    if(which==='armor'){player.position.set(5.3,.10,5.6);select('tony',true);if(yinsen){yinsen.position.set(7.0,.10,5.2);yinsen.rotation.y=-.9}}
    if(which==='outro'&&yinsen)yinsen.visible=false;
    makeCutProps(c);speak(sequences[which][0],true);
@@ -291,10 +291,22 @@ function createStarkIndustries(B){
    const fire=(key,kind)=>{if(!c.beats.has(key)){c.beats.add(key);B.sfx(kind)}};
    const tp=player.position,yp=yinsen?.position;
    if(c.which==='intro'){
-     if(i===0){let walk=cue(t,.3,2.0);tp.set(-.65+walk*.55,.1,10.1-walk*.75);player.rotation.y=1.2-.55*walk;actorPose(tony,t,t<2?'walk':'talk',1-walk*.5);
-       if(yinsen){yp.set(2.0-.55*walk,.1,8.6+.35*walk);faceActor(yinsen,yp,tp);actorPose(yinsen,t,t<2?'walk':'react',.6)}shot=t<1.8?'establish':t<3.6?'tony':'reaction';
-     }else if(i===1){tp.set(-.1,.1,9.35);yp?.set(1.45,.1,8.95);faceActor(player,tp,yp);if(yinsen)faceActor(yinsen,yp,tp);actorPose(tony,t,t<3.4?'think':'react');actorPose(yinsen,t,'talk');if(c.tool&&yinsen){c.tool.visible=true;yinsen.userData.arms[1].rotation.set(-.82+.12*Math.sin(t*2),0,.08);c.tool.getWorldPosition(c.toolWorld)}shot=t<2.8?'yinsen':t<4.1?'insert':t<6.2?'reaction':'two';
-     }else{if(c.tool)c.tool.visible=false;faceActor(player,tp,yp);actorPose(tony,t,t<1.2?'think':'talk');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}shot=t<1.1?'two':t<3.5?'tony':'wide'}
+     const v=tony.userData;
+     if(i===0){
+       if(t<1.45){const wake=cue(t,.10,1.35);tp.set(-3.6,.78,10.87);player.rotation.y=0;actorPose(tony,t,'idle');tony.rotation.x=-Math.PI/2+.30*wake;tony.position.y=0;v.head.rotation.x=.20*wake;v.arms[1].rotation.x=-.80*wake;shot='wake'}
+       else if(t<2.9){const sit=cue(t,1.45,2.65);tp.set(-3.6+.53*sit,.78-.90*sit,10.87-.83*sit);player.rotation.y=Math.PI/2*sit;actorPose(tony,t,'idle');tony.rotation.x=(-Math.PI/2+.30)*(1-sit);tony.position.y=0;for(const leg of v.legs)leg.rotation.x=-Math.PI/2*sit;v.arms[0].rotation.x=-.54*Math.sin(Math.PI*sit);v.head.rotation.x=.15;shot='sit'}
+       else {const stand=cue(t,2.9,3.65),walk=cue(t,3.65,4.5);tp.set(-3.07+.75*stand+.42*walk,-.12+.22*stand,10.04-.55*walk);player.rotation.y=Math.PI/2-.42*walk;actorPose(tony,t,t<3.65?'idle':t<4.5?'walk':'talk',.65);for(const leg of v.legs)leg.rotation.x+=-Math.PI/2*(1-stand);shot=t<4.5?'stand':'two'}
+       if(yinsen){yp.set(-.30,.10,9.35);faceActor(yinsen,yp,tp);actorPose(yinsen,t,t<3?'think':'react')}
+     }else if(i===1){
+       const w=cue(t,0,1.3);tp.set(-1.9+.75*w,.10,9.49-.32*w);yp?.set(-.30,.10,9.35);faceActor(player,tp,yp);if(yinsen)faceActor(yinsen,yp,tp);actorPose(tony,t,t<1.3?'walk':t<4.3?'think':'react',.6);actorPose(yinsen,t,'talk');
+       if(c.tool&&yinsen){c.tool.visible=true;yinsen.userData.arms[1].rotation.set(-.68-.30*Math.sin(Math.PI*cue(t,1.5,4.5)),0,.06);c.tool.getWorldPosition(c.toolWorld)}
+       if(t>5.1){v.arms[0].rotation.x=-.68*Math.sin(Math.PI*cue(t,5.1,7.5));v.head.rotation.x=.13}
+       shot=t<1.3?'two':t<3.1?'yinsen':t<4.7?'insert':t<6.1?'reaction':'two';
+     }else{
+       if(c.tool)c.tool.visible=false;tp.set(-1.15,.1,9.17);faceActor(player,tp,yp);actorPose(tony,t,t<1.4?'think':'talk');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}
+       const point=cue(t,2.15,2.9)*(1-cue(t,3.9,4.75));v.arms[1].rotation.set(-.27-1.02*point,0,.12);v.head.rotation.y=-.22*point;
+       shot=t<1.4?'reaction':t<3.2?'tony':'two'
+     }
    }else if(c.which==='armor'){
      tp.set(5.3,.1,5.6);player.rotation.y=0;
      if(i<2){actorPose(tony,t,i===0?'talk':'think');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,i===1?'talk':'react')}if(i===0&&t>2.8){const reach=cue(t,2.8,3.35)*(1-cue(t,4.45,5.3));tony.userData.arms[1].rotation.x=-.25-.85*reach;tony.userData.head.rotation.x=.20*reach;tony.userData.torso.rotation.y=.15*reach}shot=i===0?(t<1.8?'establish':t<3.5?'tony':'bench'):(t<1.6?'yinsen':'reaction')}
@@ -303,7 +315,7 @@ function createStarkIndustries(B){
        c.rig.rotation.y=0;c.rig.position.set(5.3,.10,5.6);
        for(const part of c.parts){const j=part.i,u=cue(t,.15+j*.36,.86+j*.36),left=1-u;part.o.visible=u>.001;part.o.position.copy(part.p);part.o.rotation.copy(part.r);part.o.position.x+=Math.sin(j*2.39)*left*1.65;part.o.position.y+=(.45+j*.075)*left+Math.sin(Math.PI*u)*.22;part.o.position.z+=(.50+Math.cos(j*2.39)*.36)*left;part.o.rotation.z+=Math.sin(j)*left*.85;if(u>.98)fire('part'+j,'metal')}
        const flashAge=t-2.6;tickCutSparks(c,{x:5.3,y:1.45,z:6.0},flashAge);c.glow.intensity=Math.max(0,1-Math.abs(flashAge-.12)*4)*5+progress*1.4;
-       if(t>3.6){actorPose(c.rig,t,'hero');fire('reactor','power')}
+       if(t>3.6){const reveal=cue(t,3.6,4.65);c.rig.position.z=5.6+.65*reveal;c.rig.rotation.y=-.35*reveal;actorPose(c.rig,t,t<4.4?'walk':'hero',.50);c.rig.userData.arms[1].rotation.x=-.15-.45*Math.sin(Math.PI*cue(t,4.0,5.1));fire('reactor','power')}
        if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}
        shot=t<1.25?'boots':t<2.55?'chest':t<3.55?'helmet':'hero';
      }
@@ -315,22 +327,23 @@ function createStarkIndustries(B){
    // Camera edit uses shot/reverse-shot, insert shots and low hero angles.
    // All positions are relative to the acting character or prop.
    let p=tp,y=1.48,dist=4.1,angle=.38,height=2.25,fov=39,lookX=0,lookZ=0;
+   if(shot==='wake'){p={x:-3.6,z:9.82};y=.92;dist=3.55;height=3.15;angle=2.55;fov=42}if(shot==='sit'){p=tp;y=1.0;dist=4.35;height=2.70;angle=1.65;fov=43}if(shot==='stand'){p=tp;y=1.35;dist=4.65;height=2.8;angle=1.85;fov=43}
    if(shot==='establish'||shot==='wide'){p=tp;y=1.25;dist=5.9;height=3.25;angle=.50;fov=45;lookX=.65}
-   if(shot==='two'){p=tp;y=1.45;dist=4.6;height=2.4;angle=.10;fov=43;lookX=.65}
-   if(shot==='tony'){p=tp;y=1.81;dist=2.75;height=2.15;angle=player.rotation.y+.22;fov=35}
-   if(shot==='yinsen'&&yp){p=yp;y=1.80;dist=2.65;height=2.20;angle=yinsen.rotation.y-.22;fov=35}
+   if(shot==='two'){p=tp;y=1.45;dist=4.7;height=2.65;angle=c.which==='intro'?2.75:.10;fov=43;lookX=.65}
+   if(shot==='tony'){p=tp;y=1.69;dist=3.15;height=2.15;angle=player.rotation.y+.58;fov=38}
+   if(shot==='yinsen'&&yp){p=yp;y=1.67;dist=3.2;height=2.20;angle=yinsen.rotation.y-.46;fov=38}
    if(shot==='reaction'){p=isY?tp:(yp||tp);y=1.78;dist=2.9;height=2.22;angle=(isY?player.rotation.y:yinsen?.rotation.y||0)+.24;fov=35}
    if(shot==='insert'&&c.tool){c.tool.getWorldPosition(c.toolWorld);p=c.toolWorld;y=p.y;dist=2.4;height=p.y+.30;angle=(yinsen?.rotation.y||0)+.24;fov=40}
    if(shot==='bench'){p={x:7,z:7};y=1.16;dist=2.8;height=2.3;angle=.62;fov=39}
    if(shot==='boots'){y=.64;dist=3.2;height=1.05;angle=-.45;fov=39}
    if(shot==='chest'){y=1.35;dist=3.25;height=1.95;angle=-.28;fov=39}
    if(shot==='helmet'){y=1.94;dist=3.0;height=2.55;angle=-.40;fov=38}
-   if(shot==='hero'){y=1.35;dist=4.9;height=2.25;angle=-.44;fov=42}
+   if(shot==='hero'){if(c.rig?.visible)p=c.rig.position;y=1.39;dist=4.45;height=1.75;angle=-.65;fov=43}
    if(shot==='exit'){y=1.35;dist=5.2;height=2.8;angle=.65;fov=45;lookZ=-.65}
    if(assemblyBench)assemblyBench.visible=c.which!=='armor'||shot==='bench';
    const key=i+':'+shot;
    if(c.shotKey!==key){c.shotKey=key;c.shotStart=c.t}
-   const dolly=Math.min(1,(c.t-c.shotStart)/3),move=.13*dolly;
+   const dolly=Math.min(1,(c.t-c.shotStart)/3),move=(shot==='hero'?.32:.18)*dolly;
    target.set(p.x+lookX,y,p.z+lookZ);cutLook.copy(target);
    camDesired.set(p.x+Math.sin(angle+move)*dist,Math.max(1.0,height+move*.12),p.z+Math.cos(angle+move)*dist);
    if(c.lastCam!==key){c.lastCam=key;B.camera.position.copy(camDesired)}else B.camera.position.lerp(camDesired,1-Math.exp(-dt*10));
