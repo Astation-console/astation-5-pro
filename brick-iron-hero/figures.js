@@ -487,7 +487,7 @@ function buildMinifigureFactory(T, renderer, mat) {
       const [y,rx,rz,cx=0,cz=0]=rows[j];
       for(let i=0;i<=n;i++){
         const a=(i/n*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a),sx=Math.sign(si)*Math.pow(Math.abs(si),power),sz=Math.sign(co)*Math.pow(Math.abs(co),power);
-        pos.push(cx+rx*sx,y,cz+rz*sz);uv.push((sx+1)*.5,(y-yMin)/range);
+        pos.push(cx+rx*sx,y,cz+rz*sz);uv.push(...(typeof front?.project==='function'?front.project(cx+rx*sx,y,cz+rz*sz):[(sx+1)*.5,(y-yMin)/range]));
         if(j&&i<n){const k=(j-1)*(n+1)+i,t=k+n+1,angle=Math.abs(a+Math.PI/n);
           const dst=front&&angle<frontArc?1:back&&angle>Math.PI-frontArc?2:0;indices[dst].push(k,k+1,t,k+1,t+1,t)}
       }
