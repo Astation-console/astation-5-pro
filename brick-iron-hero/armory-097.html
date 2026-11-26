@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#121e2a"><title>Brick Iron Hero • Narodziny Mark III</title><link rel="stylesheet" href="./workshop.css?v=060"><style>
+/* Classic title-screen layout; all art behind it is live Three.js. */
+#overlay{isolation:isolate;display:flex;align-items:center;justify-content:flex-start;overflow:auto;padding:clamp(14px,4vh,44px) max(6vw,env(safe-area-inset-left)) max(42px,env(safe-area-inset-bottom));background:linear-gradient(90deg,rgba(4,12,25,.96) 0%,rgba(6,18,34,.89) 24%,rgba(9,24,44,.50) 48%,transparent 77%),linear-gradient(0deg,rgba(2,9,22,.85),transparent 28%),linear-gradient(180deg,#0813218a,transparent 27%);touch-action:pan-y}
+.title-vignette{position:absolute;inset:0;pointer-events:none;z-index:-1;background:radial-gradient(ellipse at 78% 46%,transparent 20%,#02081b34 56%,#020714a0 100%);box-shadow:inset 0 0 75px #0005}
+.title-specks{position:absolute;inset:0;pointer-events:none;z-index:-1;opacity:.35;background-image:radial-gradient(circle at 13% 19%,#b3e8ff 0 1px,transparent 2px),radial-gradient(circle at 45% 56%,#ffc46b 0 1.5px,transparent 3px),radial-gradient(circle at 72% 22%,#c8edff 0 1px,transparent 2px),radial-gradient(circle at 94% 68%,#b0e9ff 0 1.5px,transparent 3px);background-size:230px 170px,320px 210px,260px 240px,440px 270px;animation:title-drift 18s linear infinite}
+@keyframes title-drift{to{background-position:230px 170px,-320px 210px,260px -240px,-440px -270px}}
+#menu{width:min(520px,48vw);max-width:none;margin:auto 0;position:relative;z-index:1;text-align:center}
+.game-logo{width:max-content;max-width:100%;margin:0 auto clamp(14px,3vh,32px);position:relative;filter:drop-shadow(0 9px 12px #0008)}
+.logo-brand{position:relative;display:table;padding:6px 19px 5px;margin:0 auto 2px;background:linear-gradient(#ff3c36,#af121d);border:2px solid #ff8271;border-radius:4px;box-shadow:0 5px #611119,0 7px 0 #090a10;transform:skew(-8deg);z-index:1}
+.logo-brand span{font:1000 clamp(15px,2.7vw,33px)/1 'Arial Black',Impact,sans-serif;letter-spacing:-.05em;color:#fff8e2;text-shadow:1px 2px 0 #531720}
+.logo-brand i{position:absolute;width:20%;height:7px;top:-8px;background:linear-gradient(#f96a54,#b51217);border:1px solid #fd917c;border-radius:50% 50% 12% 12%}
+.logo-brand i:nth-of-type(1){left:12%}.logo-brand i:nth-of-type(2){left:40%}.logo-brand i:nth-of-type(3){left:68%}
+#menu h1{display:block;margin:0;transform:skew(-7deg);font:1000 clamp(35px,6.7vw,87px)/.98 'Arial Black',Impact,system-ui,sans-serif;letter-spacing:-.075em;white-space:nowrap;color:#ffcf45;text-shadow:0 1px #fff4a0,0 3px #b65b13,0 6px #8f1b1e,0 9px #3a0c19,2px 11px #030812;-webkit-text-stroke:1px #fff3a2}
+.logo-subtitle{font:900 italic clamp(9px,1.25vw,17px)/1.25 system-ui;letter-spacing:.22em;color:#e7f7ff;text-shadow:0 2px 3px #000;margin:10px 0 0}
+.classic-nav{display:flex;flex-direction:column;align-items:center;gap:3px}
+#menu .menu-choice,#pauseOverlay .menu-choice{appearance:none;display:block;position:relative;width:max-content;max-width:100%;height:auto;min-height:36px;padding:5px 29px;border:0;border-radius:0;background:none;box-shadow:none;text-align:center;color:#73d0ff;font:900 italic clamp(17px,2.4vw,29px)/1.1 system-ui,sans-serif;letter-spacing:.04em;text-shadow:0 2px 0 #00142a,0 3px 7px #000,0 0 10px #0079bb55;transform:none;transition:color .12s,scale .12s;touch-action:manipulation}
+#menu #start:before,#menu .menu-choice:before,#pauseOverlay .menu-choice:before{content:none}
+#menu .menu-choice:not(:disabled):hover,#menu .menu-choice:focus-visible,#menu .menu-choice.selected,#pauseOverlay .menu-choice:focus-visible,#pauseOverlay .menu-choice:hover{color:#fff8cf;scale:1.055;text-shadow:0 2px #6e350a,0 0 17px #ffcb4c,0 3px 10px #000;outline:none}
+#menu .menu-choice:not(:disabled):hover:before,#menu .menu-choice:focus-visible:before,#menu .menu-choice.selected:before{content:"";position:absolute;left:7px;top:50%;width:0;height:0;border-left:12px solid #ffd651;border-top:8px solid transparent;border-bottom:8px solid transparent;transform:translateY(-50%);filter:drop-shadow(0 0 5px #ffc34c)}
+#menu .menu-choice:disabled{color:#72869e;opacity:.55;cursor:default}
+.menu-caption{margin:14px 0 0;font:600 10px/1.3 ui-monospace,monospace;letter-spacing:.10em;color:#b7cce1;text-shadow:0 2px #000}
+.title-footer{position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:max(18px,env(safe-area-inset-left));right:max(18px,env(safe-area-inset-right));display:flex;justify-content:space-between;align-items:center;color:#c9dbed;font-size:10px;font-weight:800;letter-spacing:.08em;pointer-events:none;text-shadow:0 2px 6px #000}
+.title-controls b{color:#071729;background:#a1e2f8;padding:3px 6px;border-radius:4px;margin:0 4px}
+#menu h2{font:900 italic clamp(18px,2.5vw,28px)/1.15 system-ui;color:#fff4c3;margin:5px 0 12px;text-shadow:0 2px #071322}
+#menu p{max-width:none;margin:8px auto;color:#cbd9e7}
+.menu-screen{width:100%;text-align:center}#menu .back-choice{margin:7px auto 0;font-size:17px;color:#c7deeb}
+.level-tile{display:flex;align-items:center;gap:10px;width:100%;max-width:320px;margin:auto;padding:12px;text-align:left;border:1px solid #69c6ec;background:linear-gradient(120deg,#142e4aeb,#173c54b8);border-radius:6px;color:#fff;box-shadow:0 3px #060f1a}
+.level-tile strong,.level-tile small{display:block}.level-tile small{font-size:10px;color:#b6d6e7;margin-top:3px}.level-num{font:1000 26px 'Arial Black',system-ui;color:#ffc94a}.locked-level{font-size:11px!important}
+.settings-row{display:flex;align-items:center;justify-content:space-between;max-width:310px;margin:0 auto 7px;padding:5px 0;border-bottom:1px solid #aac8df45;color:#e7f4ff;font-size:13px}.settings-row button{background:#1a3d5a;border:1px solid #79bbd4;padding:5px 12px;border-radius:4px;font-size:11px}
+#voiceTests{justify-content:center;margin:6px auto}#extras{margin:0 auto;text-align:left}#extras[open]{padding:7px;background:#101b2be8}#confirmScreen .menu-choice{margin:auto}
+#pauseGame{position:fixed;z-index:3;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);height:35px;min-width:41px;border:1px solid #8fc0e4;background:#102332df;border-radius:7px;font:900 17px system-ui;display:none}
+body.playing:not(.cinematic) #pauseGame{display:block}body.paused #pauseGame{display:none}
+#pauseOverlay{position:fixed;inset:0;z-index:6;background:#061021b8;display:grid;place-items:center;text-align:center}.pause-panel{padding:25px;min-width:min(320px,90vw);background:linear-gradient(140deg,#14283aee,#081324f5);border:1px solid #77bfd69c;box-shadow:0 10px 50px #0009}.pause-panel h2{color:#ffd55c;font:1000 italic 30px system-ui;margin:0 0 12px}.pause-panel .menu-choice{margin:auto;font-size:20px!important}
+#trailerScreen{position:fixed;inset:0;z-index:6;pointer-events:none}.trailer-bar{position:absolute;left:0;right:0;height:10%;background:#03080d}.trailer-bar.top{top:0}.trailer-bar.bottom{bottom:0}#trailerText{position:absolute;bottom:15%;left:5%;right:5%;text-align:center;font:1000 italic clamp(22px,4vw,48px) system-ui;color:#ffe082;letter-spacing:.08em;text-shadow:0 3px 8px #000,0 0 17px #000}#skipTrailer{position:absolute;top:12%;right:5%;pointer-events:auto;padding:7px 12px;background:#14273ae6;border:1px solid #7ba4c2;border-radius:4px;font-size:11px}
+@media(orientation:portrait){#overlay{align-items:flex-end;justify-content:center;padding:12px 5vw max(42px,env(safe-area-inset-bottom));background:linear-gradient(0deg,#050e20 0%,#061326f5 30%,#0c203ad2 42%,#0a172a24 68%,transparent 83%),linear-gradient(180deg,#050c1e88,transparent 25%)}#menu{width:100%;margin:auto 0 0}.game-logo{margin-bottom:12px}#menu h1{font-size:clamp(46px,13vw,80px)}.logo-brand span{font-size:22px}.logo-subtitle{font-size:11px}#menu .menu-choice{font-size:22px;min-height:37px}.title-controls{display:none}.title-footer{justify-content:center}.menu-caption{margin-top:8px}}
+@media(max-height:520px) and (orientation:landscape){#overlay{padding:12px max(5vw,env(safe-area-inset-left)) 28px;align-items:center}#menu{width:48%;margin:auto 0}.game-logo{margin-bottom:10px}.logo-brand{padding:4px 14px 3px}.logo-brand span{font-size:clamp(13px,2.4vw,23px)}#menu h1{font-size:clamp(33px,6.1vw,64px)}.logo-subtitle{margin-top:5px;font-size:10px}.classic-nav{gap:0}#menu .menu-choice{font-size:clamp(16px,2.45vw,23px);min-height:30px;padding-top:4px;padding-bottom:4px}.menu-caption{margin-top:6px;font-size:9px}.title-footer{font-size:9px;bottom:7px}}
+@media(prefers-reduced-motion:reduce){.title-specks{animation:none}.menu-choice{transition:none}}
+#perfReadout{position:fixed;z-index:3;top:max(72px,calc(env(safe-area-inset-top) + 64px));left:max(14px,env(safe-area-inset-left));padding:4px 7px;border-radius:4px;background:#071728c9;color:#bce8dc;font:700 10px ui-monospace,monospace;pointer-events:none}body:not(.playing) #perfReadout,body.cinematic #perfReadout{display:none}#levelScreen .level-tile{margin:6px auto}#levelScreen #caveFree{font-size:15px;margin:auto}
+#starkStats,#starkDetect,#trueHero,#starkTools{position:fixed;z-index:3}body:not(.playing) #starkStats,body:not(.playing) #starkDetect,body:not(.playing) #trueHero,body:not(.playing) #starkTools,body.cinematic #starkStats,body.cinematic #starkDetect,body.cinematic #trueHero,body.cinematic #starkTools{display:none}
+#starkStats{top:max(100px,calc(env(safe-area-inset-top) + 92px));left:max(14px,env(safe-area-inset-left));font:700 10px system-ui;color:#f5dc9a;background:#0b1a2bd9;padding:5px 7px;border-radius:4px;pointer-events:none}#starkDetect{top:max(126px,calc(env(safe-area-inset-top) + 118px));left:14px;font-size:10px;color:#86dfff;text-shadow:0 2px #06101b;pointer-events:none}#trueHero{top:max(71px,calc(env(safe-area-inset-top) + 63px));right:max(14px,env(safe-area-inset-right));width:clamp(100px,30vw,180px);font:800 9px system-ui;color:#ffe49b;text-align:right;pointer-events:none}#trueHero i{display:block;height:6px;background:#0b1e2c;border:1px solid #e2ae4a88;margin-top:3px;border-radius:5px;overflow:hidden}#trueHero b{display:block;height:100%;background:linear-gradient(90deg,#e5a73a,#ffef97);width:0}
+#starkTools{display:flex;gap:5px;right:max(18px,env(safe-area-inset-right));bottom:max(120px,calc(env(safe-area-inset-bottom) + 103px))}#starkTools button{min-height:35px;border:1px solid #8ebbd8;background:#142b43e8;border-radius:6px;padding:5px 8px;font:900 10px system-ui}
+#starkPanel{position:fixed;inset:0;z-index:8;background:#040b17d9;display:grid;place-items:center;padding:12px;touch-action:pan-y}.starkSheet{width:min(590px,95vw);max-height:88dvh;overflow:auto;padding:16px;background:linear-gradient(130deg,#18344c,#101b2b);border:1px solid #638caa;border-radius:12px}.starkSheet header{display:flex;justify-content:space-between;align-items:center;gap:6px}.starkSheet header strong{font:900 21px system-ui;color:#ffd160}.starkSheet header small{display:block;color:#a9dfff;font-size:11px;margin:5px 0}.starkSheet h3{font:800 12px system-ui;color:#9ac5df;margin:14px 0 6px;letter-spacing:.08em}#characterList,#bonusList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.starkChar,#starkClose{min-height:37px;text-align:left;padding:9px;border:1px solid #52738e;border-radius:5px;background:#233c55;font:800 12px system-ui}.starkChar small{display:block;color:#c6d9e6;font-size:10px;font-weight:500;margin-top:5px}.starkChar:disabled{opacity:.47}.starkSheet p{font-size:11px;color:#d3dfeb}#starkDetector{margin-top:7px;width:100%}
+#starkCut{position:fixed;inset:0;z-index:7;pointer-events:none}.starkCutBar{position:absolute;left:0;right:0;height:10%;background:#080b12}.starkCutBar.top{top:0}.starkCutBar.bottom{bottom:0}#starkCutTitle{position:absolute;top:4%;left:4%;font:900 14px system-ui;color:#ffd35f}#starkCutLine{position:absolute;bottom:9%;left:5%;right:5%;padding:12px;background:#0a1525d9;text-align:center;font:700 16px system-ui}#starkCutSkip{position:absolute;top:3%;right:4%;pointer-events:auto;font-size:11px;padding:7px;background:#26384b;border:1px solid #799ab7}
+@media(max-height:520px){#starkTools{bottom:106px}#starkStats{top:76px}#starkDetect{top:97px}#trueHero{top:56px}.starkSheet{max-height:90dvh}}
+#caveDialogue{position:fixed;z-index:4;left:18%;right:18%;bottom:16%;padding:9px 12px;background:#08121ee8;border:1px solid #a98d60;text-align:center;color:#fff3dc;font:700 13px system-ui;border-radius:5px;pointer-events:none}#starkCutLine{font-size:clamp(13px,2vw,20px);color:#fff0d1;max-width:680px;margin:0 auto;bottom:10%;line-height:1.35}</style></head><body><div id="perfReadout">-- FPS</div><div id="hud"><div id="scoreboard"><i class="gold-stud" aria-hidden="true"></i><span id="counter" aria-label="Study">00000</span><small id="hero">TONY STARK</small></div><div id="obj"><small>MISJA 01 / WARSZTAT</small><span id="objective">Odzyskaj 6 ogniw energii</span><div id="progress"><div id="progressFill"></div></div></div></div><div id="stick"><div id="knob"></div></div><div id="starkStats"></div><div id="starkDetect"></div><div id="trueHero"><span>PRAWDZIWY BOHATER</span><i><b id="trueHeroFill"></b></i></div><div id="starkTools"><button id="starkChars">POSTACIE</button><button id="starkAttack">MOC</button><button id="starkDodge">UNIK</button></div><div id="actions"><button id="swap">ZMIANA</button><button id="view" aria-label="Pokaż przód postaci">WIDOK</button><button id="fly">LOT</button><button id="act">AKCJA</button><button id="jump">SKOK</button></div><div id="hint">WASD · ruch　 E · akcja　 Spacja · skok　 F · lot　 Q · postać</div><div id="msg"></div><div id="cinema" class="hidden"><div class="bar top"></div><div class="bar bottom"></div><div id="flash"></div><div id="sceneName"></div><div id="dialog"><span id="speaker"></span><span id="line"></span></div><button id="skip">POMIŃ ▶</button><button id="voiceToggle" aria-label="Włącz lub wyłącz dialogi">GŁOS: ON</button></div><button id="pauseGame" aria-label="Pauza" title="Pauza">Ⅱ</button><div id="overlay"><div class="title-vignette" aria-hidden="true"></div><div class="title-specks" aria-hidden="true"></div><div id="menu"><header class="game-logo" aria-label="Brick Iron Hero">
+<div class="logo-brand"><span>BRICK</span><i></i><i></i><i></i></div><h1><span class="iron-title">IRON HERO</span></h1><div class="logo-subtitle">STARK INDUSTRIES</div></header>
+<div id="menuRoot" class="menu-screen"><nav class="classic-nav" aria-label="Menu główne">
+<button class="menu-choice" id="start" disabled>ŁADOWANIE…</button>
+<button class="menu-choice" id="continueGame" disabled>Kontynuuj</button>
+<button class="menu-choice" id="selectLevel">Wybór poziomu</button>
+<button class="menu-choice" id="watchTrailer">Zwiastun</button>
+<button class="menu-choice" id="openOptions">Ustawienia</button></nav><div id="saveInfo" class="menu-caption">Rozdział 01 · Warsztat Starka</div></div>
+<div id="levelScreen" class="menu-screen hidden"><h2>Wybór poziomu</h2><button class="level-tile" id="levelOne"><span class="level-num">01</span><span><strong>Narodziny Mark III</strong><small>Warsztat Starka · misja fabularna</small></span></button><button class="level-tile" id="caveStory"><span class="level-num">02</span><span><strong>Ucieczka z jaskini</strong><small>Fabularny · Mark I · 10 minizestawów</small></span></button><button class="menu-choice" id="caveFree">Jaskinia — swobodna gra</button><button class="menu-choice back-choice" data-back>Wstecz</button></div>
+<div id="optionsScreen" class="menu-screen hidden"><h2>Ustawienia</h2><div class="settings-row"><span>Grafika</span><button id="qualityMode">AUTO</button></div><div class="settings-row"><span>Dubbing</span><button id="menuVoice">WŁ.</button></div><div id="voiceTests"><button id="testJarvis">TEST JARVIS</button><button id="testTony">TEST TONY</button></div><details id="extras"><summary>Ustawienia dubbingu</summary><label for="tonyVoice" class="voiceLabel">GŁOS ZAPASOWY TONY’EGO</label><select id="tonyVoice"><option value="">Automatycznie — naturalny polski</option></select><div id="packControls"><button id="importPack">WCZYTAJ DUBBING</button><input id="packFile" type="file" accept=".json,application/json" hidden><small id="packStatus">JARVIS: 5/5 • Tony: 4/4 nagrań</small></div></details><button class="menu-choice back-choice" data-back>Wstecz</button></div>
+<div id="confirmScreen" class="menu-screen hidden"><h2>Nowa gra?</h2><p>Rozpoczęcie nowej gry zastąpi dotychczasowy zapis misji.</p><button class="menu-choice" id="confirmNew">Rozpocznij od nowa</button><button class="menu-choice back-choice" data-back>Anuluj</button></div>
+<p id="err"></p></div><div class="title-footer"><span>FAN GAME · BUILD 0.9.7 · MOLDED ARMOR</span><span class="title-controls"><b>↵</b> Wybierz　<b>Esc</b> Wstecz</span></div></div><div id="trailerScreen" class="hidden"><div class="trailer-bar top"></div><div class="trailer-bar bottom"></div><div id="trailerText"></div><button id="skipTrailer">POMIŃ ▶</button></div><div id="starkPanel" class="hidden"><div class="starkSheet"><header><div><strong>STARK INDUSTRIES</strong><small id="starkWallet"></small></div><button id="starkClose">ZAMKNIJ ×</button></header><h3>POSTACIE I ZBROJOWNIA</h3><div id="characterList"></div><h3>CZERWONE KLOCKI · BONUSY</h3><div id="bonusList"></div><button class="starkChar" id="starkDetector">Wykrywacz minizestawów</button><h3>OSIĄGNIĘCIA</h3><p id="starkAchievements"></p></div></div><div id="caveDialogue" class="hidden"></div><div id="starkCut" class="hidden"><div class="starkCutBar top"></div><div class="starkCutBar bottom"></div><strong id="starkCutTitle"></strong><p id="starkCutLine"></p><button id="starkCutSkip">POMIŃ ▶</button></div><div id="pauseOverlay" class="hidden"><div class="pause-panel"><h2>PAUZA</h2><button class="menu-choice" id="resumeGame">Wznów grę</button><button class="menu-choice" id="saveReturn">Zapisz i wróć do menu</button></div></div>
+<script>window.addEventListener('error',function(e){var el=document.getElementById('err');if(el)el.textContent='Błąd gry: '+(e.message||'Nie udało się załadować zasobu')+(e.filename?' · '+e.filename.split('/').pop()+':'+e.lineno:'');});</script><script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script><script src="./figures-097.js"></script><script src="./workshop.js?v=060"></script><script src="./stark-industries.js?v=097"></script><script>
+(()=>{'use strict';const $=x=>document.getElementById(x);if(!window.THREE){$('err').textContent='Nie udało się załadować silnika 3D. Sprawdź internet i odśwież stronę.';return}
+const T=THREE, scene=new T.Scene();scene.background=new T.Color(0x87a9ba);scene.fog=new T.Fog(0x87a9ba,38,100);
+const touchGPU=matchMedia('(pointer:coarse)').matches||/iPhone|iPad|Android/i.test(navigator.userAgent);let quality='auto';try{const q=localStorage.getItem('brick-quality');if(['auto','fast','low','medium','high'].includes(q))quality=q==='fast'?'low':q}catch(e){}
+let renderer;try{renderer=new T.WebGLRenderer({antialias:!touchGPU,powerPreference:'high-performance',alpha:false,stencil:false});}catch(e){$('err').textContent='WebGL jest niedostępny w tej przeglądarce.';return}
+let renderScale=Math.min(devicePixelRatio,touchGPU?.85:1.5);renderer.setPixelRatio(renderScale);renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=!(touchGPU&&quality!=='high');renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;document.body.prepend(renderer.domElement);
+const camera=new T.PerspectiveCamera(48,innerWidth/innerHeight,.1,140);scene.add(new T.HemisphereLight(0xc6d8eb,0x696261,1.55));const sun=new T.DirectionalLight(0xffe3bf,2.45);sun.position.set(-10,16,10);sun.castShadow=true;sun.shadow.mapSize.set(touchGPU?512:1024,touchGPU?512:1024);Object.assign(sun.shadow.camera,{left:-22,right:22,top:22,bottom:-22,near:1,far:65});sun.shadow.normalBias=.025;sun.shadow.bias=-.0002;scene.add(sun);workshopLighting(T,scene,renderer);
+const perfEl=$('perfReadout');let perfStart=0,perfFrames=0,perfCooldown=0,perfFPS=0,slowWindows=0,fastWindows=0;
+function setRenderScale(v){v=Math.max(.50,Math.min(touchGPU?1.15:1.5,v));if(Math.abs(v-renderScale)<.015)return;renderScale=v;renderer.setPixelRatio(v);renderer.setSize(innerWidth,innerHeight)}
+function applyQuality(){renderer.shadowMap.enabled=quality==='high'||(!touchGPU&&quality==='auto');sun.castShadow=renderer.shadowMap.enabled;setRenderScale(quality==='low'?.60:quality==='medium'?.86:quality==='high'?Math.min(devicePixelRatio,touchGPU?1.15:1.5):Math.min(devicePixelRatio,touchGPU?.85:1.5));$('qualityMode').textContent=quality==='auto'?'AUTO':quality==='low'?'LOW':quality==='medium'?'MEDIUM':'HIGH';slowWindows=fastWindows=0;perfCooldown=performance.now()+2500}
+$('qualityMode').onclick=()=>{quality=quality==='auto'?'low':quality==='low'?'medium':quality==='medium'?'high':'auto';try{localStorage.setItem('brick-quality',quality)}catch(e){}applyQuality()};applyQuality();
+function measurePerformance(now){if(!perfStart)perfStart=now;perfFrames++;const elapsed=now-perfStart;if(elapsed<1100)return;perfFPS=Math.round(perfFrames*1000/elapsed);perfFrames=0;perfStart=now;perfEl.textContent=perfFPS+' FPS · '+Math.round(renderScale*100)+'% · 0.9.7 / M'+(window.BRICK_ARMOR_BUILD||'OLD');if(quality!=='auto'||now<perfCooldown)return;if(perfFPS<(touchGPU?27:48)){slowWindows++;fastWindows=0;if(slowWindows>=2){setRenderScale(renderScale-.12);slowWindows=0;perfCooldown=now+2200}}else if(perfFPS>=(touchGPU?29:56)){fastWindows++;slowWindows=0;if(fastWindows>=5&&renderScale<(touchGPU?.85:1.5)){setRenderScale(Math.min(touchGPU?.85:1.5,renderScale+.07));fastWindows=0;perfCooldown=now+3500}}else{fastWindows=slowWindows=0}}
+const glowMaterials=new Map();const cache=new Map(),geo=new T.BoxGeometry(1,1,1),cyl=new T.CylinderGeometry(1,1,1,16);function mat(c,metal=0){const k=c+':'+metal;if(!cache.has(k))cache.set(k,new T.MeshStandardMaterial({color:c,metalness:metal,roughness:.30}));return cache.get(k)}
+function mesh(g,s,x,y,z,c,p=scene,metal=0){const o=new T.Mesh(g,mat(c,metal));o.scale.set(...s);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;p.add(o);return o}
+function box(x,y,z,w,h,d,c,p=scene,m=0){return mesh(geo,[w,h,d],x,y,z,c,p,m)}
+function cylinder(x,y,z,r,h,c,p=scene,m=0){return mesh(cyl,[r,h,r],x,y,z,c,p,m)}
+function glow(x,y,z,w,h,d,c,p){const o=box(x,y,z,w,h,d,c,p);if(!glowMaterials.has(c))glowMaterials.set(c,new T.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.82}));o.material=glowMaterials.get(c);return o}
+box(0,-.38,0,38,.7,40,0x566775);box(0,-.65,-21,100,.8,8,0x536c72);box(0,-.9,-40,150,.3,46,0x246d91);box(0,-.05,0,24,.12,24,0x8799a6);
+for(let i=-12;i<=12;i+=3){box(i,.025,0,.035,.025,24,0x415566);box(0,.025,i,24,.025,.035,0x415566)}
+// Open-front workshop, glass skyline, benches and illuminated bays.
+box(0,2.4,-12,25,4.8,.45,0x354353);box(-12,2.4,0,.5,4.8,24,0x344452);box(12,1.2,-4,.5,2.4,16,0x344452);
+for(let x=-10;x<=10;x+=4){box(x,3.15,-11.7,3.2,1.9,.13,0x6fadc4);glow(x,3.15,-11.59,3.1,.07,.06,0x96d7f2,scene);box(x,1,-10.55,2.7,1.2,1.4,0x28384c);box(x,1.65,-10.5,2.9,.13,1.6,0x8899a9);glow(x,1.15,-9.8,1.5,.24,.05,0x36bbed,scene)}
+for(let z=-8;z<=7;z+=5){box(-11,1,z,1.5,1.8,3.2,0x243b4c);box(-11,2,z,1.6,.2,3.3,0x9baeb8);glow(-10.2,1.3,z,.1,.15,2.2,0x42d4ee,scene)}
+for(let x=-16;x<=16;x+=4){box(x,.06,15,2,.12,.13,0xe5b84c);box(x,.25,-16,.18,.45,5,0xa9bac5)}
+// Instanced brick floor, studs and layered brick walls.
+const dummy=new T.Object3D();function batch(g,items){let m=new T.InstancedMesh(g,new T.MeshStandardMaterial({color:0xffffff,roughness:.35}),items.length);items.forEach((p,i)=>{dummy.position.set(p[0],p[1],p[2]);dummy.scale.set(p[3],p[4],p[5]);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);m.setColorAt(i,new T.Color(p[6]));});m.instanceMatrix.needsUpdate=true;m.receiveShadow=true;scene.add(m)}
+let tiles=[],pegs=[],walls=[];for(let x=-11.5;x<12;x+=1)for(let z=-11.5;z<12;z+=1){let edge=x<-8||x>8||z<-8||z>9;tiles.push([x,.04,z,.97,.12,.97,edge?0x516a76:((Math.round(x+z)%4===0)?0x788b97:0x6b818e)]);if(edge)for(let dx of [-.25,.25])for(let dz of [-.25,.25])pegs.push([x+dx,.135,z+dz,.15,.105,.15,0x788fa1]);}
+for(let row=0;row<5;row++)for(let i=0;i<12;i++){walls.push([-11+i*2+(row%2)*.45,.38+row*.58,-11.41,1.96,.55,.32,row===0?0xd2a33c:row%2?0x41576a:0x526777]);walls.push([-11.68,.38+row*.58,-10+i*1.8,.32,.55,1.77,row===0?0xd2a33c:0x536879]);}batch(geo,tiles);batch(cyl,pegs);batch(geo,walls);
+function brick(x,y,z,w,h,d,c,p=scene){box(x,y,z,w,h,d,c,p);let nx=Math.max(1,Math.round(w/.45)),nz=Math.max(1,Math.round(d/.45));for(let i=0;i<nx;i++)for(let j=0;j<nz;j++)cylinder(x-w/2+w*(i+.5)/nx,y+h/2+.05,z-d/2+d*(j+.5)/nz,.13,.10,c,p)}
+for(let z of [-8,-4,0,4]){brick(-10,2.12,z,1.5,.18,1.4,0x218ac1);box(-10,2.55,z,.64,.67,.10,0x182d43);glow(-9.99,2.55,z+.06,.51,.47,.025,0x36b7e2,scene)}
+for(let x of [-8,-5,-2,1,4]){brick(x,.30,-9.6,1.8,.6,1.4,0x647887);brick(x,.76,-9.6,1.8,.28,1.4,0x233747);box(x,1.85,-11.05,1.85,2.15,.10,0x1b3043);glow(x,2.86,-10.98,1.6,.08,.08,0x66d8ff,scene)}
+for(let i=0;i<15;i++){let x=-28+i*4.1,h=3+(i*7%13)*.55;box(x,h/2-.6,-33-(i%3)*2,3.5,h,3,0x6a899d);}
+const cart=new T.Group();cart.position.set(10,0,7);scene.add(cart);brick(0,.48,0,1.25,.5,1.85,0xe5ae36,cart);brick(0,.92,-.25,1.14,.4,1.1,0xc23b31,cart);for(let x of [-.69,.69])for(let z of [-.57,.57]){let w=cylinder(x,.25,z,.28,.18,0x22282e,cart);w.rotation.z=Math.PI/2}
+const pad=new T.Group();pad.position.set(7,0,-6);scene.add(pad);cylinder(0,.14,0,2.15,.28,0x263a4f,pad,.4);cylinder(0,.3,0,1.72,.09,0x43c7e9,pad,.3);cylinder(0,.38,0,1.25,.1,0x394e61,pad);for(let i=0;i<8;i++){let a=i*Math.PI/4;glow(Math.cos(a)*1.8,.37,Math.sin(a)*1.8,.25,.08,.25,0x8ce9ff,pad)}
+const poseRigs=dressWorkshop(T,scene,renderer,{box,cylinder,mat,glow,brick,geo});
+const figure=buildMinifigureFactory(T,renderer,mat);
+let tony=figure(false),iron=figure(true),player=new T.Group();player.add(tony,iron);iron.visible=false;player.position.set(0,0,7);scene.add(player);
+const contactMap=(()=>{
+  const c=document.createElement('canvas');c.width=c.height=96;const ctx=c.getContext('2d');
+  const g=ctx.createRadialGradient(48,48,2,48,48,46);g.addColorStop(0,'rgba(8,17,24,.76)');g.addColorStop(.46,'rgba(12,20,24,.55)');g.addColorStop(1,'rgba(10,19,24,0)');
+  ctx.fillStyle=g;ctx.fillRect(0,0,96,96);return new T.CanvasTexture(c);
+})();
+function contactShade(){
+  const mesh=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:contactMap,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));
+  mesh.rotation.x=-Math.PI/2;scene.add(mesh);return mesh;
+}
+const footShadows=[contactShade(),contactShade()],footOrigin=new T.Vector3();
+function drawWorkshop(){
+  (stark&&started&&!cut?[stark.model(),null]:[tony,iron]).forEach((fig,i)=>{
+    const shadow=footShadows[i];
+    shadow.visible=!!fig?.visible;
+    if(!shadow.visible)return;
+    if(started&&cut?.type==='armor'&&i===0){shadow.visible=false;return;}
+    fig.getWorldPosition(footOrigin);
+    const x=footOrigin.x,z=footOrigin.z;
+    const floor=Math.hypot(x-7,z+6)<1.26?.436:.109;
+    const lift=Math.max(0,footOrigin.y-floor);
+    shadow.position.set(x,floor+.002,z+.014);
+    shadow.scale.set(1.65+lift*.26,1.12+lift*.20,1);shadow.material.opacity=.9/(1+lift*.68);
+  });
+  stark?.occlude(camera.position);syncCoins();renderer.render(scene,camera);
+}
+
+let stark=null;let crates=[],studs=[],rings=[],debris=[];let score=0,cells=0,hitTimer=0,built=false,armored=false,flying=false,stage=0,ringIndex=0,started=false,vy=0,noticeUntil=0;let paused=false,trailerStart=null,menuScreen="menuRoot",menuActive=0,lastAutosave=0;let cut=null,walkBlend=0,walkPhase=0,motionX=0,motionZ=0,landPulse=0,wasAir=false,ac=null;const positions=[[-6,5],[-4,-1],[1,-5],[7,4],[-7,-6],[4,0]];
+// All animated collectibles share only two GPU draw calls.
+const studBody=new T.CylinderGeometry(.185,.198,.095,touchGPU?12:24),studRim=new T.TorusGeometry(.109,.040,touchGPU?5:8,touchGPU?12:24);
+const coinLimit=128,coinMat=new T.MeshStandardMaterial({color:0xffffff,roughness:.30,metalness:.43});
+const coinBodies=new T.InstancedMesh(studBody,coinMat,coinLimit),coinRims=new T.InstancedMesh(studRim,coinMat,coinLimit);
+for(const m of [coinBodies,coinRims]){m.count=0;m.frustumCulled=false;m.instanceMatrix.setUsage(T.DynamicDrawUsage);scene.add(m)}
+const goldCoin=new T.Color(0xf9ba32),goldRim=new T.Color(0xffda6c),blueCoin=new T.Color(0x35cce0),blueRim=new T.Color(0x9ff6ff);
+const coinPivot=new T.Object3D(),coinLocal=new T.Object3D(),coinMatrix=new T.Matrix4();coinLocal.rotation.x=Math.PI/2;coinLocal.position.y=.069;coinLocal.updateMatrix();
+const coinFrustum=new T.Frustum(),coinProjection=new T.Matrix4(),coinSphere=new T.Sphere(new T.Vector3(),.38);
+function syncCoins(){if(stark?.area()==='cave'){coinBodies.count=coinRims.count=0;return}
+  camera.updateMatrixWorld();coinProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);coinFrustum.setFromProjectionMatrix(coinProjection);
+  let n=0;for(let i=0;i<studs.length&&n<coinLimit;i++){
+    const o=studs[i];coinSphere.center.copy(o.g.position);if(!coinFrustum.intersectsSphere(coinSphere))continue;
+    coinPivot.position.copy(o.g.position);coinPivot.rotation.set(0,o.g.rotation.y,.83,'YXZ');coinPivot.scale.setScalar(o.energy?1.36:1.08);coinPivot.updateMatrix();
+    coinBodies.setMatrixAt(n,coinPivot.matrix);coinMatrix.multiplyMatrices(coinPivot.matrix,coinLocal.matrix);coinRims.setMatrixAt(n,coinMatrix);
+    coinBodies.setColorAt(n,o.energy?blueCoin:goldCoin);coinRims.setColorAt(n,o.energy?blueRim:goldRim);n++;
+  }
+  for(const m of [coinBodies,coinRims]){m.count=n;m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true}
+}
+function stud(x,z,y=.35,energy=false){const g=new T.Object3D();g.position.set(x,y,z);g.rotation.y=x+z;studs.push({g,y,energy});}
+// Batch rigid pieces inside destructible crates and flight gates; the parent
+// remains independently removable by gameplay and the save system.
+function batchRigid(parent){
+  parent.updateMatrixWorld(true);const buckets=new Map(),inv=new T.Matrix4().copy(parent.matrixWorld).invert(),local=new T.Matrix4();
+  parent.traverse(m=>{if(m!==parent&&m.isMesh&&!m.isInstancedMesh&&!Array.isArray(m.material)){const key=m.geometry.uuid+'|'+m.material.uuid;if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(m)}});
+  for(const items of buckets.values()){if(items.length<2)continue;const first=items[0],inst=new T.InstancedMesh(first.geometry,first.material,items.length);inst.castShadow=first.castShadow;inst.receiveShadow=first.receiveShadow;
+    items.forEach((m,i)=>{local.multiplyMatrices(inv,m.matrixWorld);inst.setMatrixAt(i,local);m.removeFromParent()});inst.instanceMatrix.needsUpdate=true;inst.computeBoundingSphere();parent.add(inst)}
+}
+positions.forEach(([x,z],i)=>{let g=new T.Group();g.position.set(x,0,z);brick(0,.23,0,1.2,.46,1.2,0xbc742d,g);brick(0,.70,0,1.2,.46,1.2,0xe1a045,g);for(let s of [-1,1]){box(s*.42,.48,.61,.13,.91,.06,0x855021,g);box(s*.42,.48,-.61,.13,.91,.06,0x855021,g)}box(0,.54,.625,.36,.23,.045,0x32485a,g);glow(0,.54,.654,.18,.09,.028,0x65e6ff,g);batchRigid(g);scene.add(g);crates.push({g,x,z,live:true});});
+for(let i=0;i<32;i++){let a=i*Math.PI*2/32;stud(9.8*Math.cos(a),9.8*Math.sin(a))}
+function notice(s){$('msg').textContent=s;$('msg').style.display='block';noticeUntil=performance.now()+2200}
+function hud(){ $('progressFill').style.width=(stage===0?cells/6*100:stage===2?ringIndex/5*100:100)+'%'; $('counter').textContent=String(score).padStart(5,'0');$('hero').textContent=armored?'IRON MAN / MARK III':'TONY STARK';$('objective').textContent=stage===0?'Odzyskaj ogniwa: '+cells+'/6':stage===1?'Podejdź do niebieskiej platformy i użyj AKCJI':stage===2?'Przeleć przez bramy: '+ringIndex+'/5':'MISJA UKOŃCZONA — swobodna gra';if(stark&&started)stark.hud();}
+function suit(v){armored=v;tony.visible=!v;iron.visible=v;if(stark)stark.syncBase(v);if(!v)flying=false;hud()}
+function makeRings(){
+  const points=[[7,2.5,-2],[9,2.5,4],[5,2.5,9],[-3,2.5,8],[-8,2.5,2]];
+  const ringShape=new T.TorusGeometry(1.55,.075,touchGPU?5:8,touchGPU?32:48);
+  const tileShape=new T.BoxGeometry(.28,.105,.16);
+  points.forEach(([x,y,z],i)=>{
+    const ring=new T.Mesh(ringShape,new T.MeshStandardMaterial({color:i?0x426477:0xffca40,emissive:i?0x122838:0xc77b19,emissiveIntensity:.65,roughness:.32}));
+    ring.position.set(x,y,z);ring.rotation.y=i<2?0:Math.PI/3;
+    for(let j=0;j<12;j++){
+      const a=j*Math.PI/6,tile=new T.Mesh(tileShape,j%3===0?mat(0xf7dfad,.14):mat(0x324d61,.18));
+      tile.position.set(1.55*Math.cos(a),1.55*Math.sin(a),0);tile.rotation.z=a+Math.PI/2;ring.add(tile);
+    }
+    batchRigid(ring);scene.add(ring);rings.push(ring);
+  });
+}
+function action(){if(!started||cut||paused||stark?.blocked())return;if(stark?.action())return;hitTimer=.38;anim.hitSide=1-anim.hitSide;sfx("click");let near=crates.filter(c=>c.live).sort((a,b)=>player.position.distanceTo(a.g.position)-player.position.distanceTo(b.g.position))[0];if(near&&Math.hypot(player.position.x-near.x,player.position.z-near.z)<2.6){near.live=false;scene.remove(near.g);stud(near.x,near.z,.48,true);for(let i=0;i<5;i++){let a=i*1.26;stud(near.x+Math.cos(a)*1.1,near.z+Math.sin(a)*1.1);let d=new T.Group();d.position.set(near.x,.6,near.z);scene.add(d);box(0,0,0,.35,.20,.35,i%2?0xbc742d:0xe1a045,d);debris.push({d,v:new T.Vector3(Math.cos(a)*3,3+Math.random()*3,Math.sin(a)*3),age:0})}return}
+if(stage===1&&Math.hypot(player.position.x-7,player.position.z+6)<3){beginCut('armor');return}notice(stage===0?'Podejdź bliżej skrzyni':stage===1?'Podejdź do platformy':'Przeleć przez bramy')}
+function jump(){if(!started||cut||paused||stark?.blocked())return;if(flying){flying=false;vy=0}else if(player.position.y<.05){vy=7.5;sfx("jump")}}
+function flight(){if(!started||cut||paused||stark?.blocked())return;if(!armored||(stark&&!stark.canFly())){notice('Najpierw zbuduj pancerz');return}flying=!flying;sfx(flying?'power':'click');notice(flying?'TRYB LOTU':'LĄDOWANIE')}
+$('act').onclick=action;$('fly').onclick=flight;$('jump').onclick=jump;$('swap').onclick=()=>{if(!started||cut||stark?.blocked())return;if(stark){stark.openPicker();return}if(!built){notice('Pancerz jeszcze niedostępny');return}suit(!armored)};
+$('view').onclick=()=>{if(!started||cut||stark?.blocked())return;if(stark?.area()==='cave'){caveWide=!caveWide;notice(caveWide?'JASKINIA · WIDOK SZERSZY':'JASKINIA · KAMERA BLISKA');return}showFront=!showFront;notice(showFront?'WIDOK POSTACI':'KAMERA GRY')};let joy={x:0,y:0},pointer=null,keys={};const stick=$('stick'),knob=$('knob');function move(e){let r=stick.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,rad=r.width*.32,k=Math.max(1,Math.hypot(dx,dy)/rad);joy.x=dx/k/rad;joy.y=dy/k/rad;knob.style.transform='translate('+dx/k+'px,'+dy/k+'px)'}
+stick.onpointerdown=e=>{pointer=e.pointerId;stick.setPointerCapture(pointer);move(e)};stick.onpointermove=e=>{if(e.pointerId===pointer)move(e)};function release(){pointer=null;joy.x=joy.y=0;knob.style.transform='none'}stick.onpointerup=release;stick.onpointercancel=release;stick.onlostpointercapture=release;
+
+// Local mission checkpoint, including remaining collectibles and destructible objects.
+const SAVE_KEY='brick-iron-checkpoint-v070';
+function readCheckpoint(){try{let d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(!d||d.v!==1||!Number.isInteger(d.stage)||d.stage<0||d.stage>3||!Number.isInteger(d.cells)||d.cells<0||d.cells>6||!Number.isInteger(d.ringIndex)||d.ringIndex<0||d.ringIndex>5||!Number.isFinite(d.score)||!Array.isArray(d.crates)||d.crates.length!==crates.length||!Array.isArray(d.studs)||d.studs.length>100||!Array.isArray(d.pos)||d.pos.length!==3||!d.pos.every(Number.isFinite)||!d.studs.every(o=>o&&[o.x,o.y,o.z].every(Number.isFinite)))return null;return d}catch(e){return null}}
+function saveCheckpoint(){if(!started||cut)return false;if(stark?.area()==='cave')return stark.saveCave();try{let d={v:1,stage,cells,ringIndex,score,built,armored,flying,pos:[player.position.x,player.position.y,player.position.z],rotation:player.rotation.y,crates:crates.map(c=>c.live),studs:studs.map(o=>({x:o.g.position.x,z:o.g.position.z,y:o.y,energy:o.energy}))};localStorage.setItem(SAVE_KEY,JSON.stringify(d));return true}catch(e){return false}}
+function restoreCheckpoint(d){for(let c of crates){scene.remove(c.g)}crates.forEach((c,i)=>{c.live=!!d.crates[i];if(c.live)scene.add(c.g)});for(let o of studs)scene.remove(o.g);studs.length=0;for(let o of d.studs)stud(o.x,o.z,o.y,!!o.energy);score=Math.max(0,d.score);cells=d.cells;stage=d.stage;ringIndex=d.ringIndex;built=!!d.built;suit(built&&!!d.armored);flying=armored&&!!d.flying;player.position.set(T.MathUtils.clamp(d.pos[0],-10.5,10.5),flying?2.5:0,T.MathUtils.clamp(d.pos[2],-9.7,12));player.rotation.y=Number.isFinite(d.rotation)?d.rotation:0;if(stage===2){makeRings();for(let i=0;i<ringIndex;i++)scene.remove(rings[i]);if(rings[ringIndex]){rings[ringIndex].material.color.setHex(0xffd557);rings[ringIndex].material.emissive.setHex(0xffa52b)}}hud()}
+function showMenuScreen(id){menuScreen=id;for(let n of ['menuRoot','levelScreen','optionsScreen','confirmScreen'])$(n).classList.toggle('hidden',n!==id);menuActive=0;markMenu(0)}
+function menuItems(){let parent=paused?$('pauseOverlay'):$(menuScreen);return [...parent.querySelectorAll('button:not(:disabled)')].filter(b=>b.offsetParent!==null)}
+function markMenu(index,focus=false){let items=menuItems();if(!items.length)return;menuActive=(index+items.length)%items.length;for(let b of document.querySelectorAll('.menu-choice.selected'))b.classList.remove('selected');items[menuActive].classList.add('selected');if(focus)items[menuActive].focus({preventScroll:true})}
+function updateSaveInfo(){const d=readCheckpoint();$('continueGame').disabled=!d&&!stark?.canResume();$('saveInfo').textContent=stark?.canResume()?'ZAPIS · UCIECZKA Z JASKINI':d?'ZAPIS · '+d.score+' STUDÓW · '+(d.stage===3?'UKOŃCZONO':d.stage===2?'PRÓBA LOTU':d.cells+'/6 OGNIW'):'ROZDZIAŁ 01 · WARSZTAT STARKA'}
+function launchGame(d){if(started)return;stark?.markWorkshop();stopVoice();started=true;document.body.classList.add('playing');$('overlay').classList.add('hidden');resetFigure(tony);resetFigure(iron);player.position.set(0,.10,7);player.rotation.set(0,0,0);suit(false);ensureAudio();preparePickups();if(d){restoreCheckpoint(d);if(d.stage===3)stark?.onWorkshopDone();notice('Wczytano zapis');saveCheckpoint()}else{saveCheckpoint();beginCut('intro')}}
+function requestNew(){if(readCheckpoint())showMenuScreen('confirmScreen');else launchGame(null)}
+function togglePause(v){if(!started||cut)return;paused=!!v;release();keys={};document.body.classList.toggle('paused',paused);$('pauseOverlay').classList.toggle('hidden',!paused);if(paused){saveCheckpoint();markMenu(0)}else{document.activeElement?.blur();ensureAudio()}}
+function endTrailer(){trailerStart=null;$('trailerScreen').classList.add('hidden');$('overlay').classList.remove('hidden');resetFigure(tony);resetFigure(iron);markMenu(0)}
+$('start').onclick=requestNew;$('confirmNew').onclick=()=>launchGame(null);$('continueGame').onclick=()=>{if(stark?.canResume()){stark.resume();return}let d=readCheckpoint();if(d)launchGame(d);else updateSaveInfo()};$('selectLevel').onclick=()=>showMenuScreen('levelScreen');$('levelOne').onclick=requestNew;$('openOptions').onclick=()=>showMenuScreen('optionsScreen');for(let b of document.querySelectorAll('[data-back]'))b.onclick=()=>{stopVoice();showMenuScreen('menuRoot')};
+$('watchTrailer').onclick=()=>{stopVoice();ensureAudio();trailerStart=performance.now();$('overlay').classList.add('hidden');$('trailerScreen').classList.remove('hidden');sfx('power')};$('skipTrailer').onclick=endTrailer;$('pauseGame').onclick=()=>{if(!stark?.blocked())togglePause(true)};$('resumeGame').onclick=()=>togglePause(false);$('saveReturn').onclick=()=>{if(!saveCheckpoint()){notice('Nie można zapisać postępu');togglePause(false);return}location.reload()};$('menuVoice').onclick=()=>{voiceOn=!voiceOn;if(!voiceOn)stopVoice();$('menuVoice').textContent=voiceOn?'WŁ.':'WYŁ.';$('voiceToggle').textContent='GŁOS: '+(voiceOn?'ON':'OFF');try{localStorage.setItem('brick-voice-enabled',voiceOn?'1':'0')}catch(e){}};
+for(let el of document.querySelectorAll('#menu button,#pauseOverlay button'))el.addEventListener('pointerenter',()=>{let n=menuItems().indexOf(el);if(n>=0)markMenu(n)});
+function menuInput(code){if(trailerStart!==null){if(code==='Escape'||code==='Enter'||code==='Space')endTrailer();return true}if(started&&!paused)return false;let items=menuItems();if(code==='ArrowDown'||code==='ArrowUp'){markMenu(menuActive+(code==='ArrowDown'?1:-1),true);return true}if(code==='Enter'||code==='Space'){items[menuActive]?.click();return true}if(code==='Escape'){if(paused)togglePause(false);else if(menuScreen!=='menuRoot'){stopVoice();showMenuScreen('menuRoot')}return true}return false}
+addEventListener('keydown',e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT'||e.target.tagName==='SUMMARY')return;if(menuInput(e.code)){e.preventDefault();return}if(!started||paused)return;if(stark?.blocked()){if(e.code==='Escape'){if(stark.isCut())stark.finishStoryCut();else stark.closePicker()}return}keys[e.code]=true;if(!e.repeat){if(e.code==='Escape'){if(cut)finishCut();else togglePause(true)}if(e.code==='KeyE')action();if(e.code==='Space'){e.preventDefault();jump()}if(e.code==='KeyF')flight();if(e.code==='KeyQ')$('swap').click();if(e.code==='KeyR')stark?.attack(true);if(e.code==='ShiftLeft')stark?.dodge()}});
+addEventListener('keyup',e=>keys[e.code]=false);addEventListener('blur',()=>{keys={};release()});addEventListener('pagehide',saveCheckpoint);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveCheckpoint()});$('skip').onclick=()=>finishCut();
+
+// Decode the uploaded pickup once and share it across overlapping pickups.
+const pickupURL='./audio/fx/stud.mp3';
+const pickupData=fetch(pickupURL).then(r=>r.ok?r.arrayBuffer():null).catch(()=>null);
+let pickupReady;
+function preparePickups(){
+  if(!pickupReady&&ac)pickupReady=pickupData.then(b=>b?ac.decodeAudioData(b):null).catch(()=>null);
+}
+let lastPickup=-Infinity;
+function playPickup(){
+  if(!ac)return;
+  const now=performance.now();
+  // Several studs can reach the same player in one render frame.
+  if(now-lastPickup<60)return;
+  lastPickup=now;preparePickups();
+  const play=buf=>{
+    if(!buf){const a=new Audio(pickupURL);a.volume=.61;a.play().catch(()=>{});return;}
+    const s=ac.createBufferSource(),vol=ac.createGain();s.buffer=buf;vol.gain.value=.62;
+    s.connect(vol);vol.connect(ac.destination);s.onended=()=>{s.disconnect();vol.disconnect();};s.start();
+  };
+  pickupReady.then(play);
+}
+
+function sfx(kind){if(!ac||ac.state!=='running')return;try{let now=ac.currentTime;let notes=kind==='power'?[210,340,520,780]:kind==='success'?[523,659,784,1047]:kind==='jump'?[300,480]:kind==='metal'?[130,75]:[240];notes.forEach((f,i)=>{let o=ac.createOscillator(),g=ac.createGain(),t=now+i*.075;o.type=kind==='metal'?'triangle':'sine';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.065,t+.012);g.gain.exponentialRampToValueAtTime(.001,t+.13);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.145)})}catch(e){}}
+const smooth=x=>{x=T.MathUtils.clamp(x,0,1);return x*x*(3-2*x)};
+function resetFigure(fig){
+  fig.position.set(0,0,0);fig.rotation.set(0,0,0);fig.scale.set(1,1,1);
+  for(const part of fig.children){part.visible=true;part.rotation.set(0,0,0);}
+  if(fig.userData.visor)fig.userData.visor.rotation.x=0;
+  for(const j of fig.userData.jets)j.visible=false;
+}
+const assembly=iron.children.map((o,i)=>{
+  const {legs,arms,head,torso}=iron.userData;
+  const boot=legs.indexOf(o),arm=arms.indexOf(o);
+  const start=boot>=0?1.85+boot*.30:arm>=0?3.45+arm*.16:o===head?4.53:o===torso?3.05:2.79;
+  return {o,i,other:tony.children[i],p:o.position.clone(),r:o.rotation.clone(),scale:o.scale.clone(),
+    start,span:o===head?.86:.78,dx:Math.sign(o.position.x||0)*(boot>=0?1.35:1.6),dy:o===head?1.25:boot>=0?.38:.78};
+});
+let sparks=[];for(let i=0;i<22;i++){let sp=new T.Mesh(new T.BoxGeometry(.055,.055,.055),new T.MeshBasicMaterial({color:i%2?0x9feeff:0xffd56a,transparent:true,opacity:.9}));sp.visible=false;scene.add(sp);sparks.push(sp)}
+function cleanAssembly(){for(let a of assembly){a.o.position.copy(a.p);a.o.rotation.copy(a.r);a.o.scale.copy(a.scale);a.o.visible=true;a.other.visible=true}poseRigs();for(let sp of sparks)sp.visible=false}
+// Each key identifies a subtitle line in scenes. Imported clips may override these defaults.
+const jarvisRecordings = {
+  'intro-0': './audio/jarvis/warsztat.mp3',
+  'intro-2': './audio/jarvis/ogniwa.mp3',
+  'armor-1': './audio/jarvis/montaz.mp3',
+  'armor-2': './audio/jarvis/reaktor.mp3',
+  'outro-0': './audio/jarvis/bramy.mp3'
+};
+const tonyRecordings = {
+  'intro-1': './audio/tony/czesci.mp3?v=061',
+  'armor-0': './audio/tony/montaz.mp3?v=061',
+  'armor-3': './audio/tony/lot.mp3?v=061',
+  'outro-1': './audio/tony/poprzeczka.mp3?v=061'
+};
+const caveRecordings={};for(const id of ['tony-01','tony-02','tony-03','tony-05','tony-06','tony-07','tony-09','tony-10','yinsen-01','yinsen-02'])caveRecordings['cave-'+id]='./audio/cave/'+id+'.mp3?v=091';
+const voiceClips = {...jarvisRecordings, ...tonyRecordings,...caveRecordings};
+let recordingProgressAt = 0;
+let packData={},recordPlayer=new Audio(),voiceOn=true,voiceAudio=null,voiceSerial=0,voiceList=[],robotReady=false,robotSource=null,robotNodes=[],robotCache=new Map();
+recordPlayer.preload='auto';recordPlayer.playsInline=true;
+const allowedKeys = Object.keys(voiceClips);
+const jarvisKeys = Object.keys(jarvisRecordings);
+const tonyKeys = Object.keys(tonyRecordings);
+function installPack(p,persist=true){if(!p||p.format!=='brick-iron-voice-pack-v1'||!p.clips||typeof p.clips!=='object')throw Error('Nieprawidłowy pakiet');let valid={};for(let k of allowedKeys){let c=p.clips[k];if(!c)continue;if(c.mime!=='audio/mpeg'||typeof c.base64!=='string'||c.base64.length>1800000||!/^[A-Za-z0-9+/]+={0,2}$/.test(c.base64))throw Error('Nieprawidłowe nagranie: '+k);atob(c.base64);valid[k]=c}if(!Object.keys(valid).length)throw Error('Brak nagrań');Object.assign(packData,valid);for(let [k,c] of Object.entries(valid))voiceClips[k]='data:audio/mpeg;base64,'+c.base64;let saved=true;if(persist){try{localStorage.setItem('brick-voice-pack-v1',JSON.stringify({format:'brick-iron-voice-pack-v1',clips:packData}))}catch(e){saved=false}}let el=$('packStatus');el.textContent='JARVIS: '+jarvisKeys.filter(k=>voiceClips[k]).length+'/5 • Tony: '+tonyKeys.filter(k=>voiceClips[k]).length+'/4'+(saved?'':' • tylko ta sesja');return saved}
+try{let stored=localStorage.getItem('brick-voice-pack-v1');if(stored)installPack(JSON.parse(stored),false)}catch(e){}
+recordPlayer.src=voiceClips['intro-0'];
+$('importPack').onclick=()=>$('packFile').click();$('packFile').onchange=async e=>{let f=e.target.files&&e.target.files[0];if(!f)return;try{if(f.size>5000000)throw Error('Pakiet jest za duży');let p=JSON.parse(await f.text());installPack(p);$('err').textContent='Dubbing wczytany.'}catch(err){$('err').textContent='Import: '+err.message}e.target.value=''};
+const robotBase='https://cdn.jsdelivr.net/gh/btopro/mespeak@master/';
+let selectedTony='';try{selectedTony=localStorage.getItem('brick-tony-voice')||''}catch(e){}
+function voiceQuality(v){let n=v.name.toLowerCase();return (/premium|enhanced|natural|neural|rozszerzon|ulepszon|wysokiej jakości|siri/.test(n)?100:0)+(/marek|adam|piotr|krzysztof|jan|male|mężczyzna/.test(n)?25:0)+(v.default?2:0)}
+function refreshVoices(){if(!window.speechSynthesis)return;voiceList=speechSynthesis.getVoices();let pl=voiceList.filter(v=>v.lang.toLowerCase().startsWith('pl')).sort((a,b)=>voiceQuality(b)-voiceQuality(a));let el=$('tonyVoice');el.replaceChildren(new Option('Automatycznie — naturalny polski',''));for(let v of pl){let option=new Option(v.name,v.voiceURI);el.add(option)}if(pl.some(v=>v.voiceURI===selectedTony))el.value=selectedTony;}
+try{refreshVoices();if(window.speechSynthesis){speechSynthesis.addEventListener('voiceschanged',refreshVoices);window.addEventListener('pageshow',refreshVoices)}}catch(e){}
+$('tonyVoice').onchange=e=>{selectedTony=e.target.value;try{localStorage.setItem('brick-tony-voice',selectedTony)}catch(e){}ensureAudio();speakLine('system',3,'TONY STARK','No dobra. Sprawdźmy, czy to lata.')};
+let robotRequested=false;
+function loadRobot(){if(robotRequested)return;robotRequested=true;let script=document.createElement('script');script.src=robotBase+'mespeak.js';script.async=true;script.onload=()=>{try{let ms=window.meSpeak;if(!ms)return;let config=false,voice=false;function ready(){if(config&&voice){robotReady=true;}}ms.loadConfig(robotBase+'mespeak_config.json',ok=>{config=!!ok;ready()});ms.loadVoice(robotBase+'voices/pl.json',ok=>{voice=!!ok;ready()})}catch(e){}};script.onerror=()=>{};document.head.appendChild(script)}
+function ensureAudio(){try{if(!ac){let C=window.AudioContext||window.webkitAudioContext;if(C)ac=new C()}if(ac&&ac.state==='suspended')ac.resume().catch(()=>{})}catch(e){}}
+function stopVoice(){voiceSerial++;try{if(robotSource){try{robotSource.stop()}catch(e){}robotSource=null}for(let node of robotNodes){try{node.disconnect();if(node.stop)node.stop()}catch(e){}}robotNodes=[];if(voiceAudio){voiceAudio.onerror=voiceAudio.onended=voiceAudio.ontimeupdate=null;voiceAudio.pause();voiceAudio=null}if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}}
+function robotChime(){if(!ac||ac.state!=='running')return;try{let t=ac.currentTime;for(let i=0;i<2;i++){let o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=i?720:510;g.gain.setValueAtTime(.035,t+i*.07);g.gain.exponentialRampToValueAtTime(.001,t+i*.07+.1);o.connect(g);g.connect(ac.destination);o.start(t+i*.07);o.stop(t+i*.07+.11)}}catch(e){}}
+function speakLine(type,index,who,line){stopVoice();if(!voiceOn)return;let serial=voiceSerial,jarvis=who.indexOf('J.A.R.V.I.S.')>=0;
+const local=()=>{if(serial!==voiceSerial||!voiceOn||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return;try{let u=new SpeechSynthesisUtterance(line);u.lang='pl-PL';let pl=(voiceList.length?voiceList:speechSynthesis.getVoices()).filter(v=>v.lang.toLowerCase().startsWith('pl'));let ranked=pl.slice().sort((a,b)=>voiceQuality(b)-voiceQuality(a));let chosen=jarvis?ranked.find(v=>v.voiceURI!==selectedTony)||ranked[0]:ranked.find(v=>v.voiceURI===selectedTony)||ranked[0];if(chosen)u.voice=chosen;u.rate=jarvis?.79:.96;u.pitch=jarvis?.40:1;u.volume=jarvis?.89:1;if(jarvis)robotChime();window.speechSynthesis.speak(u)}catch(e){}};
+const synthRobot=async()=>{if(!robotReady||!ac||ac.state!=='running'){local();return}try{let buf=robotCache.get(line);if(!buf){let raw=window.meSpeak.speak(line,{voice:'pl',variant:'m3',pitch:31,speed:153,amplitude:100,rawdata:true});if(!raw)throw Error('empty synthesis');let data=raw instanceof ArrayBuffer?raw.slice(0):ArrayBuffer.isView(raw)?raw.buffer.slice(raw.byteOffset,raw.byteOffset+raw.byteLength):new Uint8Array(raw).buffer;buf=await ac.decodeAudioData(data);robotCache.set(line,buf)}if(serial!==voiceSerial||!voiceOn)return;
+let src=ac.createBufferSource();src.buffer=buf;let high=ac.createBiquadFilter();high.type='highpass';high.frequency.value=190;let low=ac.createBiquadFilter();low.type='lowpass';low.frequency.value=3800;let eq=ac.createBiquadFilter();eq.type='peaking';eq.frequency.value=1100;eq.Q.value=.75;eq.gain.value=4;let mod=ac.createGain();mod.gain.value=.81;let osc=ac.createOscillator(),depth=ac.createGain();osc.frequency.value=37;depth.gain.value=.18;osc.connect(depth);depth.connect(mod.gain);let dry=ac.createGain();dry.gain.value=.85;let delay=ac.createDelay(.2);delay.delayTime.value=.045;let wet=ac.createGain();wet.gain.value=.13;src.connect(high);high.connect(low);low.connect(eq);eq.connect(mod);mod.connect(dry);dry.connect(ac.destination);mod.connect(delay);delay.connect(wet);wet.connect(ac.destination);robotSource=src;robotNodes=[src,high,low,eq,mod,osc,depth,dry,delay,wet];src.onended=()=>{try{osc.stop()}catch(e){};if(robotSource===src){robotSource=null;for(let node of robotNodes){try{node.disconnect()}catch(e){}}robotNodes=[]}};robotChime();osc.start();src.start()}catch(e){local()}};
+const clip = voiceClips[type+'-'+index];
+let usedFallback = false;
+const fallback = () => {
+  if (serial !== voiceSerial || usedFallback) return;
+  usedFallback = true;
+  voiceAudio = null;
+  if (jarvis) { loadRobot(); synthRobot(); } else local();
+};
+if (!clip) { fallback(); return; }
+try {
+  voiceAudio = recordPlayer;
+  if (recordPlayer.getAttribute('src') !== clip || recordPlayer.error) recordPlayer.src = clip;
+  else recordPlayer.currentTime = 0;
+  recordPlayer.volume = .95;
+  recordingProgressAt = performance.now();
+  recordPlayer.ontimeupdate = () => { recordingProgressAt = performance.now(); };
+  recordPlayer.onended = () => { if (serial === voiceSerial) voiceAudio = null; };
+  recordPlayer.onerror = fallback;
+  recordPlayer.play().catch(fallback);
+} catch (e) { fallback(); }
+}
+$('voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('voiceToggle').textContent='GŁOS: '+(voiceOn?'ON':'OFF');if(!voiceOn)stopVoice();else if(cut){ensureAudio();let k=Math.max(0,cut.last),l=scenes[cut.type].lines[k];speakLine(cut.type,k,l[1],l[2])}};
+$('testJarvis').onclick=()=>{ensureAudio();speakLine('intro',0,'J.A.R.V.I.S.','Witaj, panie Stark. Warsztat jest gotowy.')};$('testTony').onclick=()=>{ensureAudio();speakLine('armor',3,...scenes.armor.lines[3].slice(1))};
+const scenes={intro:{duration:8.5,name:'01 / POCZĄTEK',lines:[[0,'J.A.R.V.I.S.','Witaj, panie Stark. Warsztat jest gotowy.'],[2.8,'TONY STARK','Świetnie. Tylko gdzie podziały się moje części?'],[5.6,'J.A.R.V.I.S.','Sześć ogniw energii. Proponuję zacząć od skrzyń.']]},armor:{duration:9,name:'02 / NARODZINY MARK III',lines:[[0,'TONY STARK','JARVIS, uruchom sekwencję montażu.'],[2.2,'J.A.R.V.I.S.','Montaż nóg. Stabilizacja pancerza.'],[4.1,'J.A.R.V.I.S.','Reaktor aktywny. Kalibracja hełmu.'],[6.5,'TONY STARK','No dobra. Sprawdźmy, czy to lata.']]},outro:{duration:6.5,name:'03 / TEST ZAKOŃCZONY',lines:[[0,'J.A.R.V.I.S.','Wszystkie bramy zaliczone. Test zakończony sukcesem.'],[3,'TONY STARK','Nieźle. Następnym razem ustawmy poprzeczkę wyżej.']]}};
+function beginCut(type){if(cut)return;if(type==='outro')suit(true);release();keys={};motionX=motionZ=walkBlend=0;hitTimer=0;showFront=false;resetFigure(tony);resetFigure(iron);cleanAssembly();cut={type,t:0,last:-1,beats:new Set(),origin:player.position.clone()};flying=false;vy=0;player.position.y=type==='intro'?.10:0;player.rotation.y=0;if(type==='armor'){player.position.set(7,.42,-6);suit(false);iron.visible=false}document.body.classList.add('cinematic');$('cinema').classList.remove('hidden');$('sceneName').textContent=scenes[type].name;$('flash').style.opacity='0';$('speaker').textContent='';$('line').textContent='';sfx(type==='outro'?'success':'power');let l=scenes[type].lines[0];cut.last=0;$('speaker').textContent=l[1];$('line').textContent=l[2];speakLine(type,0,l[1],l[2])}
+function finishCut(){if(!cut)return;stopVoice();let type=cut.type;const origin=cut.origin;cut=null;lens(44);cleanAssembly();resetFigure(tony);resetFigure(iron);player.position.y=0;vy=0;flying=false;document.body.classList.remove('cinematic');$('cinema').classList.add('hidden');$('flash').style.opacity='0';if(type==='armor'){if(!built){built=true;stage=2;suit(true);makeRings();if(stark)stark.award(500);else score+=500;}player.position.set(7,0,-3.7);notice('MARK III ONLINE! Włącz LOT.')}else if(type==='intro'){player.position.set(0,0,7);notice('Odzyskaj 6 ogniw ze skrzyń')}else{player.position.x=origin.x;player.position.z=origin.z;notice('MISJA UKOŃCZONA! +1000 studsów')}hud();saveCheckpoint()}
+function cinemaFrame(dt){let c=cut;if(!c)return;let conf=scenes[c.type];const nextCue = conf.lines[c.last+1]?.[0] ?? conf.duration;
+let nextTime = c.t + dt * (voiceOn ? .53 : 1);
+// Let the current take finish before switching speakers, including on a slow connection.
+if (voiceAudio && !voiceAudio.ended && performance.now()-recordingProgressAt < 5000) {
+  nextTime = Math.min(nextTime, nextCue-.0001);
+}
+c.t = nextTime;
+let t=c.t;if(t>=conf.duration){finishCut();return}
+let k=0;for(let i=0;i<conf.lines.length;i++)if(t>=conf.lines[i][0])k=i;if(k!==c.last){c.last=k;$('speaker').textContent=conf.lines[k][1];$('line').textContent=conf.lines[k][2];speakLine(c.type,k,conf.lines[k][1],conf.lines[k][2])}
+renderCutShot(c,t,dt);
+}
+function renderCutShot(c,t,dt) {
+  const p=player.position;
+  const ease=(a,b)=>smooth((t-a)/(b-a));
+  const mix=T.MathUtils.lerp;
+  function shot(start,end,eyeA,eyeB,lookA,lookB,fov){
+    const u=ease(start,end);
+    camera.position.set(mix(eyeA[0],eyeB[0],u),mix(eyeA[1],eyeB[1],u),mix(eyeA[2],eyeB[2],u));
+    camera.lookAt(mix(lookA[0],lookB[0],u),mix(lookA[1],lookB[1],u),mix(lookA[2],lookB[2],u));
+    lens(fov+(camera.aspect<.85?9:0));
+  }
+  const pos=(dx,dy,dz)=>[p.x+dx,p.y+dy,p.z+dz];
+  const beat=(n,kind)=>{if(t>=n&&!c.beats.has(n)){c.beats.add(n);sfx(kind);}};
+  if(c.type==='intro'){
+    const check=Math.sin(Math.PI*ease(1.45,3.32)),shrug=Math.sin(Math.PI*ease(3.33,5.43));
+    tony.userData.head.rotation.set(.13*check,-.25*check+.58*ease(5.5,6.5),.11*shrug);
+    tony.userData.arms[1].rotation.set(-.86*check-.39*shrug,0,-.18*check);
+    tony.userData.arms[0].rotation.set(-.36*shrug,0,.34*shrug);
+    if(t<2.8)shot(0,2.8,pos(3.5,3.2,6.9),pos(1.7,2.45,4.6),pos(-.55,1.18,-1.5),pos(0,1.48,0),40);
+    else if(t<5.6)shot(2.8,5.6,pos(1.12,2.29,2.55),pos(.58,2.18,2.20),pos(0,1.94,0),pos(0,1.95,0),37);
+    else shot(5.6,8.5,[-8.3,1.75,8.45],[-7.9,1.19,7.66],[-4.7,.92,4.87],[-5.93,.63,4.92],47);
+  }else if(c.type==='armor'){
+    poseRigs(ease(.35,6.5),true);
+    tony.visible=iron.visible=true;
+    for(const a of assembly){
+      const u=T.MathUtils.clamp((t-a.start)/a.span,0,1),progress=smooth(u);
+      const remaining=1-progress,angle=a.i*2.399;
+      a.o.visible=u>0;a.other.visible=u<.86;
+      a.o.position.copy(a.p);a.o.rotation.copy(a.r);
+      a.o.position.x+=a.dx*remaining;
+      a.o.position.y+=a.dy*remaining+Math.sin(Math.PI*u)*.16;
+      a.o.position.z+=(.52+.18*Math.cos(angle))*remaining;
+      a.o.rotation.z+=a.dx*.34*remaining;
+      a.o.rotation.y+=Math.sin(angle)*.83*remaining;
+    }
+    for(const [n,kind] of [[2.55,'metal'],[2.89,'metal'],[3.83,'metal'],[4.27,'power'],[5.37,'metal'],[6.6,'success']])beat(n,kind);
+    let lift=ease(6.48,8.35);
+    player.position.y=.43+.72*lift;
+    tony.userData.head.rotation.x=.15*Math.sin(Math.PI*ease(.2,2.1));
+    iron.userData.arms.forEach((arm,i)=>{if(t>5.72){arm.rotation.z=(i?1:-1)*(.06+.25*lift);arm.rotation.x=-.15*lift;}});
+    iron.userData.jets.forEach(j=>{j.visible=lift>.018;j.scale.y=.7+.65*lift;});
+    iron.userData.visor.rotation.x=-1.09*(1-ease(5.28,5.76));beat(5.76,'metal');
+    const strike=t<4.04?3.83:5.37;
+    for(let i=0;i<sparks.length;i++){
+      const sp=sparks[i],age=t-strike-i*.006,a=i*2.4;
+      sp.visible=age>=0&&age<.48;
+      if(sp.visible){sp.position.set(p.x+Math.cos(a)*age*2.3,p.y+(strike<4?1.40:2.13)+age*(1.6+i%3)-age*age*7,p.z+.3+Math.sin(a)*age*2.3);sp.scale.setScalar(Math.max(.16,1-age*1.8));sp.material.opacity=1-age*1.7;}
+    }
+    if(t<1.95)shot(0,1.95,pos(-2.8,1.7,3.95),pos(-2.35,1.78,3.6),pos(0,1.25,0),pos(0,1.55,0),42);
+    else if(t<3.3)shot(1.95,3.3,pos(.72,.53,2.30),pos(.42,.65,2.03),pos(0,.54,0),pos(0,.66,0),40);
+    else if(t<4.68)shot(3.3,4.68,pos(-.9,1.55,2.48),pos(-.38,1.52,2.18),pos(0,1.37,0),pos(0,1.49,0),36);
+    else if(t<6.5)shot(4.68,6.5,pos(.66,2.45,2.65),pos(.35,2.25,2.27),pos(0,2.11,0),pos(0,2.11,0),34);
+    else shot(6.5,9,pos(-1.45,.69,4.75),pos(-2.28,1.16,5.15),pos(0,1.43,0),pos(0,1.37,0),41);
+  }else{
+    const land=ease(0,2.13),brace=Math.sin(Math.PI*ease(1.40,2.96)),salute=Math.sin(Math.PI*ease(3.0,5.85));
+    p.set(c.origin.x+1.6*(1-land),.12+2.25*(1-land),c.origin.z-1.85*(1-land));
+    iron.rotation.x=-.38*(1-land)+.18*brace;iron.rotation.z=-.20*(1-land);
+    iron.userData.head.rotation.set(.22*brace,-.31*salute,-.10*salute);
+    iron.userData.arms[1].rotation.set(-.72*brace-.85*salute,0,.28*(1-land));
+    iron.userData.arms[0].rotation.set(-.52*brace,0,-.26*(1-land));
+    iron.userData.legs[0].rotation.x=.34*brace;iron.userData.legs[1].rotation.x=-.48*brace;
+    iron.userData.jets.forEach(j=>{j.visible=t<1.9;j.scale.y=.45+1.25*(1-land);});beat(2.08,'metal');
+    if(t<2.12)shot(0,2.12,pos(-2.30,.38,4.84),pos(-1.76,.58,4.14),pos(0,1.36,0),pos(0,1.05,0),42);
+    else if(t<3.0)shot(2.12,3,pos(.87,.40,2.55),pos(1.12,.67,2.80),pos(0,.69,0),pos(0,1.2,0),39);
+    else shot(3,6.5,pos(.7,2.08,2.95),pos(-.80,1.80,3.48),pos(0,1.83,0),pos(0,1.64,0),37);
+  }
+  drawWorkshop();
+}
+function lens(fov){if(Math.abs(camera.fov-fov)>.02){camera.fov=fov;camera.updateProjectionMatrix();}}
+function titleFrame(t,render=true){
+  const narrow=camera.aspect<1, dist=narrow?7.15:5.28,angle=.095+.065*Math.sin(t*.32);
+  player.position.set(2.95,.108,-2.95);
+  tony.visible=iron.visible=true;
+  iron.position.set(.42,0,.25);iron.rotation.y=-.12;iron.userData.head.rotation.y=.16+.06*Math.sin(t*.58);
+  tony.position.set(-.65,.015,-.57);tony.rotation.y=.27;tony.userData.head.rotation.y=-.16+.07*Math.sin(t*.48);
+  tony.userData.arms[0].rotation.set(-.16,0,-.10);
+  iron.userData.arms[1].rotation.set(-.43-.13*Math.sin(t*.7),0,.14);
+  lens(narrow?39:37);
+  const shift=narrow?0:Math.min(4.8,dist*Math.tan(T.MathUtils.degToRad(camera.fov/2))*camera.aspect*.415);
+  const target=new T.Vector3(player.position.x-shift,narrow?.61:1.37,player.position.z+.10);
+  camera.position.set(target.x+Math.sin(angle)*dist,narrow?2.52:1.98,target.z+dist);
+  camera.lookAt(target);if(render)drawWorkshop();
+}
+function trailerFrame(now){let t=(now-trailerStart)/1000;if(t>=10.5){endTrailer();return}titleFrame(t,false);let p=player.position;let u=t<3.5?t/3.5:t<7?(t-3.5)/3.5:(t-7)/3.5;if(t<3.5){camera.position.set(p.x+2.7-u*1.2,2.0,p.z+4.8-u*.9);camera.lookAt(p.x-.2,1.25,p.z);$('trailerText').textContent='WARSZTAT STARKA'}else if(t<7){camera.position.set(p.x+1.6-u*.7,1.82,p.z+2.9-u*.45);camera.lookAt(p.x+.38,1.65,p.z+.18);iron.userData.arms[1].rotation.x=-.7-u*.65;$('trailerText').textContent='NARODZINY MARK III'}else{let q=Math.sin(u*Math.PI);iron.position.y=.08+.75*q;iron.userData.jets.forEach(j=>{j.visible=true;j.scale.y=.65+q*.5});camera.position.set(p.x-1.8+u*1.2,2.1+q*.5,p.z+4.1);camera.lookAt(p.x+.4,1.55+q*.3,p.z);$('trailerText').textContent='BRICK IRON HERO'}drawWorkshop()}
+let gamepadLatch={};function pollMenuPad(){if(started&&!paused||!navigator.getGamepads)return;let p=[...navigator.getGamepads()].find(Boolean);if(!p){gamepadLatch={};return}let actions={ArrowUp:!!p.buttons[12]?.pressed||p.axes[1]<-.65,ArrowDown:!!p.buttons[13]?.pressed||p.axes[1]>.65,Enter:!!p.buttons[0]?.pressed,Escape:!!p.buttons[1]?.pressed};for(let k in actions){if(actions[k]&&!gamepadLatch[k])menuInput(k);gamepadLatch[k]=actions[k]}}
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}addEventListener('resize',resize);
+// Procedural minifigure animation director: rigid limbs, independent body/head,
+ // phase-driven stride, weight shifts and spring-smoothed aerial poses.
+const anim={gait:0,phase:0,flight:0,air:0,run:0,land:0,takeoff:0,turn:0,prevYaw:0,wasFlight:false,wasAir:false,hitSide:1,trailClock:0,fig:null,footHeight:0,launch:0,brake:0,lastSpeed:0,lastStep:-1,impact:0,lookReady:false};
+const cameraDest=new T.Vector3();const groundY=.085;const bootPoint=new T.Vector3(),cameraTarget=new T.Vector3(),cameraWanted=new T.Vector3();
+const mixA=(a,b,t)=>a+(b-a)*t;
+const damp=(a,b,dt,k)=>mixA(a,b,1-Math.exp(-k*dt));
+const clamp01=v=>T.MathUtils.clamp(v,0,1);
+const sin2=v=>Math.sin(v);
+const pose=(obj,x,y,z,dt,k=17)=>{if(!obj)return;obj.rotation.x=damp(obj.rotation.x,x,dt,k);obj.rotation.y=damp(obj.rotation.y,y,dt,k);obj.rotation.z=damp(obj.rotation.z,z,dt,k)};
+const trailGroup=new T.Group();scene.add(trailGroup);
+const trailGeom=new T.SphereGeometry(.09,6,4);
+const trails=Array.from({length:touchGPU?18:30},(_,i)=>{let m=new T.Mesh(trailGeom,new T.MeshBasicMaterial({color:i%3===0?0xefffff:0x53ceff,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending}));m.visible=false;trailGroup.add(m);return{m,life:0,max:1,vel:new T.Vector3()}});
+let trailCursor=0;const emitPos=new T.Vector3(),localDir=new T.Vector3(),quat=new T.Quaternion();
+function emitTrail(jet,amount){const p=trails[trailCursor++%trails.length];jet.getWorldPosition(emitPos);jet.getWorldQuaternion(quat);localDir.set(0,-1,0).applyQuaternion(quat).normalize();p.m.position.copy(emitPos).addScaledVector(localDir,.22);p.vel.copy(localDir).multiplyScalar(2.4+amount*3.8);p.life=p.max=.30+amount*.23;p.m.scale.set(.75,.95,.75);p.m.visible=true;p.m.material.opacity=.65;}
+const dustGeom=new T.BoxGeometry(.09,.09,.09);const dust=Array.from({length:touchGPU?10:18},(_,i)=>{let m=new T.Mesh(dustGeom,new T.MeshBasicMaterial({color:i%3===0?0x9fcde0:0x8796a5,transparent:true,opacity:0,depthWrite:false}));m.visible=false;trailGroup.add(m);return {m,life:0,max:1,v:new T.Vector3()}});let dustCursor=0;
+function dustBurst(x,z,count,power){for(let i=0;i<count;i++){let p=dust[dustCursor++%dust.length],a=i*2.399+clock*.7;p.m.position.set(x+Math.cos(a)*.24,.15,z+Math.sin(a)*.24);p.v.set(Math.cos(a)*power,.6+power*.45,Math.sin(a)*power);p.life=p.max=.32+.08*(i%3);p.m.visible=true;p.m.material.opacity=.56;p.m.scale.setScalar(.8);}}
+function tickDust(dt){for(let p of dust){if(!p.m.visible)continue;p.life-=dt;if(p.life<=0){p.m.visible=false;continue}p.v.y-=dt*5;p.m.position.addScaledVector(p.v,dt);p.m.position.y=Math.max(.11,p.m.position.y);p.m.rotation.x+=dt*3;p.m.material.opacity=.6*p.life/p.max;p.m.scale.setScalar(.8+(1-p.life/p.max)*.9)}}
+function clearTrails(){for(let p of dust){p.life=0;p.m.visible=false}anim.lookReady=false;anim.lastStep=-1;for(let p of trails){p.life=0;p.m.visible=false}anim.trailClock=0}
+function tickTrails(dt,fig,speed){for(let p of trails){if(!p.m.visible)continue;p.life-=dt;if(p.life<=0){p.m.visible=false;continue}let q=p.life/p.max;p.m.position.addScaledVector(p.vel,dt);p.m.scale.setScalar(.6+(1-q)*1.7);p.m.material.opacity=q*q*.56}if(flying&&armored){anim.trailClock+=dt;if(anim.trailClock>=(touchGPU?.085:.05)){anim.trailClock%=touchGPU?.085:.05;fig.updateMatrixWorld(true);for(let j of fig.userData.jets)emitTrail(j,speed)}}else anim.trailClock=0}
+function updatePose(fig,dt,t,vx,vz,gait,vertical,travel){
+ const airborne=!flying&&player.position.y>.075;
+ if(anim.fig!==fig){anim.fig=fig;anim.prevYaw=player.rotation.y;anim.turn=0;anim.lastStep=-1;anim.footHeight=0;fig.scale.set(1,1,1)}
+ const yawDelta=Math.atan2(Math.sin(player.rotation.y-anim.prevYaw),Math.cos(player.rotation.y-anim.prevYaw));anim.prevYaw=player.rotation.y;
+ anim.turn=damp(anim.turn,T.MathUtils.clamp(yawDelta/Math.max(.008,dt)*.055,-.28,.28),dt,9);
+ if(flying&&!anim.wasFlight)anim.takeoff=.47;
+ if(!flying&&anim.wasFlight)anim.air=1;
+ if(anim.wasAir&&!airborne&&!flying){anim.land=.39;anim.impact=1;sfx('metal');dustBurst(player.position.x,player.position.z,12,1.8)}
+ anim.wasFlight=flying;anim.wasAir=airborne;
+ anim.takeoff=Math.max(0,anim.takeoff-dt);anim.land=Math.max(0,anim.land-dt);anim.impact=damp(anim.impact,0,dt,10);anim.brake=damp(anim.brake,clamp01((anim.lastSpeed-gait)/Math.max(.01,dt)*.10),dt,9);anim.lastSpeed=gait;
+ anim.gait=damp(anim.gait,gait,dt,gait>anim.gait?12:17);
+ anim.run=damp(anim.run,smooth((gait-.55)/.40),dt,10);
+ anim.air=damp(anim.air,airborne?1:0,dt,17);
+ anim.flight=damp(anim.flight,flying?1:0,dt,7.5);
+ if(!flying&&!airborne){const strideLength=mixA(1.05,2.35,anim.run);anim.phase=(anim.phase+travel*Math.PI*2/strideLength)%(Math.PI*2)}
+ const phase=anim.phase,amp=anim.gait,run=anim.run,f=anim.flight,a=anim.air,ground=(1-f)*(1-a);
+ const wave=Math.sin(phase),sideWave=Math.cos(phase),idle=(1-amp)*ground;
+ const step=Math.abs(Math.sin(phase)),land=anim.land>0?Math.sin(Math.PI*(1-anim.land/.39)):0;
+ const take=anim.takeoff>0?Math.sin(Math.PI*(1-anim.takeoff/.47)):0;
+ const rise=clamp01((vertical+1)/8),airPitch=mixA(.20,-.10,rise);
+ // The forward axis of the minifigure is +Z, so a positive pitch leans forward.
+ const flightPitch=.05+amp*1.18-.28*take-.33*anim.brake;
+ const pitch=mixA((.025+.15*run)*amp+land*.27-.12*anim.brake,airPitch,a);
+ const bank=-anim.turn*(.55+1.35*amp);
+ pose(fig,mixA(pitch,flightPitch,f),0,mixA(sideWave*.035*amp+bank*.25,bank,f),dt,11);
+ fig.scale.set(1,1,1);
+ let lift=groundY+ground*(step*.075*amp+Math.sin(t*2.2)*.009*idle-land*.065)+f*(Math.sin(t*4.6)*.055+take*.065);
+ // Raise the pitched flight pose enough to keep the boots out of the floor on takeoff.
+ lift+=f*Math.max(0,Math.sin(flightPitch))*.24;
+ fig.position.y=damp(fig.position.y,lift,dt,19);
+ const ud=fig.userData;
+ pose(ud.torso,ground*(wave*.028*amp+land*.035),ground*sideWave*.045*amp,ground*sideWave*.024*amp,dt,14);
+ pose(ud.head,mixA(ground*(-.035*amp+Math.sin(t*1.9)*.025*idle)+a*(-.07),-flightPitch*.55,f),ground*(sideWave*.055*amp+Math.sin(t*.85)*.11*idle)+anim.turn*.18,-bank*.32,dt,12);
+ for(let i=0;i<2;i++){
+   const side=i?1:-1, p=phase+i*Math.PI;
+   // Piecewise stride gives a longer planted-foot stance and faster swing-through.
+   const u=((p/(2*Math.PI))%1+1)%1;const stance=.61-.09*run;const reach=.46+.31*run;const stride=u<stance?mixA(-reach,reach,smooth(u/stance)):mixA(reach,-reach,smooth((u-stance)/(1-stance)));
+   const legGround=stride*Math.min(1,amp*1.8)+land*(i?.16:-.16);
+   const legAir=i?mixA(-.45,-.19,rise):mixA(.21,.54,rise);
+   const legFlight=.07+.16*amp+side*.055*Math.sin(t*3)+side*.08*anim.brake;
+   pose(ud.legs[i],mixA(mixA(legGround,legAir,a),legFlight,f),f*side*.035,0,dt,20);
+   let armGround=-stride*Math.min(1,amp*1.7)*(.88+.18*run)+Math.sin(t*2.3+i*.9)*idle*.045;
+   let armAir=mixA(-.62,-1.38,rise)+side*.09;
+   let armFlight=.16+amp*.87-.48*take+side*anim.turn*.55-.35*anim.brake;
+   let ax=mixA(mixA(armGround,armAir,a),armFlight,f),az=side*(.035+amp*.025+f*(.15+.09*amp)+a*.20),ay=f*side*.08;
+   if(hitTimer>0&&i===anim.hitSide){let u=clamp01(1-hitTimer/.38);let strike=u<.23?mixA(ax,.72,smooth(u/.23)):u<.55?mixA(.72,-1.75,smooth((u-.23)/.32)):mixA(-1.75,ax,smooth((u-.55)/.45));ax=strike;az+=side*Math.sin(Math.PI*u)*.16;}
+   pose(ud.arms[i],ax,ay,az,dt,hitTimer>0?29:19);
+ }
+ // Compensate for the lowest rigid boot after posing, keeping the stance on the floor.
+ if(ground>.85&&player.position.y<.08){player.updateMatrixWorld(true);let low=Infinity;for(let leg of ud.legs)for(let z of [-.19,.29]){bootPoint.set(0,-.833,z);leg.localToWorld(bootPoint);low=Math.min(low,bootPoint.y)}const floor=.112;const correction=T.MathUtils.clamp(floor-low,-.19,.19);fig.position.y+=correction*(1-Math.exp(-dt*30));if(amp>.24&&travel>.001){const stepId=phase<Math.PI?0:1;if(stepId!==anim.lastStep){anim.lastStep=stepId;const foot=ud.legs[stepId];foot.getWorldPosition(bootPoint);dustBurst(bootPoint.x,bootPoint.z,3,.35+.45*run)}}}else anim.lastStep=-1;
+ // Helmet is held closed in gameplay; cutscene logic still owns its opening animation.
+ if(ud.visor)ud.visor.rotation.x=damp(ud.visor.rotation.x,0,dt,12);
+ ud.jets.forEach((j,i)=>{j.visible=armored&&(flying||f>.08);const pulse=1+.12*Math.sin(t*47+i*2.1);j.scale.set(.72+f*.38,Math.max(.03,f*(.56+.82*amp+.42*take)*pulse),.72+f*.38)});
+ tickTrails(dt,fig,amp);tickDust(dt);
+}
+// A stable camera looking down into the cave, independent of player facing.
+let caveWide=false,caveCameraReady=false;
+const caveCamPos=new T.Vector3(),caveCamLook=new T.Vector3();
+function caveCameraFrame(dt){
+  const p=player.position,portrait=camera.aspect<1;
+  const height=(caveWide?12.4:9.2)+(portrait?.65:0),back=caveWide?4.2:3.0;
+  // Fixed orientation matches the existing world-space touch joystick.
+  caveCamPos.set(p.x,p.y+height,p.z+back);
+  caveCamLook.set(p.x,p.y+.55,p.z-.45);
+  if(!caveCameraReady||camera.position.distanceTo(caveCamPos)>11){camera.position.copy(caveCamPos);caveCameraReady=true}
+  else camera.position.lerp(caveCamPos,1-Math.exp(-dt*16));camera.position.y=Math.max(camera.position.y,p.y+8.5);
+  lens(damp(camera.fov,caveWide?48:40,dt,10));camera.lookAt(caveCamLook);
+}
+let wasCutFrame=false;let prev=performance.now(),clock=0,showFront=false;camera.position.set(0,10,18);function frame(now){requestAnimationFrame(frame);let dt=Math.min((now-prev)/1000,.085);prev=now;if(document.hidden){perfStart=0;perfFrames=0;return}clock+=dt;measurePerformance(now);if(!started){pollMenuPad();if(trailerStart!==null)trailerFrame(now);else titleFrame(clock);return;}if(paused){pollMenuPad();perfStart=0;perfFrames=0;return}if(stark?.blocked()){if(stark.cutFrame(dt)){caveCameraReady=false;drawWorkshop();}else{perfStart=0;perfFrames=0}return}if(cut){if(!wasCutFrame){clearTrails();wasCutFrame=true}cinemaFrame(dt);return}wasCutFrame=false;if(now-lastAutosave>2500){lastAutosave=now;saveCheckpoint()}if(now>noticeUntil)$('msg').style.display='none';let vx=joy.x+(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0),vz=joy.y+(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0),mag=Math.hypot(vx,vz);if(!started)mag=vx=vz=0;let n=Math.max(1,mag),speed=(flying?8:5.3)*(stark?.dodgeFactor()||1),blend=1-Math.exp(-dt*(mag>.08?11:15));motionX+=(vx/n*speed-motionX)*blend;motionZ+=(vz/n*speed-motionZ)*blend;const oldX=player.position.x,oldZ=player.position.z;player.position.x=T.MathUtils.clamp(oldX+motionX*dt,-10.5,10.5);player.position.z=T.MathUtils.clamp(oldZ+motionZ*dt,-9.7,12);stark?.collide(oldX,oldZ);const travel=Math.hypot(player.position.x-oldX,player.position.z-oldZ);if(mag>.08){let a=Math.atan2(vx,vz),diff=Math.atan2(Math.sin(a-player.rotation.y),Math.cos(a-player.rotation.y));player.rotation.y+=diff*(1-Math.exp(-dt*13))}
+if(flying){player.position.y+=(2.5-player.position.y)*(1-Math.exp(-dt*3.7));vy=0}else{vy-=19*dt;player.position.y=Math.max(0,player.position.y+vy*dt);if(player.position.y===0)vy=0}
+let fig=stark?stark.model():(armored?iron:tony);hitTimer=Math.max(0,hitTimer-dt);let gait=T.MathUtils.clamp(travel/Math.max(dt,.001)/(flying?8:5.3),0,1);updatePose(fig,dt,clock,vx,vz,gait,vy,travel);stark?.update(dt);
+if(stark?.area()!=='cave'){for(let i=studs.length-1;i>=0;i--){let s=studs[i];s.g.rotation.y+=dt*2.5;s.g.position.y=s.y+Math.sin(clock*3+i)*.08;if(started&&Math.hypot(s.g.position.x-player.position.x,s.g.position.z-player.position.z)<1.05&&player.position.y<1.1){scene.remove(s.g);studs.splice(i,1);if(stark)stark.award(s.energy?100:10);else score+=s.energy?100:10;playPickup();if(s.energy){cells++;if(cells===6){stage=1;notice('Wszystkie części! Zbuduj Mark III.')}}hud()}}
+if(stage===2&&flying&&rings[ringIndex]&&player.position.distanceTo(rings[ringIndex].position)<1.65){scene.remove(rings[ringIndex]);ringIndex++;if(stark)stark.award(200);else score+=200;if(ringIndex===5){stage=3;if(stark){stark.award(1000);stark.onWorkshopDone()}else score+=1000;beginCut('outro')}else{rings[ringIndex].material.color.setHex(0xffd557);rings[ringIndex].material.emissive.setHex(0xffa52b);notice('BRAMA '+ringIndex+'/5')}hud()}
+for(let i=debris.length-1;i>=0;i--){let o=debris[i];o.age+=dt;o.v.y-=10*dt;o.d.position.addScaledVector(o.v,dt);o.d.rotation.x+=dt*4;if(o.age>1){scene.remove(o.d);debris.splice(i,1)}}
+}if(stark?.area()==='cave'){caveCameraFrame(dt);drawWorkshop();return}caveCameraReady=false;let dist=(innerWidth<innerHeight?6.95:5.85)+anim.flight*anim.gait*.85;let dest=showFront?cameraDest.set(player.position.x+Math.sin(player.rotation.y)*5,player.position.y+2.5,player.position.z+Math.cos(player.rotation.y)*5):cameraDest.set(player.position.x,player.position.y+dist*.66,player.position.z+dist);camera.position.lerp(dest,1-Math.exp(-dt*6));lens(damp(camera.fov,44+anim.flight*anim.gait*5,dt,5));cameraWanted.set(player.position.x+(showFront?0:motionX*.11),player.position.y+1.25-anim.flight*.18-anim.impact*.035,player.position.z+(showFront?0:-2+motionZ*.10));if(!anim.lookReady){cameraTarget.copy(cameraWanted);anim.lookReady=true}else cameraTarget.lerp(cameraWanted,1-Math.exp(-dt*10));camera.lookAt(cameraTarget);drawWorkshop()}stark=createStarkIndustries({T,scene,player,figure,box,cylinder,brick,glow,mat,batchRigid,tony,iron,camera,reset:resetFigure,notice,hud,release,sfx,stud,pickup:playPickup,voice:speakLine,stopVoice,voiceEnabled:()=>voiceOn,stage:()=>stage,score:()=>score,addScore:n=>{score+=n},hit:n=>{hitTimer=.38;anim.hitSide=n%2},setArmor:(v)=>{armored=v;flying=false;vy=0},persistent:o=>o===trailGroup||footShadows.includes(o),enterCave:()=>{started=true;document.body.classList.add('playing');$('overlay').classList.add('hidden');release();keys={};resetFigure(tony);resetFigure(iron);ensureAudio();preparePickups();}});hud();$('start').disabled=false;$('start').textContent='Nowa gra';try{if(localStorage.getItem('brick-voice-enabled')==='0'){voiceOn=false;$('menuVoice').textContent='WYŁ.';$('voiceToggle').textContent='GŁOS: OFF'}}catch(e){}updateSaveInfo();markMenu(0);requestAnimationFrame(frame)
+})();</script></body></html>

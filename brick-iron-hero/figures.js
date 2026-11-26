@@ -1,5 +1,6 @@
 // Molded parts have their own pivots; only the surfaces facing the camera carry a print.
 function buildMinifigureFactory(T, renderer, mat) {
+  window.BRICK_ARMOR_BUILD='097';
   const loader = new T.TextureLoader();
   const mobileGPU=matchMedia('(pointer:coarse)').matches||/iPhone|iPad|Android/i.test(navigator.userAgent);
   // Individual molded ABS materials, rather than one material shared with scenery.
@@ -510,15 +511,27 @@ function buildMinifigureFactory(T, renderer, mat) {
     const normals=geo.attributes.normal;for(let j=0;j<rows.length;j++){let a=j*(n+1),b=a+n;let x=normals.getX(a)+normals.getX(b),y=normals.getY(a)+normals.getY(b),z=normals.getZ(a)+normals.getZ(b),l=Math.hypot(x,y,z)||1;normals.setXYZ(a,x/l,y/l,z/l);normals.setXYZ(b,x/l,y/l,z/l)}
     return piece(parent,geo,[base,front?.material||base,back?.material||base]);
   }
+  function moldedFaceShell(parent,S,id){
+    const heavy=id==='mark1',war=id==='war';
+    const outline=heavy?[[-.32,.30],[-.28,.38],[.27,.38],[.32,.30],[.336,.12],[.32,-.13],[.25,-.225],[-.25,-.225],[-.32,-.13],[-.336,.12]]:
+      war?[[-.30,.33],[-.21,.40],[-.11,.39],[-.09,.27],[.09,.27],[.11,.39],[.21,.40],[.30,.33],[.33,.12],[.28,-.06],[.20,-.22],[-.20,-.22],[-.28,-.06],[-.33,.12]]:
+      [[-.30,.33],[-.22,.426],[-.12,.435],[-.094,.28],[.094,.28],[.12,.435],[.22,.426],[.30,.33],[.325,.13],[.285,-.02],[.22,-.19],[.10,-.218],[-.10,-.218],[-.22,-.19],[-.285,-.02],[-.325,.13]];
+    const base=abs(heavy?0xb4b7b6:war?0x8f9aa2:id==='mark3'?0xe2b54c:0xc1ccd4,.29,.22,.35);
+    function depth(x,y){let i=1;while(i<S.head.length-1&&y>S.head[i][0])i++;let a=S.head[i-1],b=S.head[i],t=T.MathUtils.clamp((y-a[0])/(b[0]-a[0]),0,1),w=T.MathUtils.lerp(a[1],b[1],t),d=T.MathUtils.lerp(a[2],b[2],t);return d*Math.pow(Math.max(.001,1-Math.pow(Math.min(.999,Math.abs(x)/w),2/S.power)),S.power/2)}
+    const edge=abs(heavy?0x555c60:war?0x32383f:id==='mark3'?0x7a4b21:0x687780,.39,.17,.22);
+    curvedPatch(parent,outline,edge,.025,depth,2);
+    curvedPatch(parent,outline.map(([x,y])=>[x*.965,(y-.07)*.966+.07]),base,.043,depth,2);
+    return depth;
+  }
   function helmetRelief(parent,S,id){
-    const lo=S.head[0][0],hi=S.head[S.head.length-1][0],heavy=id==='mark1',war=id==='war';
+    const shellDepth=moldedFaceShell(parent,S,id);const lo=S.head[0][0],hi=S.head[S.head.length-1][0],heavy=id==='mark1',war=id==='war';
     function row(y){let j=1;while(j<S.head.length-1&&y>S.head[j][0])j++;const a=S.head[j-1],b=S.head[j],t=T.MathUtils.clamp((y-a[0])/(b[0]-a[0]),0,1);return [T.MathUtils.lerp(a[1],b[1],t),T.MathUtils.lerp(a[2],b[2],t)]}
     const xy=([u,v])=>{const y=hi-v*(hi-lo);return [(u*2-1)*row(y)[0],y]};
     const depth=(x,y)=>{const [w,d]=row(y);return d*Math.pow(Math.max(.00001,1-Math.pow(Math.min(.9999,Math.abs(x)/w),2/S.power)),S.power/2)};
     const border=abs(heavy?0x53595c:war?0x303841:id==='mark3'?0x9d7036:0x82919a,.38,.22,.22);
     const shine=abs(heavy?0xc0c3c2:war?0xc3cbd0:id==='mark3'?0xe5bc6b:0xe0e7eb,.31,.25,.27);
     const black=abs(0x171d22,.46,0,.16),light=war?new T.MeshBasicMaterial({color:0xe6a394}):eyeMaterial;
-    function relief(points,material,offset=.007){return curvedPatch(parent,points.map(xy),material,offset,depth,1)}
+    function relief(points,material,offset=.007){return curvedPatch(parent,points.map(xy),material,offset+.046,shellDepth,2)}
     for(let side of [-1,1]){
       const mirror=p=>side<0?p:p.map(([u,v])=>[1-u,v]);
       const outline=heavy?[[.168,.307],[.442,.358],[.432,.49],[.158,.463]]:[[.15,.34],[.45,.38],[.43,.49],[.17,.48]];
@@ -532,6 +545,7 @@ function buildMinifigureFactory(T, renderer, mat) {
     }
     const mouth=heavy?[[.29,.71],[.39,.67],[.61,.67],[.71,.71],[.68,.78],[.32,.78]]:[[.31,.74],[.40,.76],[.60,.76],[.69,.74],[.66,.81],[.34,.81]];
     relief(mouth,black,.008);
+    if(heavy){for(const [x,y] of [[.24,.19],[.72,.12],[.80,.59],[.34,.88]])relief([[x,y],[x+.055,y-.022],[x+.073,y+.016],[x+.020,y+.043]],abs(0xa18c6c,.49,.10,.20),.006);}
     if(heavy)for(let i=0;i<3;i++){let x=.385+i*.115;relief([[x,.682],[x+.019,.682],[x+.019,.77],[x,.77]],shine,.012)}
   }
   function newArmor(id){
@@ -540,6 +554,7 @@ function buildMinifigureFactory(T, renderer, mat) {
     const heavy=id==='mark1',war=id==='war',armoredWide=heavy||war;
     const torsoRows=[[.004,.419,.238],[.027,.444,.261],[.065,.451,.270],[.29,.412,.256],[.63,.362,.237],[.715,.337,.221],[.757,.306,.202]];
     suitShell(torso,torsoRows,.27,body,A.torso,A.back,Math.PI*.48);
+    if(heavy||war){const sideMat=abs(heavy?0x777e80:0x353e47,.38,.18,.27);for(const side of [-1,1]){const pa=softBox(torso,.095,.32,.34,.025,sideMat,side*.388,.39,.005);pa.rotation.z=-side*.12;}}
     const reactor=group(torso,0,.757-(heavy?.38:.34)*.753,.267);const rim=piece(reactor,new T.TorusGeometry(.076,.009,6,24),dark);rim.castShadow=false;const light=piece(reactor,new T.CircleGeometry(.057,24),eyeMaterial,0,0,.012);light.castShadow=false;
     drum(root,0,1.765,0,.148,.12,body);
     const hips=group(root,0,.87);
