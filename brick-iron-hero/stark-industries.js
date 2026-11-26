@@ -208,29 +208,117 @@ function createStarkIndustries(B){
  const sequences={intro:['tony-01','yinsen-01','tony-02'],armor:['tony-03','yinsen-02','tony-05'],outro:['tony-09','tony-10']};
  function speak(id,cinematic=false){const d=dialogue[id];if(!d)return;B.voice('cave',id,d[0],d[1]);voiceUntil=elapsed+d[2]+.5;if(cinematic){$('starkCutLine').textContent=d[0]+' — '+d[1]}else{B.notice(d[0]+': '+d[1]);$('caveDialogue').textContent=d[0]+': '+d[1];$('caveDialogue').classList.remove('hidden')}}
  function hintVoice(id){if(storyCut||spoken.has(id)||elapsed<voiceUntil)return;spoken.add(id);speak(id)}
- function playCut(which){B.stopVoice();$('caveDialogue').classList.add('hidden');storyCut={which,t:0,index:0,lineTime:0,origin:player.position.clone(),assembled:false};$('starkCut').classList.remove('hidden');document.body.classList.add('cinematic');$('starkCutTitle').textContent=which==='intro'?'01 · UCIECZKA Z JASKINI':which==='armor'?'01 · NARODZINY MARK I':'01 · POWRÓT DO DOMU';B.release();
- if(which==='armor'){player.position.set(6.4,.10,6.1);select('tony',true);if(yinsen){yinsen.position.set(8.1,.10,6.3);yinsen.rotation.y=-.45}}speak(sequences[which][0],true)}
- function finishStoryCut(){if(!storyCut)return;const c=storyCut;if(c.which==='armor'){select('mark1',true);player.position.set(6.4,.10,5.7)}else player.position.copy(c.origin);if(yinsen)yinsen.visible=c.which!=='outro';storyCut=null;$('starkCut').classList.add('hidden');document.body.classList.remove('cinematic');B.stopVoice();B.hud();saveCave();if(c.which==='outro'&&!free)leaveCave()}
+ // CINEMATIC DIRECTOR: blocking, reaction beats, props and camera edit.
+ const target=new T.Vector3(),camDesired=new T.Vector3(),shotA=new T.Vector3(),shotB=new T.Vector3();
+ const ease01=v=>{v=T.MathUtils.clamp(v,0,1);return v*v*(3-2*v)};
+ const cue=(t,a,b)=>ease01((t-a)/(b-a));
+ function actorPose(fig,t,style='idle',weight=1){
+   if(!fig)return;const u=fig.userData,k=Math.sin(t*3.4),breath=Math.sin(t*1.8);
+   fig.rotation.x=0;fig.rotation.z=0;fig.position.y=.025*breath;
+   u.head.rotation.set(.026*breath,0,.025*k);
+   for(let i=0;i<2;i++){u.arms[i].rotation.set(-.045+.035*breath,0,(i?1:-1)*.06);u.legs[i].rotation.set(0,0,0)}
+   if(style==='walk'){const q=Math.sin(t*8)*.58*weight;fig.position.y=.065*Math.abs(Math.sin(t*8));u.legs[0].rotation.x=q;u.legs[1].rotation.x=-q;u.arms[0].rotation.x=-q*.68;u.arms[1].rotation.x=q*.68;u.head.rotation.x=.05;fig.rotation.x=.035}
+   if(style==='talk'){const q=Math.sin(t*2.7),f=Math.pow(Math.max(0,Math.sin(t*1.65)),2);u.head.rotation.set(.05*q,.09*Math.sin(t*1.4),.05*Math.cos(t*1.6));u.arms[1].rotation.set(-.40-.38*f,0,.13+.16*f);u.arms[0].rotation.set(-.18-.25*Math.max(0,-q),0,-.14);fig.rotation.z=.035*q}
+   if(style==='think'){u.head.rotation.set(.17,-.14,.06);u.arms[0].rotation.set(-1.05,0,-.19);u.arms[1].rotation.set(-.25,0,.12)}
+   if(style==='react'){const q=Math.sin(t*3.1);u.head.rotation.set(-.09+.045*q,.12,.07);u.arms[0].rotation.set(-.28-.16*q,0,-.24);u.arms[1].rotation.set(-.19,0,.22)}
+   if(style==='hero'){u.head.rotation.set(-.05,.12*Math.sin(t*1.5),0);u.arms[0].rotation.set(-.12,0,-.19);u.arms[1].rotation.set(-.22,0,.23);fig.rotation.x=-.025}
+ }
+ function faceActor(a,position,b){if(!a||!b)return;a.rotation.y=Math.atan2(b.x-position.x,b.z-position.z)}
+ function makeCutProps(c){
+   c.props=new T.Group();caveRoot.add(c.props);
+   c.parts=[];
+   if(c.which==='armor'){
+     // Build the actual playable Mark I rig piece by piece. It is temporary
+     // and never shares moving joints with the player's saved rig.
+     c.rig=figure.variant('mark1');c.rig.position.set(6.4,.10,6.1);c.props.add(c.rig);
+     c.parts=c.rig.children.map((o,i)=>({o,i,p:o.position.clone(),r:o.rotation.clone()}));
+     c.rig.visible=false;
+   }
+   const sparkGeo=new T.BoxGeometry(.065,.065,.065),sparkMat=new T.MeshBasicMaterial({color:0xffca67});
+   c.sparkMesh=new T.InstancedMesh(sparkGeo,sparkMat,22);c.sparkMesh.count=0;c.sparkMesh.frustumCulled=false;c.props.add(c.sparkMesh);c.sparkPivot=new T.Object3D();
+   c.glow=new T.PointLight(0x78dfff,0,5,2);c.glow.position.set(6.4,1.5,6.55);c.props.add(c.glow);
+   if(c.which==='intro'){c.tool=group(c.props,0,0,0);box(0,0,0,.12,.12,.35,0x9aa4a9,c.tool);box(0,0,.18,.23,.12,.11,0x6a757c,c.tool);c.tool.visible=false}
+ }
+ function tickCutSparks(c,at,age){const live=age>=0&&age<.64;if(!live){c.sparkMesh.count=0;return}
+   const o=c.sparkPivot;c.sparkMesh.count=22;for(let i=0;i<22;i++){let a=i*2.399,v=1.4+i%4*.31;o.position.set(at.x+Math.cos(a)*age*v,at.y+age*(1.5+i%5*.3)-5*age*age,at.z+Math.sin(a)*age*v);o.rotation.set(age*6+i,age*5,i);o.scale.setScalar(Math.max(.08,1-age*1.4));o.updateMatrix();c.sparkMesh.setMatrixAt(i,o.matrix)}c.sparkMesh.instanceMatrix.needsUpdate=true;
+ }
+ function playCut(which){
+   B.stopVoice();$('caveDialogue').classList.add('hidden');
+   storyCut={which,t:0,index:0,lineTime:0,origin:player.position.clone(),originYaw:player.rotation.y,yinsenPos:yinsen?.position.clone(),yinsenYaw:yinsen?.rotation.y||0,assembled:false,beats:new Set(),shotKey:''};
+   const c=storyCut;
+   $('starkCut').classList.remove('hidden');document.body.classList.add('cinematic');
+   $('starkCutTitle').textContent=which==='intro'?'01 · UCIECZKA Z JASKINI':which==='armor'?'01 · NARODZINY MARK I':'01 · POWRÓT DO DOMU';B.release();
+   if(which==='intro'){player.position.set(-.65,.1,10.1);if(yinsen){yinsen.position.set(2.0,.1,8.6);yinsen.rotation.y=-.4}}
+   if(which==='armor'){player.position.set(6.4,.10,6.1);select('tony',true);if(yinsen){yinsen.position.set(8.1,.10,6.3);yinsen.rotation.y=-.9}}
+   if(which==='outro'&&yinsen)yinsen.visible=false;
+   makeCutProps(c);speak(sequences[which][0],true);
+ }
+ function disposeCut(c){
+   if(!c.props)return;c.props.removeFromParent();
+   c.sparkMesh.geometry.dispose();c.sparkMesh.material.dispose();
+   // The suit uses shared texture materials. Never dispose those.
+ }
+ function finishStoryCut(){
+   if(!storyCut)return;const c=storyCut;disposeCut(c);
+   if(c.which==='armor'){select('mark1',true);player.position.set(6.4,.10,5.7);player.rotation.y=0}
+   else{player.position.copy(c.origin);player.rotation.y=c.originYaw}
+   B.reset(model());if(yinsen){B.reset(yinsen);if(c.yinsenPos)yinsen.position.copy(c.yinsenPos);yinsen.rotation.y=c.yinsenYaw;yinsen.visible=c.which!=='outro'}
+   storyCut=null;$('starkCut').classList.add('hidden');document.body.classList.remove('cinematic');B.stopVoice();B.hud();saveCave();if(c.which==='outro'&&!free)leaveCave()
+ }
  $('starkCutSkip').onclick=finishStoryCut;
- const target=new T.Vector3(),camDesired=new T.Vector3();
- function cutFrame(dt){if(!storyCut)return false;let c=storyCut;c.t+=dt;c.lineTime+=dt;const seq=sequences[c.which];if(c.lineTime>dialogue[seq[c.index]][2]+.45&&(!B.voiceBusy()||c.lineTime>dialogue[seq[c.index]][2]+7)){c.index++;c.lineTime=0;if(c.index>=seq.length){finishStoryCut();return true}speak(seq[c.index],true)}
-  if(c.which==='armor'&&c.index===2&&!c.assembled){c.assembled=true;select('mark1',true);scatter(6.4,1,6.1,0x8e989e);B.sfx('power')}
-  if(waypoint)waypoint.visible=false;const d=dialogue[seq[c.index]],speaker=d[0]==='YINSEN'&&yinsen?yinsen:model(),other=speaker===yinsen?model():yinsen;
-  if(yinsen&&c.which==='intro'){yinsen.position.set(1.4,.10,9.7);player.position.set(0,.10,10.1);yinsen.rotation.y=-.35}
-  const p=speaker===yinsen?yinsen.position:player.position,t=c.lineTime;
-  const wide=c.index===0&&t<1.65,building=c.which==='armor'&&c.index===2,ending=c.which==='outro';
-  const angle=wide?.52:speaker===yinsen?-.28:.34;
-  const dist=wide?5.7:building?3.8:ending?4.4:2.85;
-  target.set(p.x+(wide?.58:0),wide?1.28:building?1.29:1.77,p.z);
-  cutLook.copy(target);camDesired.set(p.x+Math.sin(angle)*dist,wide?3.35:building?2.20:2.48+Math.sin(t*.45)*.07,p.z+Math.cos(angle)*dist);
-  const shotKey=c.index+':'+wide+':'+building;
-  if(c.shotKey!==shotKey){c.shotKey=shotKey;B.camera.position.copy(camDesired)}else B.camera.position.lerp(camDesired,1-Math.exp(-dt*8));
-  B.camera.lookAt(target);B.camera.fov=wide?47:building?43:37;B.camera.updateProjectionMatrix();
-  const u=speaker.userData,gesture=Math.sin(t*2.1),beat=Math.sin(t*3.7)*.5+.5;
-  u.head.rotation.set(.045*Math.sin(t*3.2),.11*Math.sin(t*1.8),.027*gesture);
-  u.arms[1].rotation.set(-.32-.20*gesture,0,.12+.05*beat);u.arms[0].rotation.x=-.10-.12*Math.sin(t*1.4);
-  if(other?.userData?.head){other.userData.head.rotation.set(.045*Math.sin(c.t*2),speaker===yinsen?.28:-.28,0);other.userData.arms[1].rotation.x=-.08}
-  return true;
+ function cutFrame(dt){
+   if(!storyCut)return false;const c=storyCut;c.t+=dt;c.lineTime+=dt;const seq=sequences[c.which];
+   if(c.lineTime>dialogue[seq[c.index]][2]+.45&&(!B.voiceBusy()||c.lineTime>dialogue[seq[c.index]][2]+7)){c.index++;c.lineTime=0;if(c.index>=seq.length){finishStoryCut();return true}speak(seq[c.index],true)}
+   if(waypoint)waypoint.visible=false;
+   const t=c.lineTime,i=c.index,tony=model(),isY=dialogue[seq[i]][0]==='YINSEN';
+   let shot='wide',fx=0;
+   const fire=(key,kind)=>{if(!c.beats.has(key)){c.beats.add(key);B.sfx(kind)}};
+   const tp=player.position,yp=yinsen?.position;
+   if(c.which==='intro'){
+     if(i===0){let walk=cue(t,.3,2.0);tp.set(-.65+walk*.55,.1,10.1-walk*.75);player.rotation.y=1.2-.55*walk;actorPose(tony,t,t<2?'walk':'talk',1-walk*.5);
+       if(yinsen){yp.set(2.0-.55*walk,.1,8.6+.35*walk);faceActor(yinsen,yp,tp);actorPose(yinsen,t,t<2?'walk':'react',.6)}shot=t<1.8?'establish':t<3.6?'tony':'reaction';
+     }else if(i===1){tp.set(-.1,.1,9.35);yp?.set(1.45,.1,8.95);faceActor(player,tp,yp);if(yinsen)faceActor(yinsen,yp,tp);actorPose(tony,t,t<3.4?'think':'react');actorPose(yinsen,t,'talk');if(c.tool&&yinsen){c.tool.visible=true;c.tool.position.set(yp.x-.52,1.04+.08*Math.sin(t*3),yp.z+.18);c.tool.rotation.set(.3,.8,.1)}shot=t<2.8?'yinsen':t<4.1?'insert':t<6.2?'reaction':'two';
+     }else{if(c.tool)c.tool.visible=false;faceActor(player,tp,yp);actorPose(tony,t,t<1.2?'think':'talk');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}shot=t<1.1?'two':t<3.5?'tony':'wide'}
+   }else if(c.which==='armor'){
+     tp.set(6.4,.1,6.1);player.rotation.y=0;
+     if(i<2){actorPose(tony,t,i===0?'talk':'think');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,i===1?'talk':'react')}shot=i===0?(t<1.8?'establish':t<3.5?'tony':'bench'):(t<1.6?'yinsen':'reaction')}
+     else{
+       const progress=cue(t,.12,3.6);c.rig.visible=true;tony.visible=false;
+       c.rig.rotation.y=0;c.rig.position.set(6.4,.10,6.1);
+       for(const part of c.parts){const j=part.i,u=cue(t,.15+j*.36,.86+j*.36),left=1-u;part.o.visible=u>.001;part.o.position.copy(part.p);part.o.rotation.copy(part.r);part.o.position.x+=Math.sin(j*2.39)*left*1.65;part.o.position.y+=(.45+j*.075)*left+Math.sin(Math.PI*u)*.22;part.o.position.z+=(.50+Math.cos(j*2.39)*.36)*left;part.o.rotation.z+=Math.sin(j)*left*.85;if(u>.98)fire('part'+j,'metal')}
+       const flashAge=t-2.6;tickCutSparks(c,{x:6.4,y:1.45,z:6.55},flashAge);c.glow.intensity=Math.max(0,1-Math.abs(flashAge-.12)*4)*5+progress*1.4;
+       if(t>3.6){actorPose(c.rig,t,'hero');fire('reactor','power')}
+       if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}
+       shot=t<.9?'boots':t<2.0?'chest':t<3.15?'helmet':'hero';
+     }
+   }else{
+     const u=cue(t,0,1.8);
+     if(i===0){tp.set(c.origin.x-.6*(1-u),.1,c.origin.z+.8*(1-u));player.rotation.y=.2;actorPose(tony,t,t<1.8?'walk':'talk',1-u);shot=t<1.8?'exit':'hero'}
+     else{actorPose(tony,t,t<2.8?'talk':'hero');player.rotation.y=.18;shot=t<2.5?'tony':'exit'}
+   }
+   // Camera edit uses shot/reverse-shot, insert shots and low hero angles.
+   // All positions are relative to the acting character or prop.
+   let p=tp,y=1.48,dist=4.1,angle=.38,height=2.25,fov=39,lookX=0,lookZ=0;
+   if(shot==='establish'||shot==='wide'){p=tp;y=1.25;dist=5.9;height=3.25;angle=.50;fov=45;lookX=.65}
+   if(shot==='two'){p=tp;y=1.45;dist=4.6;height=2.4;angle=.10;fov=43;lookX=.65}
+   if(shot==='tony'){p=tp;y=1.81;dist=2.75;height=2.15;angle=player.rotation.y+.22;fov=35}
+   if(shot==='yinsen'&&yp){p=yp;y=1.80;dist=2.65;height=2.20;angle=yinsen.rotation.y-.22;fov=35}
+   if(shot==='reaction'){p=isY?tp:(yp||tp);y=1.78;dist=2.9;height=2.22;angle=(isY?player.rotation.y:yinsen?.rotation.y||0)+.24;fov=35}
+   if(shot==='insert'&&c.tool){p=c.tool.position;y=p.y;dist=1.8;height=1.8;angle=.42;fov=37}
+   if(shot==='bench'){p={x:7,z:7};y=1.16;dist=2.8;height=2.3;angle=.62;fov=39}
+   if(shot==='boots'){y=.48;dist=2.45;height=.65;angle=-.35;fov=35}
+   if(shot==='chest'){y=1.40;dist=2.45;height=1.67;angle=.43;fov=35}
+   if(shot==='helmet'){y=2.08;dist=2.3;height=2.18;angle=-.23;fov=34}
+   if(shot==='hero'){y=1.35;dist=4.3;height=1.14;angle=.36;fov=40}
+   if(shot==='exit'){y=1.35;dist=5.2;height=2.8;angle=.65;fov=45;lookZ=-.65}
+   const key=i+':'+shot;
+   if(c.shotKey!==key){c.shotKey=key;c.shotStart=c.t}
+   const dolly=Math.min(1,(c.t-c.shotStart)/3),move=.13*dolly;
+   target.set(p.x+lookX,y,p.z+lookZ);cutLook.copy(target);
+   camDesired.set(p.x+Math.sin(angle+move)*dist,height+move*.12,p.z+Math.cos(angle+move)*dist);
+   if(c.lastCam!==key){c.lastCam=key;B.camera.position.copy(camDesired)}else B.camera.position.lerp(camDesired,1-Math.exp(-dt*10));
+   B.camera.lookAt(target);B.camera.fov=fov+(B.camera.aspect<.85?8:0);B.camera.updateProjectionMatrix();
+   return true;
  }
  function collect(o){o.live=false;o.g.visible=false;cave.collected.push(o.type+o.id);B.pickup();
    if(o.type==='part'){cave.parts.push(o.id);award(100);B.notice('CZĘŚCI '+cave.parts.length+'/6')}
