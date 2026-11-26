@@ -29,8 +29,7 @@ function createStarkIndustries(B){
    const x=-7.7+i*2.25,z=-7.0,g=group(workshop,x,0,z);
    brick(0,.23,0,1.65,.45,1.48,0x26394d,g);box(0,1.55,-.62,1.5,2.35,.16,0x1e354b,g);
    for(const side of [-1,1]){box(side*.78,1.45,0,.10,2.15,1.32,0x355675,g);glow(side*.73,1.5,.56,.055,1.95,.06,0x54bde9,g)}
-   const display=figure.variant(id);display.scale.setScalar(.78);display.position.set(0,.47,-.05);display.rotation.y=0;g.add(display);
-   label(g,names[id].replace('Iron Man ','').toUpperCase(),0,2.75,.13,1.45);batchRigid(g);
+   const display=figure.variant(id);display.scale.setScalar(.78);display.position.set(0,.47,-.05);display.rotation.y=0;label(g,names[id].replace('Iron Man ','').toUpperCase(),0,2.75,.13,1.45);batchRigid(g);g.add(display);
    extras.push({type:'suit',id,g,x,z,range:1.65,display});
  }
  const pc=group(workshop,-7,0,0);brick(0,.55,0,1.8,1.1,1,0x364b60,pc);box(0,1.39,-.25,1.25,.54,.12,0x192d40,pc);glow(0,1.4,-.17,1.08,.43,.025,0x419fc4,pc);addHolo(pc,0,2.05,0);label(pc,'TERMINAL',0,2.68,0,1.5);extras.push({type:'terminal',g:pc,x:-7,z:0,range:2});
@@ -199,7 +198,7 @@ function createStarkIndustries(B){
    const near=robots.filter(r=>r.live&&r.g.position.distanceTo(player.position)<range).sort((a,b)=>a.g.position.distanceTo(player.position)-b.g.position.distanceTo(player.position));if(near.length){hitRobot(near[0],amount);if(current==='war'&&special&&near[1])hitRobot(near[1],1)}B.hud()
  }
  function dodge(){if(dodgeTime>0||storyCut||picker)return;dodgeTime=.32;damageTime=.7;B.sfx('jump');}
- function update(dt){elapsed+=dt;if(elapsed>=voiceUntil)$('caveDialogue').classList.add('hidden');attackTime=Math.max(0,attackTime-dt);dodgeTime=Math.max(0,dodgeTime-dt);damageTime=Math.max(0,damageTime-dt);for(let h of holograms)h.rotation.y+=dt*.6;
+ function update(dt){elapsed+=dt;if(area==='workshop')for(const e of extras)if(e.display)e.display.visible=Math.hypot(player.position.x-e.x,player.position.z-e.z)<14;if(elapsed>=voiceUntil)$('caveDialogue').classList.add('hidden');attackTime=Math.max(0,attackTime-dt);dodgeTime=Math.max(0,dodgeTime-dt);damageTime=Math.max(0,damageTime-dt);for(let h of holograms)h.rotation.y+=dt*.6;
    for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.life-=dt;p.v.y-=dt*9;p.m.position.addScaledVector(p.v,dt);p.m.rotation.x+=dt*5;if(p.life<=0){p.m.removeFromParent();particles.splice(i,1)}}
    for(let i=beams.length-1;i>=0;i--){let p=beams[i];p.life-=dt;p.g.position.addScaledVector(p.v,dt);if(p.life<=0){p.g.removeFromParent();beams.splice(i,1)}}
    if(area==='cave'&&cave){let p=player.position;if(!gateMap.power?.open&&Math.hypot(p.x,p.z-3.1)<2.4)hintVoice('tony-06');if(Math.hypot(p.x+4,p.z+8)<2.0)hintVoice('tony-07');if(yinsen?.visible){yinsen.userData.head.rotation.y=.12*Math.sin(elapsed*.8);yinsen.userData.arms[0].rotation.x=.06*Math.sin(elapsed*1.8)}for(let o of items){if(!o.live)continue;o.g.rotation.y+=dt*1.7;o.g.position.y=.40+Math.sin(elapsed*2+o.x)*.09;if(Math.hypot(p.x-o.x,p.z-o.z)<.73&&p.y<1.2){if(o.type!=='gold'||cave.stage>=2||free)collect(o)}}

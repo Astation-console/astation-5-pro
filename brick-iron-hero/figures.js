@@ -382,11 +382,11 @@ function buildMinifigureFactory(T, renderer, mat) {
   // ARMORY REMAKE: independent original prints, closed molded shells and a
   // shared eight-part animation contract. No recoloring of another character.
   const suitSpecs={
-    mark1:{base:0x898d8e,face:'#a6a9a8',shade:'#646c70',edge:'#d0d1c7',accent:'#ad9370',line:'#252b2d',body:'#a0a3a0',rough:.42,metal:.18,
-      head:[[-.265,.255,.262],[-.234,.319,.305],[-.17,.365,.334],[.05,.379,.345],[.29,.364,.337],[.40,.326,.300],[.46,.258,.252],[.48,.145,.145]],power:.45},
-    mark2:{base:0xb7c1c8,face:'#c8d0d3',shade:'#81929f',edge:'#e6ecef',accent:'#9aadb9',line:'#35434d',body:'#b5c1ca',rough:.32,metal:.26,
+    mark1:{base:0x999c9c,face:'#b8bbba',shade:'#626a70',edge:'#e1e2dd',accent:'#ad9370',line:'#252b2d',body:'#a0a3a0',rough:.35,metal:.29,
+      head:[[-.265,.280,.280],[-.242,.343,.318],[-.18,.369,.342],[.05,.381,.351],[.29,.376,.345],[.365,.354,.329],[.425,.314,.288],[.461,.241,.221],[.476,.145,.136]],power:.35},
+    mark2:{base:0xb7c1c8,face:'#c8d0d3',shade:'#81929f',edge:'#e6ecef',accent:'#9aadb9',line:'#35434d',body:'#b5c1ca',rough:.29,metal:.32,
       head:[[-.245,.235,.231],[-.215,.302,.280],[-.13,.354,.315],[.095,.374,.344],[.29,.363,.337],[.425,.329,.309],[.485,.265,.253],[.51,.152,.146]],power:.60},
-    mark3:{base:0xa41e2c,face:'#e1b75f',shade:'#a47838',edge:'#f6d78c',accent:'#e4ba5f',line:'#46252b',body:'#b22b39',rough:.34,metal:.15,
+    mark3:{base:0xa41e2c,face:'#e1b75f',shade:'#a47838',edge:'#f6d78c',accent:'#e4ba5f',line:'#46252b',body:'#b22b39',rough:.29,metal:.20,
       head:[[-.256,.255,.25],[-.228,.318,.300],[-.12,.363,.328],[.07,.379,.348],[.27,.377,.35],[.416,.339,.315],[.484,.278,.259],[.516,.151,.142]],power:.54},
     war:{base:0x444b53,face:'#9fa9b1',shade:'#596671',edge:'#d3dade',accent:'#737f88',line:'#202730',body:'#454c56',rough:.42,metal:.20,
       head:[[-.265,.263,.250],[-.230,.329,.298],[-.115,.374,.327],[.12,.393,.348],[.30,.388,.34],[.405,.353,.31],[.461,.270,.25],[.488,.16,.15]],power:.40}
@@ -452,6 +452,14 @@ function buildMinifigureFactory(T, renderer, mat) {
       o(.5,ry,.142,.15,L,E,.014);o(.5,ry,.115,.12,D,L,.012);o(.5,ry,.083,.087,'#d5f5fc','#528a9a',.010);
       o(.5,ry,.065,.068,'#edfaff',null);
       for(let i=0;i<8;i++){let a=i*Math.PI/4;p([[.5+Math.cos(a)*.12,ry+Math.sin(a)*.125],[.5+Math.cos(a)*.139,ry+Math.sin(a)*.143]],null,E,.009)}
+      // Fine edge printing, small fasteners, layered chest detail.
+      m([[.08,.065],[.28,.048],[.36,.13]],null,E,.008);
+      m([[.10,.48],[.19,.52],[.27,.49]],null,E,.007);
+      m([[.11,.82],[.19,.81],[.30,.90]],null,E,.007);
+      if(heavy){for(let i=0;i<4;i++){p([[.13+i*.015,.13],[.20+i*.015,.16]],null,D,.007);p([[.70+i*.038,.10],[.70+i*.038,.13]],null,L,.008)}p([[.17,.73],[.31,.65],[.40,.68]],null,E,.008);p([[.73,.36],[.81,.39],[.86,.48]],null,E,.008)}
+      if(id==='mark2'){m([[.12,.23],[.22,.19],[.30,.22]],null,E,.012);m([[.11,.63],[.22,.68],[.29,.68]],null,E,.010)}
+      if(redSuit){m([[.08,.36],[.17,.31],[.30,.40]],null,'#ffe0a0',.010);m([[.12,.82],[.19,.80],[.27,.86]],null,'#f3c26d',.010)}
+      if(war){m([[.12,.14],[.22,.14],[.22,.17],[.12,.17]],'#e2e7e8',null);m([[.10,.23],[.22,.23]],null,'#aebcc6',.008)}
       p([[.02,.955],[.98,.955]],null,L,.025);
     },C);
     const back=makeInk((q,p,o,m)=>{
@@ -476,9 +484,11 @@ function buildMinifigureFactory(T, renderer, mat) {
       p([[.13,.89],[.87,.89],[.76,.95],[.24,.95]],F,L,.012);
       if(heavy){wear(p);const x=side<0?.20:.77;rivet(o,x,.16,.022);rivet(o,x,.22,.017);p([[x,.20],[x+.07,.34],[x-.02,.46]],null,L,.017)}
       if(war){p([[.15,.13],[.33,.13],[.33,.23],[.15,.23]],L,E,.010)}
+      p([[.11,.055],[.85,.055]],null,E,.009);p([[.32,.42],[.68,.42]],null,E,.010);p([[.15,.87],[.85,.87]],null,E,.009);
+      if(id==='mark2'){for(let i=0;i<3;i++)p([[.16+i*.08,.17],[.16+i*.08,.25]],null,L,.009)}if(redSuit){p([[.11,.63],[.25,.63],[.36,.73]],null,'#f7dc91',.012);p([[.89,.63],[.75,.63],[.64,.73]],null,'#f7dc91',.012)}
     },C)}
     const arm=makeInk((q,p,o,m)=>{p([[.11,.06],[.89,.06],[.81,.34],[.64,.40],[.36,.40],[.19,.34]],F,L,.022);p([[.22,.44],[.78,.44],[.88,.72],[.78,.90],[.22,.90],[.12,.72]],D,L,.022);p([[.29,.52],[.71,.52],[.69,.73],[.31,.73]],redSuit?A:F,L,.016);if(heavy)wear(p)},C);
-    const result={mask,torso,back,hip,legs:[legPrint(-1),legPrint(1)],arm};suitArtCache.set(id,result);return result;
+    for(const art of [mask,torso,back,hip,arm]){art.material.roughness=S.rough;art.material.metalness=S.metal*.55;art.material.envMapIntensity=.74;}const legs=[legPrint(-1),legPrint(1)];for(const art of legs){art.material.roughness=S.rough;art.material.metalness=S.metal*.55;art.material.envMapIntensity=.74}const result={mask,torso,back,hip,legs,arm};suitArtCache.set(id,result);return result;
   }
   function suitShell(parent,rows,power,base,front,back=null,frontArc=Math.PI*.43){
     const n=mobileGPU?40:64,pos=[],uv=[],indices=[[],[],[]];
@@ -487,7 +497,7 @@ function buildMinifigureFactory(T, renderer, mat) {
       const [y,rx,rz,cx=0,cz=0]=rows[j];
       for(let i=0;i<=n;i++){
         const a=(i/n*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a),sx=Math.sign(si)*Math.pow(Math.abs(si),power),sz=Math.sign(co)*Math.pow(Math.abs(co),power);
-        pos.push(cx+rx*sx,y,cz+rz*sz);uv.push(...(typeof front?.project==='function'?front.project(cx+rx*sx,y,cz+rz*sz):[(sx+1)*.5,(y-yMin)/range]));
+        pos.push(cx+rx*sx,y,cz+rz*sz);uv.push(...(typeof front?.project==='function'?front.project(cx+rx*sx,y,cz+rz*sz):[((co<0&&back?-sx:sx)+1)*.5,(y-yMin)/range]));
         if(j&&i<n){const k=(j-1)*(n+1)+i,t=k+n+1,angle=Math.abs(a+Math.PI/n);
           const dst=front&&angle<frontArc?1:back&&angle>Math.PI-frontArc?2:0;indices[dst].push(k,k+1,t,k+1,t+1,t)}
       }
@@ -500,6 +510,30 @@ function buildMinifigureFactory(T, renderer, mat) {
     const normals=geo.attributes.normal;for(let j=0;j<rows.length;j++){let a=j*(n+1),b=a+n;let x=normals.getX(a)+normals.getX(b),y=normals.getY(a)+normals.getY(b),z=normals.getZ(a)+normals.getZ(b),l=Math.hypot(x,y,z)||1;normals.setXYZ(a,x/l,y/l,z/l);normals.setXYZ(b,x/l,y/l,z/l)}
     return piece(parent,geo,[base,front?.material||base,back?.material||base]);
   }
+  function helmetRelief(parent,S,id){
+    const lo=S.head[0][0],hi=S.head[S.head.length-1][0],heavy=id==='mark1',war=id==='war';
+    function row(y){let j=1;while(j<S.head.length-1&&y>S.head[j][0])j++;const a=S.head[j-1],b=S.head[j],t=T.MathUtils.clamp((y-a[0])/(b[0]-a[0]),0,1);return [T.MathUtils.lerp(a[1],b[1],t),T.MathUtils.lerp(a[2],b[2],t)]}
+    const xy=([u,v])=>{const y=hi-v*(hi-lo);return [(u*2-1)*row(y)[0],y]};
+    const depth=(x,y)=>{const [w,d]=row(y);return d*Math.pow(Math.max(.00001,1-Math.pow(Math.min(.9999,Math.abs(x)/w),2/S.power)),S.power/2)};
+    const border=abs(heavy?0x53595c:war?0x303841:id==='mark3'?0x9d7036:0x82919a,.38,.22,.22);
+    const shine=abs(heavy?0xc0c3c2:war?0xc3cbd0:id==='mark3'?0xe5bc6b:0xe0e7eb,.31,.25,.27);
+    const black=abs(0x171d22,.46,0,.16),light=war?new T.MeshBasicMaterial({color:0xe6a394}):eyeMaterial;
+    function relief(points,material,offset=.007){return curvedPatch(parent,points.map(xy),material,offset,depth,1)}
+    for(let side of [-1,1]){
+      const mirror=p=>side<0?p:p.map(([u,v])=>[1-u,v]);
+      const outline=heavy?[[.168,.307],[.442,.358],[.432,.49],[.158,.463]]:[[.15,.34],[.45,.38],[.43,.49],[.17,.48]];
+      const inside=heavy?[[.191,.344],[.414,.382],[.409,.443],[.188,.422]]:[[.18,.375],[.424,.404],[.412,.458],[.191,.449]];
+      relief(mirror(outline),shine,.006);
+      relief(mirror(inside),black,.011);
+      if(!heavy){const slot=[[.196,.390],[.408,.414],[.400,.444],[.205,.437]];relief(mirror(slot),light,.014)}
+      // Sculpted brow ridge and separate angular cheek flank.
+      relief(mirror(heavy?[[.155,.292],[.29,.315],[.444,.346],[.443,.362],[.169,.324]]:[[.145,.321],[.28,.335],[.45,.363],[.45,.381],[.16,.348]]),border,.013);
+      relief(mirror(heavy?[[.091,.46],[.15,.47],[.19,.65],[.26,.77],[.24,.86],[.14,.76],[.09,.60]]:[[.10,.52],[.17,.55],[.25,.69],[.34,.85],[.28,.86],[.21,.72],[.12,.64]]),border,.008);
+    }
+    const mouth=heavy?[[.29,.71],[.39,.67],[.61,.67],[.71,.71],[.68,.78],[.32,.78]]:[[.31,.74],[.40,.76],[.60,.76],[.69,.74],[.66,.81],[.34,.81]];
+    relief(mouth,black,.008);
+    if(heavy)for(let i=0;i<3;i++){let x=.385+i*.115;relief([[x,.682],[x+.019,.682],[x+.019,.77],[x,.77]],shine,.012)}
+  }
   function newArmor(id){
     const S=suitSpecs[id],A=suitArt(id),root=new T.Group(),body=abs(S.base,S.rough,S.metal,.32),dark=abs(id==='mark3'?0x641b25:id==='war'?0x252a30:0x535b60,.40,.15,.22),trim=abs(id==='mark3'?0xd2a74e:id==='war'?0x8997a0:0xb4bdc2,.36,.2,.28);
     const torso=group(root,0,.97),head=group(root,0,2.035);
@@ -510,14 +544,15 @@ function buildMinifigureFactory(T, renderer, mat) {
     drum(root,0,1.765,0,.148,.12,body);
     const hips=group(root,0,.87);
     suitShell(hips,[[0,.415,.232],[.022,.445,.255],[.078,.445,.255],[.09,.419,.239]],.28,body,A.hip,null,Math.PI*.48);
-    let visor=null;
+    let visor=null,maskDetail=head;
     const helmet=suitShell(head,S.head,S.power,body,A.mask,null,Math.PI*.47);
     if(id==='mark3'){
       const front=helmet.geometry.groups.find(g=>g.materialIndex===1),rear=helmet.geometry.groups.find(g=>g.materialIndex===0),fg=helmet.geometry.clone();
       helmet.geometry.setDrawRange(rear.start,rear.count);fg.setDrawRange(front.start,front.count);
-      visor=group(head,0,.35,-.03);piece(visor,fg,helmet.material,0,-.35,.03);
+      visor=group(head,0,.35,-.03);piece(visor,fg,helmet.material,0,-.35,.03);maskDetail=group(visor,0,-.35,.03);
       suitShell(head,[[-.21,.22,.19],[-.16,.268,.217],[.16,.268,.22],[.23,.21,.18]],.90,abs(0xeabe96,.44),tonyPrint);
     }
+    helmetRelief(maskDetail,S,id);
     for(const side of [-1,1]){
       const x=side*(S.head[3][1]-.011),hinge=drum(head,x,.045,-.047,heavy?.126:.108,.045,dark);hinge.rotation.z=Math.PI/2;
       const cap=drum(head,x+side*.028,.045,-.047,heavy?.099:.078,.022,trim);cap.rotation.z=Math.PI/2;
