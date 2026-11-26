@@ -69,7 +69,10 @@ function createStarkIndustries(B){
  const rockData=[];let rockSeed=831,rockMesh=null;const hiddenRocks=new Set(),hiddenGates=new Set(),rockMatrices=[],collapsed=new T.Matrix4().makeScale(0,0,0);const cutLook=new T.Vector3();
  function rand(){rockSeed=(rockSeed*1664525+1013904223)>>>0;return rockSeed/4294967296}
  function rock(parent,x,z,w,h,d,color=0x665f5c,y=0){rockData.push({x,y:y+h*.46,z,w,h,d,color,rx:(rand()-.5)*.33,ry:rand()*Math.PI*2,rz:(rand()-.5)*.27})}
- function flushRocks(){const mesh=new T.InstancedMesh(rockGeo,rockMat,rockData.length),o=new T.Object3D();rockData.forEach((p,i)=>{o.position.set(p.x,p.y,p.z);o.scale.set(p.w,p.h*.56,p.d);o.rotation.set(p.rx,p.ry,p.rz);o.updateMatrix();rockMatrices[i]=o.matrix.clone();mesh.setMatrixAt(i,o.matrix);mesh.setColorAt(i,new T.Color(p.color))});mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();rockMesh=mesh;caveRoot.add(mesh)}
+ function flushRocks(){const mesh=new T.InstancedMesh(rockGeo,rockMat,rockData.length),o=new T.Object3D();rockData.forEach((p,i)=>{const height=Math.min(1.04,Math.max(.18,p.h*.29));const elevated=p.y-p.h*.46>1.2;
+ if(elevated){o.position.set(p.x,-5,p.z);o.scale.set(.001,.001,.001);o.rotation.set(0,0,0)}
+ else{o.position.set(p.x,height*.49,p.z);o.scale.set(p.w,height*.51,p.d);o.rotation.set(p.rx*.35,p.ry,p.rz*.35)}
+ o.updateMatrix();rockMatrices[i]=o.matrix.clone();mesh.setMatrixAt(i,o.matrix);mesh.setColorAt(i,new T.Color(p.color))});mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();rockMesh=mesh;caveRoot.add(mesh)}
  // Camera cutaway: test each rock's conservative ellipsoid, not its triangles.
  // Only obstructing instances disappear; the original world collision stays intact.
  function blocksSight(a,b,x,y,z,rx,ry,rz){
@@ -80,23 +83,11 @@ function createStarkIndustries(B){
    return (ax+t*dx)**2+(ay+t*dy)**2+(az+t*dz)**2<1;
  }
  const sightTop=new T.Vector3(),sightLow=new T.Vector3(),sightMid=new T.Vector3();
+ // Cutaway terrain is permanently low enough for the gameplay camera.
+ // Doors are shortened visually in the same way, but remain solid to the player.
  function occlude(cam){
    if(area!=='cave'||!rockMesh)return;
-   const focus=storyCut?cutLook:player.position;
-   const y=storyCut?focus.y:focus.y+1.2;
-   sightMid.set(focus.x,y,focus.z);sightTop.set(focus.x,y+.85,focus.z);sightLow.set(focus.x,Math.max(.25,y-.87),focus.z);
-   let changed=false;
-   for(let i=0;i<rockData.length;i++){const p=rockData[i],rx=p.w*1.15+.25,ry=p.h*.67+.24,rz=p.d*1.15+.25;
-     const hide=blocksSight(cam,sightMid,p.x,p.y,p.z,rx,ry,rz)||blocksSight(cam,sightTop,p.x,p.y,p.z,rx,ry,rz)||blocksSight(cam,sightLow,p.x,p.y,p.z,rx,ry,rz);
-     if(hide!==hiddenRocks.has(i)){if(hide){hiddenRocks.add(i);rockMesh.setMatrixAt(i,collapsed)}else{hiddenRocks.delete(i);rockMesh.setMatrixAt(i,rockMatrices[i])}changed=true}
-   }
-   if(changed)rockMesh.instanceMatrix.needsUpdate=true;
-   // Closed doors can also cut across the camera. Keep their colliders active.
-   for(const gate of Object.values(gateMap)){
-     const p=gate.collider,rx=p.w*.55+.15,ry=1.4,rz=.48;
-     const hide=!gate.open&&(blocksSight(cam,sightMid,p.x,1.25,p.z,rx,ry,rz)||blocksSight(cam,sightLow,p.x,1.25,p.z,rx,ry,rz));
-     if(hide!==hiddenGates.has(gate)){gate.g.traverse(o=>{if(o.isMesh){if(hide)o.layers.disable(0);else o.layers.enable(0)}});if(hide)hiddenGates.add(gate);else hiddenGates.delete(gate)}
-   }
+   for(const gate of Object.values(gateMap)){if(!gate.open&&gate.g.scale.y!==.42)gate.g.scale.y=.42}
  }
  function wall(x,z,w,d,h=3.6){solids.push({x,z,w,d,active:true});const n=Math.ceil(Math.max(w,d)/1.0);for(let i=0;i<n;i++){const f=(i+.5)/n-.5;const xx=x+f*w,zz=z+f*d;
     rock(caveRoot,xx,zz,.78+rand()*.34,h*(.82+rand()*.22),.72+rand()*.24,0x5c514a);
@@ -190,8 +181,8 @@ function createStarkIndustries(B){
   if(c.which==='armor'&&c.index===2&&!c.assembled){c.assembled=true;select('mark1',true);scatter(6.4,1,6.1,0x8e989e);B.sfx('power')}
   const d=dialogue[seq[c.index]],speaker=d[0]==='YINSEN'&&yinsen?yinsen:model(),other=speaker===yinsen?model():yinsen;
   if(yinsen&&c.which==='intro'){yinsen.position.set(1.4,.10,9.7);player.position.set(0,.10,10.1);yinsen.rotation.y=-.35}
-  let p=speaker===yinsen?yinsen.position:player.position;let t=c.lineTime,a=.18+.12*Math.sin(t*.55);let dist=c.which==='outro'?5.5:3.6;
-  target.set(p.x,1.42,p.z);cutLook.copy(target);camDesired.set(p.x+Math.sin(a)*dist,2.65+.12*Math.sin(t*.7),p.z+Math.cos(a)*dist);B.camera.position.lerp(camDesired,1-Math.exp(-dt*4.5));B.camera.lookAt(target);
+  let p=speaker===yinsen?yinsen.position:player.position;let t=c.lineTime,a=.18+.12*Math.sin(t*.55);let dist=c.which==='outro'?4.8:3.1;
+  target.set(p.x,1.42,p.z);cutLook.copy(target);camDesired.set(p.x+Math.sin(a)*dist,3.65+.12*Math.sin(t*.7),p.z+Math.cos(a)*dist);B.camera.position.lerp(camDesired,1-Math.exp(-dt*4.5));B.camera.lookAt(target);
   const u=speaker.userData;u.head.rotation.y=.10*Math.sin(t*2);u.head.rotation.x=.035*Math.sin(t*3.2);u.arms[1].rotation.x=-.22-.25*Math.sin(t*1.75);u.arms[1].rotation.z=.12;
   if(other?.userData?.head){other.userData.head.rotation.y=.17*Math.sin(c.t*.8);other.userData.arms[1].rotation.x=-.10}
   return true;
