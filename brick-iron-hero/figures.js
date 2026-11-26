@@ -104,10 +104,48 @@ function buildMinifigureFactory(T, renderer, mat) {
   },'#eabe96');
   // Use the original reference image for Tony's recognizable printed expression.
   // Geometry and the skin-colored back remain separate from the front print.
-  const tonyMaterial=new T.MeshPhysicalMaterial({map:null,roughness:.42,metalness:0,clearcoat:.4,clearcoatRoughness:.32});
-  const tonyAtlas=loader.load('./textures/tony-print.jpg',tex=>{tex.colorSpace=T.SRGBColorSpace;tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());tonyMaterial.map=tex;tonyMaterial.needsUpdate=true;});
-  tonyAtlas.colorSpace=T.SRGBColorSpace;
-  const tonyPrint={width:245,height:400,material:tonyMaterial};
+  // The exact uploaded 245x400 reference is projected separately onto the
+  // molded head, hair and trapezoid torso. This retains the original expression,
+  // hair print and ARC shirt without stretching an entire photo over a part.
+  function photoInk(fill,project){
+    const canvas=document.createElement('canvas');canvas.width=245;canvas.height=400;
+    const ctx=canvas.getContext('2d');ctx.fillStyle=fill;ctx.fillRect(0,0,245,400);
+    const map=new T.CanvasTexture(canvas);map.colorSpace=T.SRGBColorSpace;
+    map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    return {width:245,height:400,project,canvas,ctx,map,material:new T.MeshPhysicalMaterial({map,roughness:.41,metalness:0,clearcoat:.36,clearcoatRoughness:.29})};
+  }
+  const headUV=(x,y)=>[(121.5+x*145)/245,1-(80-y*145)/400];
+  const tonyPrint=photoInk('#eabe96',headUV);
+  const tonyHair=photoInk('#38231e',headUV);
+  const tonyShirt=photoInk('#171722',(x,y)=>[(122+x*155)/245,1-(245-y*157)/400]);
+  // Manual silhouette coordinates from the supplied front photo, in its actual pixels.
+  const faceBounds=[[38,84,159],[48,84,159],[58,78,165],[69,76,166],[80,76,167],[92,77,166],[102,82,160],[110,94,151],[115,103,142]];
+  const shirtBounds=[[123,90,152],[128,76,166],[143,72,170],[165,68,176],[189,63,181],[215,58,186],[242,55,190],[246,58,187]];
+  const hairBounds=[[4,116,130],[8,100,147],[15,87,157],[23,76,167],[35,69,173],[49,67,176],[60,68,175],[77,71,174]];
+  function boundsAt(rows,y){let i=1;while(i<rows.length-1&&y>rows[i][0])i++;const a=rows[i-1],b=rows[i],t=T.MathUtils.clamp((y-a[0])/(b[0]-a[0]),0,1);return [Math.ceil(T.MathUtils.lerp(a[1],b[1],t)),Math.floor(T.MathUtils.lerp(a[2],b[2],t))]}
+  loader.load('./textures/tony-print.jpg?v=076',tex=>{
+    const source=document.createElement('canvas');source.width=245;source.height=400;const q=source.getContext('2d',{willReadFrequently:true});q.drawImage(tex.image,0,0,245,400);
+    const raw=q.getImageData(0,0,245,400).data;
+    function transfer(art,rows,top,bottom,valid,fallback){
+      const out=art.ctx.getImageData(0,0,245,400),d=out.data;
+      for(let y=0;y<400;y++){
+        const sy=T.MathUtils.clamp(y,top,bottom),[lo,hi]=boundsAt(rows,sy),allowed=[];
+        for(let x=lo;x<=hi;x++){const i=(sy*245+x)*4;if(valid(raw[i],raw[i+1],raw[i+2]))allowed.push(x)}
+        for(let x=0;x<245;x++){
+          const i=(y*245+x)*4;let sx=T.MathUtils.clamp(x,lo,hi),j=(sy*245+sx)*4;
+          if(!valid(raw[j],raw[j+1],raw[j+2])){if(allowed.length){sx=allowed.reduce((best,v)=>Math.abs(v-x)<Math.abs(best-x)?v:best,allowed[0]);j=(sy*245+sx)*4}else{d[i]=fallback[0];d[i+1]=fallback[1];d[i+2]=fallback[2];d[i+3]=255;continue}}
+          d[i]=raw[j];d[i+1]=raw[j+1];d[i+2]=raw[j+2];d[i+3]=255;
+        }
+      }
+      art.ctx.putImageData(out,0,0);art.map.needsUpdate=true;
+    }
+    // Remove white photo background, extending the nearest valid print pixel
+    // into the silhouette margin rather than drawing white seams on the model.
+    transfer(tonyPrint,faceBounds,38,115,(r,g,b)=>!(r>242&&g>242&&b>242),[234,190,150]);
+    transfer(tonyHair,hairBounds,4,77,(r,g,b)=>r<157&&g<136&&b<133,[56,35,30]);
+    transfer(tonyShirt,shirtBounds,123,246,(r,g,b)=>!(r>225&&g>225&&b>225),[23,23,34]);
+    tex.dispose();
+  });
   const ironPrint=armorTorso;
   function group(parent,x=0,y=0,z=0) {
     const g = new T.Group(); g.position.set(x,y,z); parent.add(g); return g;
@@ -131,7 +169,7 @@ function buildMinifigureFactory(T, renderer, mat) {
         const sx=Math.sign(si)*Math.pow(Math.abs(si),power);
         const sz=Math.sign(co)*Math.pow(Math.abs(co),power);
         pos.push(cx+rx*sx,y,cz+rz*sz);
-        uv.push(art?(art.normalized?(sx+1)*.5:(left+(sx+1)*.5*(right-left))/art.width):.5,art?(art.normalized?(y-rows[0][0])/Math.max(.001,rows[rows.length-1][0]-rows[0][0]):1-py/art.height):.5);
+        if(art?.project){uv.push(...art.project(cx+rx*sx,y,cz+rz*sz));}else uv.push(art?(art.normalized?(sx+1)*.5:(left+(sx+1)*.5*(right-left))/art.width):.5,art?(art.normalized?(y-rows[0][0])/Math.max(.001,rows[rows.length-1][0]-rows[0][0]):1-py/art.height):.5);
         if(j&&i<sides){
           const b=(j-1)*(sides+1)+i, t=b+sides+1;
           const dest=art && Math.abs(a+Math.PI/sides)<arc ? front:back;
@@ -207,30 +245,27 @@ function buildMinifigureFactory(T, renderer, mat) {
     const ink=piece(torso,g,backPrint(armor));ink.castShadow=false;
   }
   function hair(head){
-    // The hairline follows the molded fringe at the front and drops behind the ears.
-    const pos=[],uv=[],front=[],back=[],columns=56,levels=14;
+    // Trace the exact asymmetric fringe at the front; on the rear the
+    // molded hair sweeps down over the sides as on a classic toy hairpiece.
+    const fringe=[[64,76],[72,76],[79,67],[86,60],[95,52],[104,48],[113,54],[122,50],[130,54],[137,61],[145,58],[151,63],[159,56],[166,63],[176,76]];
+    function hairline(x){let i=1;while(i<fringe.length-1&&x>fringe[i][0])i++;const a=fringe[i-1],b=fringe[i],t=T.MathUtils.clamp((x-a[0])/(b[0]-a[0]),0,1);return (80-T.MathUtils.lerp(a[1],b[1],t))/145;}
+    const pos=[],uv=[],front=[],back=[],columns=80,levels=25;
     for(let j=0;j<=levels;j++){
       const u=j/levels,v=u*Math.PI/2;
       for(let i=0;i<=columns;i++){
         const a=(i/columns*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a);
-        const frontWeight=Math.max(0,co),fringe=.195+.024*Math.cos(10*si)-.055*Math.exp(-Math.pow((si-.34)/.18,2))-.027*Math.exp(-Math.pow((si+.55)/.20,2));
-        const edge=-.115+.322*frontWeight**.70+(fringe-.207)*frontWeight;
-        const height=edge+(.52-edge)*Math.sin(v);
-        const ridge=(.013*Math.cos(13*a+u*5.5)+.004*Math.cos(26*a+u*9))*Math.sin(v*1.75+.15);
-        const radius=(.418+ridge)*Math.cos(v)**.79*(1+.065*Math.sin(u*Math.PI*1.5));
-        const x=radius*si-.041*u, z=(radius+.004*(1-u))*co-.035+.028*frontWeight*(1-u);
-        pos.push(x,height,z);
-        uv.push((121.5+x*132)/245,1-(84-height*150)/400);
-        if(j&&i<columns){
-          const b=(j-1)*(columns+1)+i,t=b+columns+1;
-          const target=Math.abs(a+Math.PI/columns)<1.5?front:back;
-          target.push(b,b+1,t,b+1,t+1,t);
-        }
+        const frontWeight=T.MathUtils.smoothstep(co,-.12,.35);
+        const edge=T.MathUtils.lerp(-.10,hairline(121.5+si*.392*145),frontWeight);
+        const height=edge+(.522-edge)*Math.sin(v);
+        const ridge=(.009*Math.cos(17*a+u*5.2)+.004*Math.cos(31*a+u*8))*Math.sin(v*1.7+.2);
+        const radius=(.395+ridge)*Math.cos(v)**.78*(1+.085*Math.sin(u*Math.PI*1.35));
+        const x=radius*si-.022*u,z=radius*co-.014+.020*Math.max(0,co);
+        pos.push(x,height,z);uv.push(...headUV(x,height));
+        if(j&&i<columns){const b=(j-1)*(columns+1)+i,t=b+columns+1;const target=Math.abs(a+Math.PI/columns)<Math.PI*.49?front:back;target.push(b,b+1,t,b+1,t+1,t)}
       }
     }
-    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
-    g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(back.concat(front));g.addGroup(0,back.length,0);g.addGroup(back.length,front.length,1);g.computeVertexNormals();
-    const dark=abs(0x34201c,.29,0,.67), cap=piece(head,g,[dark,tonyMaterial]);cap.castShadow=true;
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(back.concat(front));g.addGroup(0,back.length,0);g.addGroup(back.length,front.length,1);g.computeVertexNormals();
+    const dark=abs(0x38231e,.31,0,.56),cap=piece(head,g,[dark,tonyHair.material]);cap.castShadow=true;
   }
   function figure(armor) {
     const root=new T.Group(), skin=abs(0xeabe96,.34,0,.48), maroon=abs(0x981b29,.25,.08,.74), black=abs(0x171722,.29,0,.62);
@@ -238,9 +273,9 @@ function buildMinifigureFactory(T, renderer, mat) {
     const torso=group(root,0,.97), head=group(root,0,2.035);
     const arms=[],legs=[],jets=[];let visor=null;
     const tx=armor?[[.006,.444,.268,323,75,234],[.045,.451,.278,316,76,234],[.70,.364,.244,188,93,216],[.76,.330,.232,178,97,211]]:[[.006,.444,.268,240,57,188],[.045,.451,.278,232,58,187],[.70,.364,.244,133,76,169],[.76,.330,.232,128,80,165]];
-    molded(torso,tx,.30,body,armor?armorTorso:tonyPrint);backSurface(torso,tx,armor);if(armor){const reactor=group(torso,0,.471,.265);const rim=piece(reactor,new T.TorusGeometry(.086,.012,8,40),abs(0xbac8d0,.31,.30));rim.castShadow=false;const lens=piece(reactor,new T.CircleGeometry(.070,40),eyeMaterial,0,0,.011);lens.castShadow=false;const lensRim=piece(reactor,new T.TorusGeometry(.052,.0035,5,32),abs(0x78b5ce,.28,.15),0,0,.013);lensRim.castShadow=false;}
+    molded(torso,tx,.24,body,armor?armorTorso:tonyShirt);backSurface(torso,tx,armor);if(armor){const reactor=group(torso,0,.471,.265);const rim=piece(reactor,new T.TorusGeometry(.086,.012,8,40),abs(0xbac8d0,.31,.30));rim.castShadow=false;const lens=piece(reactor,new T.CircleGeometry(.070,40),eyeMaterial,0,0,.011);lens.castShadow=false;const lensRim=piece(reactor,new T.TorusGeometry(.052,.0035,5,32),abs(0x78b5ce,.28,.15),0,0,.013);lensRim.castShadow=false;}
     drum(root,0,1.765,0,.15,.12,armor?maroon:skin);
-    const hips=group(root,0,.87); molded(hips,[[0,.420,.242],[.018,.434,.254],[.075,.45,.26],[.09,.437,.251]],.26,body,armor?armorHip:jeans);
+    const hips=group(root,0,.87); molded(hips,[[0,.420,.242],[.018,.434,.254],[.075,.45,.26],[.09,.437,.251]],.26,body,armor?armorHip:null);
     if(armor){
       const shell=molded(head,[[-.269,.285,.28,166,91,216],[-.23,.349,.325,159,87,221],[-.09,.372,.337,131,86,223],[.065,.372,.345,98,85,224],[.215,.374,.354,69,85,224],[.365,.361,.35,37,88,220],[.48,.335,.304,16,94,214],[.52,.258,.23,8,113,198],[.535,.13,.13,5,136,176]],.53,maroon,armorTorso,Math.PI*.49);
       // A hinged front shell closes over the driver's head during calibration.
@@ -256,11 +291,11 @@ function buildMinifigureFactory(T, renderer, mat) {
         const cap=drum(head,side*.386,.05,-.042,.092,.023,maroon);cap.rotation.z=Math.PI/2;const lip=piece(head,new T.TorusGeometry(.095,.012,8,24),abs(0xb94842,.29,.12),side*.402,.05,-.042);lip.rotation.y=Math.PI/2;
       }
     }else{
-      molded(head,[[-.247,.242,.24,111,84,159],[-.215,.344,.304,106,80,163],[-.148,.363,.321,100,77,165],[.156,.364,.321,59,78,166],[.213,.338,.299,52,81,163],[.246,.263,.25,49,91,155]],.92,skin,tonyPrint,Math.PI*.43);
+      molded(head,[[-.238,.206,.218],[-.224,.274,.267],[-.190,.318,.295],[-.144,.329,.306],[.105,.329,.306],[.175,.325,.296],[.220,.294,.272],[.251,.237,.234]],.92,skin,tonyPrint,Math.PI*.48);
       hair(head);
     }
     for(const side of [-1,1]){
-      const a=group(root,side*.395,1.62,0), armMat=armor?maroon:abs(0x54555e,.31,0,.57);
+      const a=group(root,side*.395,1.62,0), armMat=armor?maroon:abs(0x505158,.34,0,.53);
       // Cross-sections follow the angled shoulder and the forward bend of the elbow.
       const rows=[[-.535,.124,.137,.136,.045],[-.49,.134,.145,.141,.044],[-.30,.147,.151,.137,.018],[-.19,.151,.158,.11,-.008],[-.06,.154,.155,.064,-.017],[.052,.132,.140,.035,-.022],[.092,.086,.099,.028,-.025]].map(([y,rx,rz,dx,z])=>[y,rx,rz,0,0,0,side*dx,z]);
       molded(a,rows,.88,armMat);
@@ -268,7 +303,7 @@ function buildMinifigureFactory(T, renderer, mat) {
       const leg=group(root,side*.227,.855,0);
       const left=side<0, leftEdge=armor?(left?72:165):(left?57:132),rightEdge=armor?(left?146:238):(left?112:186);
       const legRows=[[-.833,.207,.278,armor?508:387,.055],[-.683,.209,.280,armor?480:360,.055],[-.642,.207,.225,armor?469:353,.002],[-.35,.203,.219,armor?417:311,0],[-.19,.209,.245,armor?388:292,-.015],[-.081,.205,.244,armor?362:271,-.018],[-.014,.162,.191,armor?353:264,-.018]].map(([y,rx,rz,py,z])=>[y,rx,rz,py,leftEdge,rightEdge,0,z]);
-      molded(leg,legRows,.25,body,armor?armorLeg:jeans);
+      molded(leg,legRows,.25,body,armor?armorLeg:null);
       // Side seams and separate rounded toe mold, without covering the front print.
       const seam=piece(leg,new T.BoxGeometry(.008,.025,.365),armor?abs(0x62141e,.34,.1):abs(0x0d1018,.35),side*.209,-.657,.025);seam.castShadow=false;
       // Two actual recessed socket rims on the back of each leg.
