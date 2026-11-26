@@ -22,7 +22,7 @@ function dressWorkshop(T, scene, renderer, parts) {
     box(x,3.1,-11.04,.27,5.45,.38,steel);
     box(x,5.28,-10.94,.58,.22,.5,orange);
     for(const y of [1.38,3.58,5.12]){const rivet=cylinder(x,y,-10.79,.065,.04,0x899bab);rivet.rotation.x=Math.PI/2;}
-    if(x<11){box(x+1.83,4.65,-11.32,3.42,1.55,.11,0x4b879e);box(x+1.83,4.72,-11.22,3.4,.08,.11,steel);box(x+1.83,4.62,-11.15,.065,1.46,.08,steel);}
+    if(x<11){const pane=new T.Mesh(new T.PlaneGeometry(3.42,1.55),new T.MeshBasicMaterial({color:0xc9ecff,transparent:true,opacity:.12,depthWrite:false,side:T.DoubleSide}));pane.position.set(x+1.83,4.65,-11.32);scene.add(pane);box(x+1.83,4.72,-11.22,3.4,.08,.11,steel);box(x+1.83,4.62,-11.15,.065,1.46,.08,steel);}
   }
   box(0,4.42,-10.95,5.4,1.33,.32,0x162938);panel('STARK','I N D U S T R I E S',5.15,1.17,0,4.43,-10.77);
   for(const x of [-7.8,7.8]){
@@ -44,7 +44,10 @@ function dressWorkshop(T, scene, renderer, parts) {
   for(let i=0;i<5;i++){const x=-1.23+i*.57;
     box(x,2.35,.175,.08,.55,.08,0x96a4ad,toolBay);const wrench=cylinder(x,2.67,.18,.105,.08,0xa5b3ba,toolBay);wrench.rotation.x=Math.PI/2;
   }
-  panel('01','MONTAŻ • MARK III',2.42,.68,7.10,2.42,-10.54);
+  panel('ASSEMBLY','PROTOTYPE SYSTEM',2.42,.68,7.10,2.42,-10.54);
+  // Separate silver worktops, under-counter drawers, floor ramp and cable trays.
+  const bench=group(10.15,0,-4.9);box(0,.91,0,1.10,.13,3.2,0xc2c8cb,bench);for(let i=0;i<3;i++){let z=-1+i;box(0,.43,z,.86,.82,.87,0x525d64,bench);for(let j=0;j<2;j++){box(-.46,.32+j*.27,z,.06,.20,.75,0x839098,bench);box(-.50,.35+j*.27,z,.055,.045,.45,0x343f49,bench)}}for(let i=0;i<4;i++){box(0,1.04,-1.18+i*.70,.44,.13,.28,0x343f49,bench);glow(-.24,1.05,-1.18+i*.70,.035,.07,.17,0x8ad7ed,bench)}
+  for(let j=0;j<5;j++){box(-4.5+j*.5,.12,-11.03,.43,.06,.32,0xc4cdd1);box(-4.5+j*.5,.16,-11.03,.36,.025,.23,0x454f57)}
   for(const x of [4,10]){
     box(x,.55,-7.98,.83,.91,.80,0x293c4c);brick(x,1.05,-7.98,.82,.13,.8,yellow);
   }

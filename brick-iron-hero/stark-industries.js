@@ -72,7 +72,7 @@ function createStarkIndustries(B){
  const rockData=[];let rockSeed=831,rockMesh=null;const hiddenRocks=new Set(),hiddenGates=new Set(),rockMatrices=[],collapsed=new T.Matrix4().makeScale(0,0,0);const cutLook=new T.Vector3();
  function rand(){rockSeed=(rockSeed*1664525+1013904223)>>>0;return rockSeed/4294967296}
  function rock(parent,x,z,w,h,d,color=0x665f5c,y=0){rockData.push({x,y:y+h*.46,z,w,h,d,color,rx:(rand()-.5)*.33,ry:rand()*Math.PI*2,rz:(rand()-.5)*.27})}
- function flushRocks(){const mesh=new T.InstancedMesh(rockGeo,rockMat,rockData.length),o=new T.Object3D();rockData.forEach((p,i)=>{const height=Math.min(p.z<-10.7?3.45:Math.abs(p.x)>11.2?2.0:1.55,Math.max(.22,p.h*.56));const elevated=p.y-p.h*.46>1.2;
+ function flushRocks(){const mesh=new T.InstancedMesh(rockGeo,rockMat,rockData.length),o=new T.Object3D();rockData.forEach((p,i)=>{const height=Math.min(p.z<-10.7?4.25:Math.abs(p.x)>11.2?2.8:1.68,Math.max(.22,p.h*.75));const elevated=p.y-p.h*.46>1.2;
  if(elevated){o.position.set(p.x,-5,p.z);o.scale.set(.001,.001,.001);o.rotation.set(0,0,0)}
  else{o.position.set(p.x,height*.49,p.z);o.scale.set(p.w,height*.51,p.d);o.rotation.set(p.rx*.35,p.ry,p.rz*.35)}
  o.updateMatrix();p.renderY=o.position.y;p.renderH=o.scale.y;p.elevated=elevated;rockMatrices[i]=o.matrix.clone();mesh.setMatrixAt(i,o.matrix);mesh.setColorAt(i,new T.Color(p.color))});mesh.instanceMatrix.setUsage(T.DynamicDrawUsage);mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();rockMesh=mesh;caveRoot.add(mesh)}
@@ -122,16 +122,18 @@ function createStarkIndustries(B){
   const studs=new T.InstancedMesh(new T.CylinderGeometry(.115,.123,.065,10),new T.MeshStandardMaterial({color:0xffffff,roughness:.58}),600);
   const pivot=new T.Object3D(),color=new T.Color();let ti=0,si=0;
   for(let i=0;i<20;i++)for(let j=0;j<20;j++){
-    const x=(i-9.5)*1.18,z=(j-9.5)*1.18;const palette=z>3.5?[0x6b6256,0x74695b,0x797064]:z>-3.5?[0x625c57,0x6e655a,0x746c62]:[0x74624e,0x7b6b58,0x88745b];
+    const x=(i-9.5)*1.18,z=(j-9.5)*1.18;const palette=z>3.5?[0x8b795e,0x927e63,0x88765c]:z>-3.5?[0x6c655b,0x786e60,0x817563]:[0x967c57,0x9d845e,0xaa9069];
     color.setHex(palette[(i*7+j*11)%3]);pivot.position.set(x,.17,z);pivot.rotation.set(0,0,0);pivot.scale.set(1,1,1);pivot.updateMatrix();tiles.setMatrixAt(ti,pivot.matrix);tiles.setColorAt(ti++,color);
     if((i+j)%3===0&&Math.abs(x)>2.2){for(const dx of [-.30,.30])for(const dz of [-.30,.30]){pivot.position.set(x+dx,.23,z+dz);pivot.updateMatrix();studs.setMatrixAt(si,pivot.matrix);studs.setColorAt(si++,color)}}
   }tiles.count=ti;studs.count=si;for(const mesh of [tiles,studs]){mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();mesh.receiveShadow=true;caveRoot.add(mesh)}
   // Irregular rock formations, rubble, ceiling fragments away from camera path.
-  for(let i=0;i<32;i++){let p=(i+.5)/32*24-12;for(const side of [-1,1]){rock(caveRoot,side*12,p,1.1+rand()*.8,3.1+rand()*2,.9+rand()*.45,0x65564b);rock(caveRoot,p,side*12,.9+rand()*.65,3.2+rand()*1.9,1.1+rand()*.6,0x574944)}}
+  for(let i=0;i<32;i++){let p=(i+.5)/32*24-12;for(const side of [-1,1]){rock(caveRoot,side*12,p,1.1+rand()*.8,3.1+rand()*2,.9+rand()*.45,[0x806b54,0x967d5f,0x6b5748][i%3]);rock(caveRoot,p,side*12,.9+rand()*.65,3.2+rand()*1.9,1.1+rand()*.6,[0x6d5949,0x88705a,0x9c8264][i%3])}}
   for(let i=0;i<45;i++){let x=-11+rand()*22,z=-11+rand()*22;if(Math.abs(x)>9.5){rock(caveRoot,x,z,.20+rand()*.45,.35+rand()*.55,.22+rand()*.45,0x8a735e)}}
   for(let i=0;i<13;i++){let z=11-i*1.7;box(-10.5,.15,z,.07,.10,1.4,0x363236,caveRoot);box(-10.27,.15,z,.06,.11,1.4,0x2b292c,caveRoot)}
   for(let i=0;i<4;i++){let x=-8.5+i*1.55;const g=group(caveRoot,x,0,10.85);brick(0,.25,0,1.3,.47,.72,0x62513b,g);brick(0,.64,0,1.25,.26,.69,0x91704b,g);for(let side of [-1,1])box(side*.43,.48,.39,.08,.81,.055,0x4c3d32,g)}
   const storage=group(caveRoot,-9.4,0,7.8);brick(0,.19,0,1.18,.36,.84,0x716454,storage);brick(0,.58,0,1.08,.30,.78,0x978267,storage);box(0,.79,0,.94,.08,.60,0x393f42,storage);for(let j=0;j<3;j++){const coil=cylinder(-.34+j*.34,.90,0,.13,.14,0x737e80,storage);coil.rotation.x=Math.PI/2}batchRigid(storage);
+  // Distinct prison alcove: bedding, medical crates, cable conduit, warm lanterns.
+  const alcove=group(caveRoot,-8.3,0,9.6);box(0,.22,0,1.6,.40,1.05,0x756048,alcove);box(0,.47,0,1.52,.10,.98,0x9b845f,alcove);for(let i=0;i<3;i++){box(-.50+i*.50,.62,0,.35,.19,.69,0xb7a185,alcove);box(-.50+i*.50,.64,.36,.10,.13,.03,0x5f5749,alcove)}batchRigid(alcove);
   const bed=group(caveRoot,-3.6,0,10.1);box(0,.35,0,1.4,.25,2.05,0x343e41,bed);box(0,.53,0,1.22,.18,1.86,0x887c68,bed);box(0,.66,-.60,1.0,.15,.53,0xc4b29b,bed);
   for(const x of [-.60,.60])for(const z of [-.85,.85])box(x,.19,z,.13,.39,.13,0x34383b,bed);
   const work=group(caveRoot,7,0,7);assemblyBench=work;for(const x of [-.94,.94])for(const z of [-.62,.62])box(x,.46,z,.14,.92,.14,0x393d41,work);box(0,.96,0,2.5,.19,1.65,0x675749,work);box(0,1.36,-.72,2.36,.66,.15,0x393e41,work);
@@ -149,6 +151,9 @@ function createStarkIndustries(B){
   for(let i=0;i<6;i++){const x=-9.8+i*3.8;brick(x,.29,-3.65,1.02,.30,.64,0x746452,caveRoot);brick(x,.57,-3.65,.85,.25,.62,0x9a8263,caveRoot)}
   for(let i=0;i<5;i++){const z=8.8-i*3.7;box(-10.1,.40,z,.075,.72,.09,0x68625c,caveRoot);glow(-10.1,.78,z,.23,.10,.23,0xffd59b,caveRoot)}
   const generator=group(caveRoot,9.7,0,-7.3);brick(0,.23,0,1.2,.44,.96,0x514b45,generator);box(0,.62,0,.95,.48,.78,0x827460,generator);for(let j=0;j<3;j++){box(-.3+j*.3,.64,.42,.10,.32,.035,0x383b3c,generator)}glow(0,.91,.18,.32,.07,.22,0xe9bf77,generator);batchRigid(generator);
+  // Desert light at the cave mouth; sculpted stone shoulders remain outside the path.
+  for(const side of [-1,1])for(let i=0;i<4;i++){rock(caveRoot,side*(2.9+i*.42),-10.95,.62+i*.14,2.3+i*.43,.72,[0xb39871,0x937b5f][i%2]);}
+  const threshold=group(caveRoot,0,0,-10.55);box(0,.21,0,3.55,.13,1.35,0xc5a879,threshold);for(let i=0;i<7;i++)box(-1.5+i*.5,.285,0,.46,.035,1.24,0xd7b887,threshold);batchRigid(threshold);
   const exitSign=group(caveRoot,0,0,-10.8);label(exitSign,'WYJŚCIE',0,2.3,.1,2.0);glow(0,2.65,0,1.7,.08,.12,0xe7d4a8,exitSign);
  
  }
@@ -181,7 +186,7 @@ function createStarkIndustries(B){
  function makeCave(saved=null,mode=false){
    solids.length=items.length=robots.length=switches.length=rockData.length=rockMatrices.length=0;hiddenRocks.clear();hiddenGates.clear();for(const k of Object.keys(gateMap))delete gateMap[k];spoken.clear();voiceUntil=0;rockSeed=831;area='cave';free=mode;meta.last='cave';caveRoot=new T.Group();worldLook={background:scene.background,fog:scene.fog,lights:scene.children.filter(o=>o.isLight).map(o=>({o,intensity:o.intensity,color:o.color?.clone(),ground:o.groundColor?.clone()}))};
    hidden=scene.children.filter(o=>!o.isLight&&o!==player&&!B.persistent(o)).map(o=>[o,o.visible]);for(const [o] of hidden)o.visible=false;scene.add(caveRoot);
-   scene.background=new T.Color(0x342c27);scene.fog=new T.Fog(0x342c27,13,40);for(const light of scene.children.filter(o=>o.isLight)){if(light.isDirectionalLight){light.intensity*=.58;light.color.setHex(0xffcda0)}else if(light.isHemisphereLight){light.intensity=1.15;light.color.setHex(0xc5b8a8);light.groundColor.setHex(0x76604f)}}const lamp=new T.PointLight(0xffc18a,9,11,2);lamp.position.set(7,3.4,7);caveRoot.add(lamp);const blue=new T.PointLight(0x89c5ff,5,10,2);blue.position.set(0,3.1,-9);caveRoot.add(blue);
+   scene.background=new T.Color(0x3a3029);scene.fog=new T.Fog(0x3a3029,13,40);for(const light of scene.children.filter(o=>o.isLight)){if(light.isDirectionalLight){light.intensity*=.58;light.color.setHex(0xffcda0)}else if(light.isHemisphereLight){light.intensity=1.15;light.color.setHex(0xc5b8a8);light.groundColor.setHex(0x76604f)}}const lamp=new T.PointLight(0xffc18a,9,11,2);lamp.position.set(7,3.4,7);caveRoot.add(lamp);const blue=new T.PointLight(0xffd7a3,8,12,2);blue.position.set(0,3.1,-9);caveRoot.add(blue);
    cave={stage:0,parts:[],switches:[],killed:[],collected:[],score:0,hp:5,done:false,pos:[0,0,10],mode:free};if(saved)cave={...cave,...saved,mode:free};
    caveDressing();
    for(let i=0;i<12;i++){let x=-11+i*2;rock(caveRoot,x,-11.7,1.3,4.8,.9);rock(caveRoot,x,11.7,1.3,3.8,.9)}
@@ -242,7 +247,7 @@ function createStarkIndustries(B){
      // Build the actual playable Mark I rig piece by piece. It is temporary
      // and never shares moving joints with the player's saved rig.
      c.rig=figure.variant('mark1');c.rig.position.set(5.3,.10,5.6);c.props.add(c.rig);
-     c.parts=c.rig.children.map((o,i)=>({o,i,p:o.position.clone(),r:o.rotation.clone()}));
+     const rigData=c.rig.userData,order=[...rigData.legs,rigData.hips,rigData.torso,...rigData.arms,rigData.head];c.parts=c.rig.children.map((o,i)=>({o,i:order.includes(o)?order.indexOf(o):2,p:o.position.clone(),r:o.rotation.clone()}));
      c.rig.visible=false;
    }
    const sparkGeo=new T.BoxGeometry(.065,.065,.065),sparkMat=new T.MeshBasicMaterial({color:0xffca67});
@@ -292,7 +297,7 @@ function createStarkIndustries(B){
      }else{if(c.tool)c.tool.visible=false;faceActor(player,tp,yp);actorPose(tony,t,t<1.2?'think':'talk');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}shot=t<1.1?'two':t<3.5?'tony':'wide'}
    }else if(c.which==='armor'){
      tp.set(5.3,.1,5.6);player.rotation.y=0;
-     if(i<2){actorPose(tony,t,i===0?'talk':'think');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,i===1?'talk':'react')}shot=i===0?(t<1.8?'establish':t<3.5?'tony':'bench'):(t<1.6?'yinsen':'reaction')}
+     if(i<2){actorPose(tony,t,i===0?'talk':'think');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,i===1?'talk':'react')}if(i===0&&t>2.8){const reach=cue(t,2.8,3.35)*(1-cue(t,4.45,5.3));tony.userData.arms[1].rotation.x=-.25-.85*reach;tony.userData.head.rotation.x=.20*reach;tony.userData.torso.rotation.y=.15*reach}shot=i===0?(t<1.8?'establish':t<3.5?'tony':'bench'):(t<1.6?'yinsen':'reaction')}
      else{
        const progress=cue(t,.12,3.6);c.rig.visible=true;tony.visible=false;
        c.rig.rotation.y=0;c.rig.position.set(5.3,.10,5.6);
@@ -300,7 +305,7 @@ function createStarkIndustries(B){
        const flashAge=t-2.6;tickCutSparks(c,{x:5.3,y:1.45,z:6.0},flashAge);c.glow.intensity=Math.max(0,1-Math.abs(flashAge-.12)*4)*5+progress*1.4;
        if(t>3.6){actorPose(c.rig,t,'hero');fire('reactor','power')}
        if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}
-       shot=t<.9?'boots':t<2.0?'chest':t<3.15?'helmet':'hero';
+       shot=t<1.25?'boots':t<2.55?'chest':t<3.55?'helmet':'hero';
      }
    }else{
      const u=cue(t,0,1.8);
@@ -317,9 +322,9 @@ function createStarkIndustries(B){
    if(shot==='reaction'){p=isY?tp:(yp||tp);y=1.78;dist=2.9;height=2.22;angle=(isY?player.rotation.y:yinsen?.rotation.y||0)+.24;fov=35}
    if(shot==='insert'&&c.tool){c.tool.getWorldPosition(c.toolWorld);p=c.toolWorld;y=p.y;dist=2.4;height=p.y+.30;angle=(yinsen?.rotation.y||0)+.24;fov=40}
    if(shot==='bench'){p={x:7,z:7};y=1.16;dist=2.8;height=2.3;angle=.62;fov=39}
-   if(shot==='boots'){y=.48;dist=2.45;height=.65;angle=-.35;fov=35}
-   if(shot==='chest'){y=1.40;dist=2.45;height=1.67;angle=.43;fov=35}
-   if(shot==='helmet'){y=2.08;dist=2.3;height=2.18;angle=-.23;fov=34}
+   if(shot==='boots'){y=.64;dist=3.2;height=1.05;angle=-.45;fov=39}
+   if(shot==='chest'){y=1.35;dist=3.25;height=1.95;angle=-.28;fov=39}
+   if(shot==='helmet'){y=1.94;dist=3.0;height=2.55;angle=-.40;fov=38}
    if(shot==='hero'){y=1.35;dist=4.9;height=2.25;angle=-.44;fov=42}
    if(shot==='exit'){y=1.35;dist=5.2;height=2.8;angle=.65;fov=45;lookZ=-.65}
    if(assemblyBench)assemblyBench.visible=c.which!=='armor'||shot==='bench';
@@ -327,7 +332,7 @@ function createStarkIndustries(B){
    if(c.shotKey!==key){c.shotKey=key;c.shotStart=c.t}
    const dolly=Math.min(1,(c.t-c.shotStart)/3),move=.13*dolly;
    target.set(p.x+lookX,y,p.z+lookZ);cutLook.copy(target);
-   camDesired.set(p.x+Math.sin(angle+move)*dist,height+move*.12,p.z+Math.cos(angle+move)*dist);
+   camDesired.set(p.x+Math.sin(angle+move)*dist,Math.max(1.0,height+move*.12),p.z+Math.cos(angle+move)*dist);
    if(c.lastCam!==key){c.lastCam=key;B.camera.position.copy(camDesired)}else B.camera.position.lerp(camDesired,1-Math.exp(-dt*10));
    B.camera.lookAt(target);B.camera.fov=fov+(B.camera.aspect<.85?13:0);B.camera.updateProjectionMatrix();
    return true;
