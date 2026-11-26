@@ -1,11 +1,12 @@
 // Molded parts have their own pivots; only the surfaces facing the camera carry a print.
 function buildMinifigureFactory(T, renderer, mat) {
   const loader = new T.TextureLoader();
+  const mobileGPU=matchMedia('(pointer:coarse)').matches||/iPhone|iPad|Android/i.test(navigator.userAgent);
   // Individual molded ABS materials, rather than one material shared with scenery.
   const plasticCache=new Map();
   function abs(color,rough=.26,metal=0,coat=.64){
     const key=[color,rough,metal,coat].join(':');
-    if(!plasticCache.has(key))plasticCache.set(key,new T.MeshPhysicalMaterial({color,roughness:rough,metalness:metal,clearcoat:coat,clearcoatRoughness:.23,envMapIntensity:.9}));
+    if(!plasticCache.has(key))plasticCache.set(key,(mobileGPU?new T.MeshStandardMaterial({color,roughness:Math.max(.23,rough),metalness:metal,envMapIntensity:.9}):new T.MeshPhysicalMaterial({color,roughness:rough,metalness:metal,clearcoat:coat,clearcoatRoughness:.23,envMapIntensity:.9})));
     return plasticCache.get(key);
   }
   const goldMask=abs(0xdcb14f,.26,.32,.73),goldEdge=abs(0xf2ce79,.25,.28,.74),darkGold=abs(0x8d642e,.39,.36,.35),maskInk=abs(0x211c24,.42,.1,.32);
@@ -270,13 +271,19 @@ function buildMinifigureFactory(T, renderer, mat) {
   // Tony is now a separate sculpt, not a recolor of the armored rig.
   // All root children deliberately retain the assembly cutscene's ordering.
   function tonyPart(parent,rows,material,art=null,oval=false,segments=64){
+    if(mobileGPU)segments=Math.min(segments,40);
     const xyz=[],uv=[],front=[],other=[];
     for(let j=0;j<rows.length;j++){
       const [y,w,d,r,cx=0,cz=0]=rows[j];
       for(let i=0;i<=segments;i++){
         const a=(i/segments*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a);
-        const x=cx+(oval?w*si:Math.sign(si)*(w-r)+r*si);
-        const z=cz+(oval?d*co:Math.sign(co)*(d-r)+r*co);
+        // Continuous rounded rectangular cross section, including closed rear seam.
+        const ux=Math.abs(si),uz=Math.abs(co);
+        let x,z;
+        if(oval){x=cx+w*si;z=cz+d*co}
+        else {const rw=Math.max(0,w-r),rd=Math.max(0,d-r);let t=Math.min(w/Math.max(ux,1e-8),d/Math.max(uz,1e-8));
+          if(t*ux>rw&&t*uz>rd){const k=ux*rw+uz*rd;t=k+Math.sqrt(Math.max(0,k*k-rw*rw-rd*rd+r*r));}
+          x=cx+si*t;z=cz+co*t;}
         xyz.push(x,y,z);uv.push(...(art?art.project(x,y,z):[i/segments,j/(rows.length-1)]));
         if(j&&i<segments){
           const k=(j-1)*(segments+1)+i,t=k+segments+1;
@@ -298,7 +305,7 @@ function buildMinifigureFactory(T, renderer, mat) {
     return piece(parent,g,material,x,y,z);
   }
   function hairLock(parent,points,width,thickness,material){
-    const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),xyz=[],idx=[],steps=20,sides=10;
+    const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),xyz=[],idx=[],steps=mobileGPU?12:20,sides=mobileGPU?7:10;
     for(let j=0;j<=steps;j++){
       const u=j/steps,p=curve.getPoint(u),dir=curve.getTangent(u).normalize();
       const normal=new T.Vector3(p.x,p.y-.05,p.z+.015).normalize();
@@ -316,7 +323,7 @@ function buildMinifigureFactory(T, renderer, mat) {
   function sculptTonyHair(head){
     const dark=abs(0x38231e,.29,0,.65),lock=abs(0x402a24,.28,0,.62),deep=abs(0x30201b,.32,0,.52);
     // Rounded molded cap with separate asymmetric fringe and raised combed locks.
-    const xyz=[],uv=[],idx=[],N=80,M=28;
+    const xyz=[],uv=[],idx=[],N=mobileGPU?48:80,M=mobileGPU?17:28;
     const fringe=[[-1,.026],[-.78,.047],[-.59,.119],[-.37,.185],[-.15,.218],[.02,.168],[.20,.206],[.36,.137],[.53,.117],[.70,.165],[.87,.065],[1,.025]];
     function edge(x){let i=1;while(i<fringe.length-1&&x>fringe[i][0])i++;let a=fringe[i-1],b=fringe[i];return T.MathUtils.lerp(a[1],b[1],T.MathUtils.clamp((x-a[0])/(b[0]-a[0]),0,1))}
     for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){
@@ -350,7 +357,7 @@ function buildMinifigureFactory(T, renderer, mat) {
     // Broad trapezoidal torso with beveled, not balloon-shaped, edges.
     tonyPart(torso,[[.006,.416,.234,.035],[.023,.447,.263,.035],[.050,.447,.270,.037],[.615,.369,.240,.035],[.708,.343,.230,.032],[.746,.324,.212,.028],[.759,.300,.198,.026]],black,tonyShirt);
     const collar=drum(torso,0,.764,0,.151,.036,black);
-    backSurface(torso,[[.018,.421,.249],[.054,.445,.267],[.69,.35,.232],[.75,.31,.21]],false);
+    // Plain black rear, without a floating print overlay.
     drum(root,0,1.765,0,.148,.12,skin);
     const hips=group(root,0,.87);
     softBox(hips,.872,.106,.495,.018,black,0,.045,0);
