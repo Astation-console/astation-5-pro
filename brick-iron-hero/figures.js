@@ -267,7 +267,120 @@ function buildMinifigureFactory(T, renderer, mat) {
     const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(back.concat(front));g.addGroup(0,back.length,0);g.addGroup(back.length,front.length,1);g.computeVertexNormals();
     const dark=abs(0x38231e,.31,0,.56),cap=piece(head,g,[dark,tonyHair.material]);cap.castShadow=true;
   }
+  // Tony is now a separate sculpt, not a recolor of the armored rig.
+  // All root children deliberately retain the assembly cutscene's ordering.
+  function tonyPart(parent,rows,material,art=null,oval=false,segments=64){
+    const xyz=[],uv=[],front=[],other=[];
+    for(let j=0;j<rows.length;j++){
+      const [y,w,d,r,cx=0,cz=0]=rows[j];
+      for(let i=0;i<=segments;i++){
+        const a=(i/segments*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a);
+        const x=cx+(oval?w*si:Math.sign(si)*(w-r)+r*si);
+        const z=cz+(oval?d*co:Math.sign(co)*(d-r)+r*co);
+        xyz.push(x,y,z);uv.push(...(art?art.project(x,y,z):[i/segments,j/(rows.length-1)]));
+        if(j&&i<segments){
+          const k=(j-1)*(segments+1)+i,t=k+segments+1;
+          const arr=art&&Math.abs(a+Math.PI/segments)<Math.PI*.48?front:other;
+          arr.push(k,k+1,t,k+1,t+1,t);
+        }
+      }
+    }
+    for(const j of [0,rows.length-1]){
+      const center=xyz.length/3,[y,,,,cx=0,cz=0]=rows[j];xyz.push(cx,y,cz);uv.push(.5,.5);
+      for(let i=0;i<segments;i++){const k=j*(segments+1)+i;if(j)other.push(center,k,k+1);else other.push(center,k+1,k)}
+    }
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(xyz,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(other.concat(front));g.addGroup(0,other.length,0);if(front.length)g.addGroup(other.length,front.length,1);g.computeVertexNormals();return piece(parent,g,art?[material,art.material]:material);
+  }
+  function softBox(parent,w,h,d,r,material,x=0,y=0,z=0){
+    const sh=new T.Shape(),a=w/2-r,b=h/2-r;
+    sh.moveTo(-a,-b);sh.lineTo(a,-b);sh.lineTo(a,b);sh.lineTo(-a,b);sh.closePath();
+    const g=new T.ExtrudeGeometry(sh,{depth:Math.max(.002,d-2*r),bevelEnabled:true,bevelSegments:3,steps:1,bevelThickness:r,bevelSize:r,curveSegments:6});g.translate(0,0,-(d-2*r)/2);
+    return piece(parent,g,material,x,y,z);
+  }
+  function hairLock(parent,points,width,thickness,material){
+    const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),xyz=[],idx=[],steps=20,sides=10;
+    for(let j=0;j<=steps;j++){
+      const u=j/steps,p=curve.getPoint(u),dir=curve.getTangent(u).normalize();
+      const normal=new T.Vector3(p.x,p.y-.05,p.z+.015).normalize();
+      const lateral=new T.Vector3().crossVectors(dir,normal).normalize();
+      const radial=new T.Vector3().crossVectors(lateral,dir).normalize();
+      const taper=.12+.88*Math.pow(Math.sin(Math.PI*u),.42);
+      for(let i=0;i<=sides;i++){
+        const a=i/sides*Math.PI*2,v=p.clone().addScaledVector(lateral,Math.cos(a)*width*taper).addScaledVector(radial,Math.sin(a)*thickness*taper);
+        xyz.push(v.x,v.y,v.z);
+        if(j&&i<sides){const k=(j-1)*(sides+1)+i,t=k+sides+1;idx.push(k,t,k+1,k+1,t,t+1)}
+      }
+    }
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(xyz,3));g.setIndex(idx);g.computeVertexNormals();return piece(parent,g,material);
+  }
+  function sculptTonyHair(head){
+    const dark=abs(0x38231e,.29,0,.65),lock=abs(0x402a24,.28,0,.62),deep=abs(0x30201b,.32,0,.52);
+    // Rounded molded cap with separate asymmetric fringe and raised combed locks.
+    const xyz=[],uv=[],idx=[],N=80,M=28;
+    const fringe=[[-1,.026],[-.78,.047],[-.59,.119],[-.37,.185],[-.15,.218],[.02,.168],[.20,.206],[.36,.137],[.53,.117],[.70,.165],[.87,.065],[1,.025]];
+    function edge(x){let i=1;while(i<fringe.length-1&&x>fringe[i][0])i++;let a=fringe[i-1],b=fringe[i];return T.MathUtils.lerp(a[1],b[1],T.MathUtils.clamp((x-a[0])/(b[0]-a[0]),0,1))}
+    for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){
+      let u=j/M,a=(i/N*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a),v=u*Math.PI/2;
+      let y0=T.MathUtils.lerp(-.10,edge(si),T.MathUtils.smoothstep(co,-.16,.42));
+      let y=y0+(.508-y0)*Math.sin(v),rr=(.386+.024*Math.sin(Math.PI*u))*Math.pow(Math.cos(v),.73);
+      let ridge=.008*Math.cos(13*a+5.6*u)*Math.sin(v*1.8+.1);
+      let x=(rr+ridge)*si-.018*u,z=(rr*.91+ridge)*co-.014;
+      xyz.push(x,y,z);uv.push(...headUV(x,y));
+      if(j&&i<N){let k=(j-1)*(N+1)+i,t=k+N+1;idx.push(k,k+1,t,k+1,t+1,t)}
+    }
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(xyz,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
+    piece(head,g,dark);
+    const strands=[
+      [[-.03,.477,.081],[-.17,.444,.159],[-.275,.326,.242],[-.327,.14,.244]],
+      [[.025,.472,.114],[-.08,.427,.253],[-.19,.306,.325],[-.245,.185,.307]],
+      [[.058,.456,.158],[-.015,.389,.295],[-.105,.255,.353],[-.13,.202,.342]],
+      [[.10,.445,.156],[.079,.364,.302],[.02,.246,.359],[-.025,.174,.351]],
+      [[.13,.447,.125],[.20,.355,.272],[.16,.246,.331],[.12,.129,.337]],
+      [[.17,.422,.102],[.284,.302,.226],[.296,.211,.248],[.26,.151,.286]],
+      [[.20,.390,.026],[.336,.258,.143],[.36,.085,.145],[.338,.025,.146]],
+      [[-.12,.47,-.03],[-.30,.337,-.16],[-.37,.095,-.11],[-.341,-.048,-.078]],
+      [[.07,.489,-.04],[.22,.38,-.23],[.27,.22,-.30],[.235,-.07,-.27]],
+      [[-.03,.493,-.08],[-.09,.41,-.28],[-.13,.19,-.365],[-.11,-.084,-.318]]
+    ];
+    strands.forEach((p,i)=>hairLock(head,p,i===3||i===4?.066:.054,.024,i%4===0?deep:lock));
+  }
+  function sculptTony(){
+    const root=new T.Group(),skin=abs(0xe6ba94,.34,0,.54),black=abs(0x15151c,.25,0,.67),inside=abs(0x090a10,.34,0,.3),sleeve=abs(0x45464e,.33,0,.62);
+    const torso=group(root,0,.97),head=group(root,0,2.035);
+    // Broad trapezoidal torso with beveled, not balloon-shaped, edges.
+    tonyPart(torso,[[.006,.416,.234,.035],[.023,.447,.263,.035],[.050,.447,.270,.037],[.615,.369,.240,.035],[.708,.343,.230,.032],[.746,.324,.212,.028],[.759,.300,.198,.026]],black,tonyShirt);
+    const collar=drum(torso,0,.764,0,.151,.036,black);
+    backSurface(torso,[[.018,.421,.249],[.054,.445,.267],[.69,.35,.232],[.75,.31,.21]],false);
+    drum(root,0,1.765,0,.148,.12,skin);
+    const hips=group(root,0,.87);
+    softBox(hips,.872,.106,.495,.018,black,0,.045,0);
+    softBox(hips,.115,.20,.40,.015,inside,0,-.048,-.018);
+    // Classical cylindrical head with a broad rounded chin and printed face.
+    tonyPart(head,[[-.240,.205,.212,.03],[-.228,.257,.255,.03],[-.210,.296,.280,.03],[-.173,.316,.297,.03],[-.119,.329,.307,.03],[.105,.329,.307,.03],[.168,.319,.300,.03],[.214,.292,.275,.03],[.244,.240,.233,.03]],skin,tonyPrint,true,80);
+    drum(head,0,.253,0,.150,.098,skin);
+    sculptTonyHair(head);
+    const arms=[],legs=[],jets=[];
+    for(const side of [-1,1]){
+      const arm=group(root,side*.395,1.62,0);
+      const shoulder=drum(arm,0,-.008,0,.12,.074,inside);shoulder.rotation.z=Math.PI/2;
+      tonyPart(arm,[[-.550,.121,.127,.025,side*.151,.036],[-.530,.139,.143,.028,side*.148,.038],[-.440,.139,.147,.030,side*.14,.032],[-.285,.154,.152,.032,side*.108,.013],[-.155,.157,.157,.032,side*.072,-.003],[-.052,.148,.150,.03,side*.034,-.012],[.038,.116,.122,.028,side*.009,-.010],[.080,.075,.082,.02,side*.002,-.010]],sleeve,null,true);
+      drum(arm,side*.151,-.572,.04,.090,.091,skin);
+      const hand=clipHand(arm,side*.151,skin);hand.position.y=-.700;hand.position.z=.055;hand.rotation.z=side*.085;
+      arms.push(arm);
+      const leg=group(root,side*.227,.855,0);
+      // Actual boot step and upper leg; horizontal mold seam is geometry.
+      tonyPart(leg,[[-.832,.190,.263,.018,0,.058],[-.815,.208,.279,.024,0,.058],[-.695,.209,.279,.024,0,.058],[-.667,.207,.277,.024,0,.058],[-.649,.207,.227,.023,0,.005],[-.540,.205,.218,.023,0,-.002],[-.310,.205,.218,.023,0,-.003],[-.158,.205,.235,.026,0,-.015],[-.075,.193,.235,.026,0,-.018],[-.025,.157,.195,.025,0,-.018]],black);
+      const ankle=softBox(leg,.412,.012,.47,.005,inside,0,-.666,.05);ankle.castShadow=false;
+      for(const y of [-.28,-.57]){
+        const ring=piece(leg,new T.TorusGeometry(.081,.013,8,24),black,0,y,-.225);ring.rotation.y=Math.PI;
+        const hole=piece(leg,new T.CircleGeometry(.070,24),inside,0,y,-.226);hole.rotation.y=Math.PI;
+      }
+      legs.push(leg);
+    }
+    root.userData={arms,legs,jets,head,torso,hips,visor:null};return root;
+  }
   function figure(armor) {
+    if(!armor)return sculptTony();
     const root=new T.Group(), skin=abs(0xeabe96,.34,0,.48), maroon=abs(0x981b29,.25,.08,.74), black=abs(0x171722,.29,0,.62);
     const body=armor?maroon:black, tr=armor?ironPrint:tonyPrint;
     const torso=group(root,0,.97), head=group(root,0,2.035);
