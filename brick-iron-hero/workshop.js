@@ -12,6 +12,8 @@ function dressWorkshop(T, scene, renderer, parts) {
     m.position.set(x,y,z);parent.add(m);return m;
   }
   const steel=0x334856,yellow=0xe8ad3b,blue=0x193c51,orange=0xda5c24;
+  const diagnostic=group(-8.3,0,-5.0);brick(0,.19,0,1.8,.34,1.30,0x364854,diagnostic);box(0,.79,0,1.30,.85,.66,0x273e4b,diagnostic);box(0,1.37,-.14,1.42,.55,.15,0x25303c,diagnostic);panel('JARVIS','SYSTEM DIAGNOSTICS',1.32,.44,0,1.38,-.05,diagnostic);for(let i=0;i<4;i++){box(-.45+i*.30,1.23,.27,.18,.05,.20,0x77939e,diagnostic);glow(-.45+i*.30,1.29,.27,.13,.025,.13,i===0?0xf1ba4d:0x6ee3f4,diagnostic)}
+  for(let z of [-4.6,-1.9,2.2,5.9])for(let x of [-9.7,9.7]){box(x,.15,z,.70,.045,.70,0x2d4654);box(x,.18,z,.57,.02,.57,0x9babb0);glow(x,.20,z,.42,.025,.055,0x65b9d3,scene)}
   for(const x of [-8.8,8.8])for(let j=0;j<7;j++){let z=-8+j*2.55;box(x,.15,z,.52,.045,2.22,0x476173);box(x,.178,z,.40,.018,1.88,0x718e9d);for(let k=0;k<3;k++)cylinder(x,.21,z-.64+k*.64,.10,.055,0x90a8b2);}
   for(let j=0;j<5;j++){const z=-7+j*3.3;box(-11.1,1.36,z,.18,1.12,1.85,0x335668);glow(-10.99,1.63,z,.035,.095,1.32,0x76cae9,scene);}
   // Workshop gantry with bolted frames, a glazed clerestory and light bars.
