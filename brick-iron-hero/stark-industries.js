@@ -149,7 +149,24 @@ function createStarkIndustries(B){
    else cylinder(0,0,0,.15,.09,0xfac549,g,.4);
    batchRigid(g);items.push({type,id,g,x,z,live:true})}
  function terminal(id,x,z){let g=group(caveRoot,x,0,z);box(0,.48,0,.78,.96,.6,0x4b5057,g);glow(0,1.02,.20,.53,.36,.07,0x70e6a0,g);label(g,id==='power'?'ZASILANIE':id==='secret'?'SEKRET':'BRAMA',0,1.65,0,1.15);switches.push({id,x,z,g})}
- function enemy(id,x,z){let g=group(caveRoot,x,0,z),col=0x7b6252;box(0,.79,0,.56,.67,.40,col,g);let head=new T.Mesh(new T.CylinderGeometry(.26,.26,.38,12),mat(0xa48b70));head.position.y=1.32;g.add(head);glow(0,1.35,.25,.35,.06,.035,0xfb7951,g);let arms=[],legs=[];for(let s of [-1,1]){let a=group(g,s*.35,1.02,0),l=group(g,s*.15,.47,0);box(0,-.23,0,.19,.47,.23,0x53575b,a);box(0,-.20,0,.23,.40,.30,0x53575b,l);arms.push(a);legs.push(l)}robots.push({id,g,arms,legs,hp:3,live:true,cool:0})}
+ function enemy(id,x,z){
+  const g=group(caveRoot,x,0,z),shell=id%2?0x657582:0x9b795a,trim=id%2?0x8c9da7:0xc1a17e,dark=0x323b43,arms=[],legs=[];
+  // Toy construction robot with a molded-looking brick body and hinged limbs.
+  brick(0,.86,0,.60,.48,.43,shell,g);box(0,.86,.239,.45,.32,.05,dark,g);glow(0,.89,.274,.24,.095,.025,0xffac55,g);
+  box(0,.55,0,.53,.12,.38,trim,g);
+  const head=group(g,0,1.43,0);brick(0,0,0,.60,.38,.49,trim,head);
+  box(0,.014,.255,.49,.22,.055,dark,head);for(const side of [-1,1]){glow(side*.115,.041,.293,.145,.065,.023,0xffad6e,head);const hinge=cylinder(side*.31,-.017,0,.09,.07,dark,head);hinge.rotation.z=Math.PI/2}
+  box(0,-.09,.288,.24,.037,.024,shell,head);
+  for(let side of [-1,1]){
+    const arm=group(g,side*.36,1.03,0),leg=group(g,side*.17,.48,0);
+    const joint=cylinder(0,0,0,.117,.11,dark,arm);joint.rotation.z=Math.PI/2;
+    box(side*.035,-.17,0,.20,.34,.24,shell,arm);box(side*.035,-.31,.016,.24,.13,.26,trim,arm);
+    for(const dx of [-.06,.06])box(side*.035+dx,-.40,.04,.065,.12,.14,dark,arm);
+    box(0,-.17,0,.23,.34,.27,shell,leg);box(0,-.36,.06,.27,.16,.38,trim,leg);
+    arms.push(arm);legs.push(leg);batchRigid(arm);batchRigid(leg)
+  }
+  batchRigid(head);robots.push({id,g,arms,legs,hp:3,live:true,cool:0})
+ }
  function makeCave(saved=null,mode=false){
    area='cave';free=mode;meta.last='cave';caveRoot=new T.Group();worldLook={background:scene.background,fog:scene.fog,lights:scene.children.filter(o=>o.isLight).map(o=>({o,intensity:o.intensity,color:o.color?.clone(),ground:o.groundColor?.clone()}))};
    hidden=scene.children.filter(o=>!o.isLight&&o!==player&&!B.persistent(o)).map(o=>[o,o.visible]);for(const [o] of hidden)o.visible=false;scene.add(caveRoot);
