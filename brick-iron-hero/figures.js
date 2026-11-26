@@ -113,11 +113,11 @@ function buildMinifigureFactory(T, renderer, mat) {
     const ctx=canvas.getContext('2d');ctx.fillStyle=fill;ctx.fillRect(0,0,245,400);
     const map=new T.CanvasTexture(canvas);map.colorSpace=T.SRGBColorSpace;
     map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-    return {width:245,height:400,project,canvas,ctx,map,material:new T.MeshPhysicalMaterial({map,roughness:.41,metalness:0,clearcoat:.36,clearcoatRoughness:.29})};
+    return {width:245,height:400,project,canvas,ctx,map,material:new T.MeshStandardMaterial({map,roughness:.47,metalness:0,envMapIntensity:.38})};
   }
   const headUV=(x,y)=>[(121.5+x*145)/245,1-(80-y*145)/400];
   const tonyPrint=photoInk('#eabe96',headUV);
-  const tonyHair=photoInk('#38231e',headUV);
+  const tonyHair=photoInk('#38231e',headUV);tonyHair.material.roughness=.42;tonyHair.material.envMapIntensity=.28;tonyHair.material.color.setRGB(.85,.81,.79);tonyPrint.material.color.setRGB(.87,.82,.77);
   const tonyShirt=photoInk('#171722',(x,y)=>[(122+x*155)/245,1-(245-y*157)/400]);
   // Manual silhouette coordinates from the supplied front photo, in its actual pixels.
   const faceBounds=[[38,84,159],[48,84,159],[58,78,165],[69,76,166],[80,76,167],[92,77,166],[102,82,160],[110,94,151],[115,103,142]];
@@ -321,38 +321,30 @@ function buildMinifigureFactory(T, renderer, mat) {
     const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(xyz,3));g.setIndex(idx);g.computeVertexNormals();return piece(parent,g,material);
   }
   function sculptTonyHair(head){
-    const dark=abs(0x38231e,.29,0,.65),lock=abs(0x402a24,.28,0,.62),deep=abs(0x30201b,.32,0,.52);
-    // Rounded molded cap with separate asymmetric fringe and raised combed locks.
-    const xyz=[],uv=[],idx=[],N=mobileGPU?48:80,M=mobileGPU?17:28;
-    const fringe=[[-1,.026],[-.78,.047],[-.59,.119],[-.37,.185],[-.15,.218],[.02,.168],[.20,.206],[.36,.137],[.53,.117],[.70,.165],[.87,.065],[1,.025]];
-    function edge(x){let i=1;while(i<fringe.length-1&&x>fringe[i][0])i++;let a=fringe[i-1],b=fringe[i];return T.MathUtils.lerp(a[1],b[1],T.MathUtils.clamp((x-a[0])/(b[0]-a[0]),0,1))}
+    // One molded hairpiece, not separate tubes. Broad swept fringe is shaped
+    // from the reference's silhouette; grooves are shallow changes in surface radius.
+    const dark=abs(0x39251e,.40,0,.23);
+    dark.envMapIntensity=.38;
+    const N=mobileGPU?64:96,M=mobileGPU?20:32,xyz=[],uv=[],front=[],back=[];
+    const fringe=[[65,74],[72,74],[79,64],[85,59],[94,53],[104,48],[112,53],[121,47],[130,49],[139,58],[145,61],[151,60],[158,56],[166,65],[174,77],[179,78]];
+    function lerpRow(rows,value){let i=1;while(i<rows.length-1&&value>rows[i][0])i++;let a=rows[i-1],b=rows[i],t=T.MathUtils.clamp((value-a[0])/(b[0]-a[0]),0,1);return a.slice(1).map((x,k)=>T.MathUtils.lerp(x,b[k+1],t))}
+    const profile=[[-.10,.354,.320],[.025,.374,.338],[.12,.388,.350],[.22,.389,.353],[.28,.381,.346],[.34,.354,.321],[.40,.307,.282],[.455,.244,.222],[.49,.155,.140],[.510,.072,.070],[.522,.003,.003]];
     for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){
-      let u=j/M,a=(i/N*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a),v=u*Math.PI/2;
-      let y0=T.MathUtils.lerp(-.10,edge(si),T.MathUtils.smoothstep(co,-.16,.42));
-      let y=y0+(.508-y0)*Math.sin(v),rr=(.386+.024*Math.sin(Math.PI*u))*Math.pow(Math.cos(v),.73);
-      let ridge=.008*Math.cos(13*a+5.6*u)*Math.sin(v*1.8+.1);
-      let x=(rr+ridge)*si-.018*u,z=(rr*.91+ridge)*co-.014;
+      const u=j/M,a=(i/N*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a);
+      const fy=(80-lerpRow(fringe,121.5+si*55)[0])/145;
+      const y0=T.MathUtils.lerp(-.105,fy,T.MathUtils.smoothstep(co,-.09,.58));
+      const y=T.MathUtils.lerp(y0,.522,u),[rx,rz]=lerpRow(profile,y);
+      const twist=a+1.20*u+.18*Math.sin(a*1.7),ripple=(.0062*Math.cos(13*twist)+.0026*Math.cos(26*twist+.5))*Math.sin(Math.PI*(.18+.82*u));
+      const x=(rx+ripple)*si-.018*Math.sin(Math.PI*u),z=(rz+ripple)*co-.006;
       xyz.push(x,y,z);uv.push(...headUV(x,y));
-      if(j&&i<N){let k=(j-1)*(N+1)+i,t=k+N+1;idx.push(k,k+1,t,k+1,t+1,t)}
+      if(j&&i<N){let k=(j-1)*(N+1)+i,t=k+N+1;let dest=Math.abs(a+Math.PI/N)<Math.PI*.46?front:back;dest.push(k,k+1,t,k+1,t+1,t)}
     }
-    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(xyz,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
-    piece(head,g,dark);
-    const strands=[
-      [[-.03,.477,.081],[-.17,.444,.159],[-.275,.326,.242],[-.327,.14,.244]],
-      [[.025,.472,.114],[-.08,.427,.253],[-.19,.306,.325],[-.245,.185,.307]],
-      [[.058,.456,.158],[-.015,.389,.295],[-.105,.255,.353],[-.13,.202,.342]],
-      [[.10,.445,.156],[.079,.364,.302],[.02,.246,.359],[-.025,.174,.351]],
-      [[.13,.447,.125],[.20,.355,.272],[.16,.246,.331],[.12,.129,.337]],
-      [[.17,.422,.102],[.284,.302,.226],[.296,.211,.248],[.26,.151,.286]],
-      [[.20,.390,.026],[.336,.258,.143],[.36,.085,.145],[.338,.025,.146]],
-      [[-.12,.47,-.03],[-.30,.337,-.16],[-.37,.095,-.11],[-.341,-.048,-.078]],
-      [[.07,.489,-.04],[.22,.38,-.23],[.27,.22,-.30],[.235,-.07,-.27]],
-      [[-.03,.493,-.08],[-.09,.41,-.28],[-.13,.19,-.365],[-.11,-.084,-.318]]
-    ];
-    strands.forEach((p,i)=>hairLock(head,p,i===3||i===4?.066:.054,.024,i%4===0?deep:lock));
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(xyz,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(back.concat(front));g.addGroup(0,back.length,0);g.addGroup(back.length,front.length,1);g.computeVertexNormals();
+    // The front uses the real hair print, with subdued specular reflections.
+    const m=piece(head,g,[dark,tonyHair.material]);m.castShadow=true;
   }
   function sculptTony(){
-    const root=new T.Group(),skin=abs(0xe6ba94,.34,0,.54),black=abs(0x15151c,.25,0,.67),inside=abs(0x090a10,.34,0,.3),sleeve=abs(0x45464e,.33,0,.62);
+    const root=new T.Group(),skin=abs(0xe2b38a,.43,0,.28),black=abs(0x13131b,.37,0,.37),inside=abs(0x090a10,.44,0,.2),sleeve=abs(0x484950,.40,0,.35);for(const m of [skin,black,inside,sleeve])m.envMapIntensity=.48;
     const torso=group(root,0,.97),head=group(root,0,2.035);
     // Broad trapezoidal torso with beveled, not balloon-shaped, edges.
     tonyPart(torso,[[.006,.416,.234,.035],[.023,.447,.263,.035],[.050,.447,.270,.037],[.615,.369,.240,.035],[.708,.343,.230,.032],[.746,.324,.212,.028],[.759,.300,.198,.026]],black,tonyShirt);
