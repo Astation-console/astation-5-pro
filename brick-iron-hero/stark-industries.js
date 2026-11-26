@@ -5,22 +5,28 @@ function createStarkIndustries(B){
  const names={tony:'Tony Stark',mark1:'Iron Man Mark I',mark2:'Iron Man Mark II',mark3:'Iron Man Mark III',war:'War Machine',pepper:'Pepper Potts'};
  const prices={mark1:0,mark2:2200,mark3:0,war:4500,pepper:800};
  const skills={tony:'Budowanie i naprawa',mark1:'Silne uderzenie, kruszenie przeszkód',mark2:'Szybki lot i impuls',mark3:'Lot i repulsory',war:'Impuls obszarowy i lot',pepper:'Terminale i tajne przejścia'};
- const defaults=()=>({v:1,wallet:0,unlocked:['tony'],red:false,gold:0,mini:[],caveDone:false,workshopDone:false,detector:false,mult:1,ownedMult:[1],ach:[],workBuilt:false,workBroken:[],cave:null,last:'workshop'});
+ const defaults=()=>({v:1,wallet:0,unlocked:['tony'],red:false,gold:0,mini:[],caveDone:false,workshopDone:false,detector:false,mult:1,ownedMult:[1],ach:[],workBuilt:false,workBroken:[],prototypeBuilt:false,prototypeTested:false,cave:null,last:'workshop'});
  let meta=defaults();try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1)meta={...meta,...d}}catch(e){}
  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(meta));return true}catch(e){return false}};
  const models={tony:B.tony,mark3:B.iron};let current='tony',area='workshop',free=false,cave=null,storyCut=null,picker=false,combo=0,attackTime=0,dodgeTime=0,damageTime=0,elapsed=0,hudClock=0;
- const workshop=new T.Group();scene.add(workshop);let caveRoot=null,yinsen=null,caveLights=[],worldLook=null,waypoint=null,spoken=new Set(),voiceUntil=0,hidden=[],extras=[],holograms=[],particles=[],beams=[];
+ const workshop=new T.Group();scene.add(workshop);let caveRoot=null,yinsen=null,caveLights=[],worldLook=null,waypoint=null,assemblyBench=null,spoken=new Set(),voiceUntil=0,hidden=[],extras=[],holograms=[],particles=[],beams=[];
  function getModel(id){if(!models[id]){models[id]=figure.variant(id);models[id].visible=false;player.add(models[id])}return models[id]}
  function has(id){return meta.unlocked.includes(id)}
+ function storyAllows(id){if(id==='tony')return true;if(area==='cave'&&!free&&!cave?.done)return id==='mark1'&&cave?.stage>=1;if(area==='workshop'&&!meta.workshopDone&&B.stage()<2)return id==='mark1'&&meta.caveDone||id==='mark2'&&meta.prototypeBuilt;return true}
+ function canBuy(id){return !!prices[id]&&meta.workshopDone&&area==='workshop'}
+ function refreshArmory(){for(const e of extras){if(e.type==='suit'){const ready=has(e.id)&&(e.id==='mark1'||e.id==='mark2'&&(meta.prototypeBuilt||meta.workshopDone)||e.id==='mark3'&&(B.stage()>=2||meta.workshopDone)||e.id==='war'&&meta.workshopDone);e.display.visible=ready&&Math.hypot(player.position.x-e.x,player.position.z-e.z)<14;e.lockSign.visible=!ready}}}
+ function prototypeStep(){if(B.stage()!==1||meta.workshopDone||meta.prototypeTested)return false;if(!meta.prototypeBuilt){meta.prototypeBuilt=true;unlock('mark2');select('mark2',true);B.notice('MARK II · PROTOTYP GOTOWY. Włącz LOT i przetestuj unoszenie.');B.sfx('success');save();B.hud();return true}if(current!=='mark2')select('mark2',true);B.notice('Przetestuj lot Mark II, a potem wróć do platformy.');return true}
+ function newCampaign(){Object.assign(meta,defaults());current='tony';free=false;closePicker();build.visible=true;buildFinished.visible=false;for(const e of extras)if(e.type==='break')e.g.visible=true;refreshArmory();$('caveFree').disabled=true;save();chooseCave(false)}
+
  function unlock(id){if(!has(id)){meta.unlocked.push(id);achievement('Postać: '+names[id]);save()}}
  function achievement(name){if(!meta.ach.includes(name)){meta.ach.push(name);B.notice('OSIĄGNIĘCIE: '+name);save()}}
  function award(n){const value=n*meta.mult;meta.wallet+=value;if(area==='cave'&&cave)cave.score+=value;else B.addScore(value);if(meta.wallet>=1000)achievement('Pierwszy tysiąc');save();return value}
- function select(id,force=false){if(!names[id]||(!force&&!has(id)))return false;if(area==='cave'&&!free&&!force&&cave?.stage===0&&id!=='tony'){B.notice('Najpierw zbuduj Mark I');return false}const next=getModel(id);Object.values(models).forEach(m=>m.visible=false);B.reset(next);next.visible=true;current=id;B.setArmor(isArmor(),false);B.hud();return true}
+ function select(id,force=false){if(!names[id]||(!force&&(!has(id)||!storyAllows(id))))return false;if(area==='cave'&&!free&&!force&&cave?.stage===0&&id!=='tony'){B.notice('Najpierw zbuduj Mark I');return false}const next=getModel(id);Object.values(models).forEach(m=>m.visible=false);B.reset(next);next.visible=true;current=id;B.setArmor(isArmor(),false);B.hud();return true}
  function isArmor(){return ['mark1','mark2','mark3','war'].includes(current)}
  function canFly(){return ['mark2','mark3','war'].includes(current)}
  function model(){return getModel(current)}
  function syncBase(v){Object.values(models).forEach(m=>m.visible=false);current=v?'mark3':'tony';models[current].visible=true;if(v)unlock('mark3')}
- function label(parent,title,x,y,z,w=2.4){const c=document.createElement('canvas');c.width=512;c.height=128;const q=c.getContext('2d');q.fillStyle='#101d2d';q.fillRect(0,0,512,128);q.fillStyle='#83d7ff';q.fillRect(0,0,9,128);q.font='bold 39px system-ui';q.fillText(title,24,77,470);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const m=new T.Mesh(new T.PlaneGeometry(w,w/4),new T.MeshBasicMaterial({map:t}));m.position.set(x,y,z);parent.add(m)}
+ function label(parent,title,x,y,z,w=2.4){const c=document.createElement('canvas');c.width=512;c.height=128;const q=c.getContext('2d');q.fillStyle='#101d2d';q.fillRect(0,0,512,128);q.fillStyle='#83d7ff';q.fillRect(0,0,9,128);q.font='bold 39px system-ui';q.fillText(title,24,77,470);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const m=new T.Mesh(new T.PlaneGeometry(w,w/4),new T.MeshBasicMaterial({map:t}));m.position.set(x,y,z);parent.add(m);return m}
  function group(parent,x,y,z){let g=new T.Group();g.position.set(x,y,z);parent.add(g);return g}
  function addHolo(parent,x,y,z){const g=group(parent,x,y,z);const material=new T.MeshBasicMaterial({color:0x65dfff,transparent:true,opacity:.65,wireframe:true});const m=new T.Mesh(new T.IcosahedronGeometry(.44,1),material);g.add(m);holograms.push(m);return g}
  // Armory pedestals, interactive computer and building zone. Display suits
@@ -30,7 +36,7 @@ function createStarkIndustries(B){
    brick(0,.23,0,1.65,.45,1.48,0x26394d,g);box(0,1.55,-.62,1.5,2.35,.16,0x1e354b,g);
    for(const side of [-1,1]){box(side*.78,1.45,0,.10,2.15,1.32,0x355675,g);glow(side*.73,1.5,.56,.055,1.95,.06,0x54bde9,g)}
    const display=figure.variant(id);display.scale.setScalar(.78);display.position.set(0,.47,-.05);display.rotation.y=0;label(g,names[id].replace('Iron Man ','').toUpperCase(),0,2.75,.13,1.45);batchRigid(g);g.add(display);
-   extras.push({type:'suit',id,g,x,z,range:1.65,display});
+   const lockSign=label(g,'W BUDOWIE',0,1.57,.51,1.18);display.visible=false;extras.push({type:'suit',id,g,x,z,range:1.65,display,lockSign});
  }
  const pc=group(workshop,-7,0,0);brick(0,.55,0,1.8,1.1,1,0x364b60,pc);box(0,1.39,-.25,1.25,.54,.12,0x192d40,pc);glow(0,1.4,-.17,1.08,.43,.025,0x419fc4,pc);addHolo(pc,0,2.05,0);label(pc,'TERMINAL',0,2.68,0,1.5);extras.push({type:'terminal',g:pc,x:-7,z:0,range:2});
  const build=group(workshop,6,0,8);brick(0,.15,0,2.8,.26,2.3,0x465368,build);for(let i=0;i<9;i++)brick(Math.sin(i*2.4)*.85,.42+(i%3)*.13,Math.cos(i*2.4)*.70,.37,.19,.35,i%2?0xc4a340:0x3289bb,build);label(build,'BUDUJ',0,1.65,0,1.5);extras.push({type:'build',g:build,x:6,z:8,range:2.3});
@@ -41,17 +47,17 @@ function createStarkIndustries(B){
  function renderPicker(){
    $('starkWallet').textContent=meta.wallet+' STUDÓW · '+percent()+'%';
    $('characterList').replaceChildren();
-   for(const id of Object.keys(names)){const b=document.createElement('button');b.className='starkChar';let unlocked=has(id);b.textContent=names[id]+' · '+(unlocked?'WYBIERZ':prices[id]?'KUP '+prices[id]:'ZABLOKOWANY');const small=document.createElement('small');small.textContent=skills[id];b.append(small);b.disabled=!unlocked&&(!prices[id]||meta.wallet<prices[id]);b.onclick=()=>{if(!has(id)){meta.wallet-=prices[id];unlock(id)}if(select(id))closePicker();save()};$('characterList').append(b)}
+   for(const id of Object.keys(names)){const b=document.createElement('button');b.className='starkChar';let unlocked=has(id),allowed=storyAllows(id),buy=canBuy(id);b.textContent=names[id]+' · '+(unlocked&&allowed?'WYBIERZ':!unlocked&&buy?'KUP '+prices[id]:'ZABLOKOWANY FABUŁĄ');const small=document.createElement('small');small.textContent=skills[id];b.append(small);b.disabled=!(unlocked&&allowed)&&!(!unlocked&&buy&&meta.wallet>=prices[id]);b.onclick=()=>{if(!has(id)){if(!canBuy(id)||meta.wallet<prices[id])return;meta.wallet-=prices[id];unlock(id)}if(select(id))closePicker();save()};$('characterList').append(b)}
    $('bonusList').replaceChildren();for(let m of [2,4,6,8,10]){let b=document.createElement('button');b.className='starkChar';let owned=meta.ownedMult.includes(m),price=m*450;b.textContent='Study ×'+m+' · '+(owned?'AKTYWUJ':price+' STUDÓW');b.disabled=!owned&&(!meta.red||meta.wallet<price);b.onclick=()=>{if(!owned){meta.wallet-=price;meta.ownedMult.push(m)}meta.mult=meta.mult===m?1:m;save();renderPicker();B.hud()};$('bonusList').append(b)}
    $('starkDetector').textContent='Wykrywacz: '+(meta.detector?'WŁ.':'KUP 600');$('starkDetector').disabled=!meta.detector&&meta.wallet<600;
    $('starkAchievements').textContent=meta.ach.length?meta.ach.join(' · '):'Brak osiągnięć';
  }
  $('starkClose').onclick=closePicker;$('starkDetector').onclick=()=>{if(!meta.detector&&meta.wallet>=600){meta.wallet-=600;meta.detector=true;save();renderPicker()}};
- function percent(){return Math.min(100,Math.round((meta.workshopDone?20:0)+(meta.caveDone?30:0)+meta.mini.length*2+meta.unlocked.length*3+(meta.red?5:0)+(meta.workBuilt?5:0)+(meta.detector?2:0)))}
+ function percent(){return Math.min(100,Math.round((meta.workshopDone?20:0)+(meta.caveDone?30:0)+meta.mini.length*2+Math.max(0,meta.unlocked.length-1)*3+(meta.red?5:0)+(meta.workBuilt?5:0)+(meta.detector?2:0)))}
  function onWorkshopDone(){if(!meta.workshopDone){meta.workshopDone=true;meta.gold++;unlock('mark3');achievement('Narodziny Mark III');save()}}
  function useWorkshop(){const p=player.position;if(Math.hypot(p.x-7,p.z+6)<2.8&&B.stage()>=2){if(current==='tony')openPicker();else select('tony',true);return true}
    const o=extras.find(e=>e.g.visible&&Math.hypot(p.x-e.x,p.z-e.z)<e.range);if(!o)return false;
-   if(o.type==='suit'){if(has(o.id)){select(o.id);B.notice(names[o.id])}else openPicker()}
+   if(o.type==='suit'){if(has(o.id)&&storyAllows(o.id)){select(o.id);B.notice(names[o.id])}else B.notice('Gablota niedostępna na tym etapie fabuły')}
    if(o.type==='terminal'){if(current==='pepper'&&!meta.ach.includes('Dostęp administracyjny')){award(100);achievement('Dostęp administracyjny')}openPicker()}
    if(o.type==='build'){meta.workBuilt=true;build.visible=false;buildFinished.visible=true;award(250);achievement('Mistrz budowania');B.sfx('success')}
    if(o.type==='break'){o.g.visible=false;meta.workBroken.push(o.id);scatter(o.x,.7,o.z,0xe9b955);for(let i=0;i<4;i++)B.stud(o.x+Math.cos(i*1.57)*.7,o.z+Math.sin(i*1.57)*.7);save()}
@@ -124,11 +130,11 @@ function createStarkIndustries(B){
   for(let i=0;i<4;i++){let x=-8.5+i*1.55;const g=group(caveRoot,x,0,10.85);brick(0,.25,0,1.3,.47,.72,0x62513b,g);brick(0,.64,0,1.25,.26,.69,0x91704b,g);for(let side of [-1,1])box(side*.43,.48,.39,.08,.81,.055,0x4c3d32,g)}
   const bed=group(caveRoot,-3.6,0,10.1);box(0,.35,0,1.4,.25,2.05,0x343e41,bed);box(0,.53,0,1.22,.18,1.86,0x887c68,bed);box(0,.66,-.60,1.0,.15,.53,0xc4b29b,bed);
   for(const x of [-.60,.60])for(const z of [-.85,.85])box(x,.19,z,.13,.39,.13,0x34383b,bed);
-  const work=group(caveRoot,7,0,7);for(const x of [-.94,.94])for(const z of [-.62,.62])box(x,.46,z,.14,.92,.14,0x393d41,work);box(0,.96,0,2.5,.19,1.65,0x675749,work);box(0,1.36,-.72,2.36,.66,.15,0x393e41,work);
+  const work=group(caveRoot,7,0,7);assemblyBench=work;for(const x of [-.94,.94])for(const z of [-.62,.62])box(x,.46,z,.14,.92,.14,0x393d41,work);box(0,.96,0,2.5,.19,1.65,0x675749,work);box(0,1.36,-.72,2.36,.66,.15,0x393e41,work);
   for(let i=0;i<5;i++){let x=-.92+i*.43;box(x,1.34,-.60,.06,.38,.06,0x9b9b94,work);let bolt=cylinder(x,1.55,-.57,.085,.04,0x8f9390,work);bolt.rotation.x=Math.PI/2}
   const plans=group(work,-.65,1.09,.22);box(0,0,0,.62,.015,.42,0xaaa18c,plans);for(let i=0;i<4;i++)box(0,.012,-.14+i*.075,.42,.006,.015,0x4c5558,plans);
   for(let i=0;i<4;i++)brick(.35+i*.19,1.14,.21,.16,.15,.20,0x7c8384,work);
-  label(work,'MARK I · MONTAŻ',0,1.96,0,2.25);
+  label(work,'MARK I · MONTAŻ',0,1.96,-.78,1.85);
   for(let i=0;i<5;i++){let x=-9+i*4.5,z=-6;const g=group(caveRoot,x,0,z);brick(0,.30,0,.86,.58,.75,0x70614e,g);brick(0,.67,0,.78,.15,.68,0x867a64,g);box(0,.40,.40,.14,.18,.06,0x3b4143,g)}
   for(let i=0;i<5;i++){let z=9-i*4.5;lampPool(i%2?7:-7,z)}
   for(const [x,z] of [[-7,6],[7,7],[7,-1],[-4,-8],[0,-10]])lampPool(x,z);
@@ -168,7 +174,7 @@ function createStarkIndustries(B){
   batchRigid(head);robots.push({id,g,arms,legs,hp:3,live:true,cool:0})
  }
  function makeCave(saved=null,mode=false){
-   area='cave';free=mode;meta.last='cave';caveRoot=new T.Group();worldLook={background:scene.background,fog:scene.fog,lights:scene.children.filter(o=>o.isLight).map(o=>({o,intensity:o.intensity,color:o.color?.clone(),ground:o.groundColor?.clone()}))};
+   solids.length=items.length=robots.length=switches.length=rockData.length=rockMatrices.length=0;hiddenRocks.clear();hiddenGates.clear();for(const k of Object.keys(gateMap))delete gateMap[k];spoken.clear();voiceUntil=0;rockSeed=831;area='cave';free=mode;meta.last='cave';caveRoot=new T.Group();worldLook={background:scene.background,fog:scene.fog,lights:scene.children.filter(o=>o.isLight).map(o=>({o,intensity:o.intensity,color:o.color?.clone(),ground:o.groundColor?.clone()}))};
    hidden=scene.children.filter(o=>!o.isLight&&o!==player&&!B.persistent(o)).map(o=>[o,o.visible]);for(const [o] of hidden)o.visible=false;scene.add(caveRoot);
    scene.background=new T.Color(0x342c27);scene.fog=new T.Fog(0x342c27,13,40);for(const light of scene.children.filter(o=>o.isLight)){if(light.isDirectionalLight){light.intensity*=.58;light.color.setHex(0xffcda0)}else if(light.isHemisphereLight){light.intensity=1.15;light.color.setHex(0xc5b8a8);light.groundColor.setHex(0x76604f)}}const lamp=new T.PointLight(0xffc18a,9,11,2);lamp.position.set(7,3.4,7);caveRoot.add(lamp);const blue=new T.PointLight(0x89c5ff,5,10,2);blue.position.set(0,3.1,-9);caveRoot.add(blue);
    cave={stage:0,parts:[],switches:[],killed:[],collected:[],score:0,hp:5,done:false,pos:[0,0,10],mode:free};if(saved)cave={...cave,...saved,mode:free};
@@ -230,14 +236,14 @@ function createStarkIndustries(B){
    if(c.which==='armor'){
      // Build the actual playable Mark I rig piece by piece. It is temporary
      // and never shares moving joints with the player's saved rig.
-     c.rig=figure.variant('mark1');c.rig.position.set(6.4,.10,6.1);c.props.add(c.rig);
+     c.rig=figure.variant('mark1');c.rig.position.set(5.3,.10,5.6);c.props.add(c.rig);
      c.parts=c.rig.children.map((o,i)=>({o,i,p:o.position.clone(),r:o.rotation.clone()}));
      c.rig.visible=false;
    }
    const sparkGeo=new T.BoxGeometry(.065,.065,.065),sparkMat=new T.MeshBasicMaterial({color:0xffca67});
    c.sparkMesh=new T.InstancedMesh(sparkGeo,sparkMat,22);c.sparkMesh.count=0;c.sparkMesh.frustumCulled=false;c.props.add(c.sparkMesh);c.sparkPivot=new T.Object3D();
-   c.glow=new T.PointLight(0x78dfff,0,5,2);c.glow.position.set(6.4,1.5,6.55);c.props.add(c.glow);
-   if(c.which==='intro'){c.tool=group(c.props,0,0,0);box(0,0,0,.12,.12,.35,0x9aa4a9,c.tool);box(0,0,.18,.23,.12,.11,0x6a757c,c.tool);c.tool.visible=false}
+   c.glow=new T.PointLight(0x78dfff,0,5,2);c.glow.position.set(5.3,1.5,6.0);c.props.add(c.glow);
+   if(c.which==='intro'&&yinsen){const arm=yinsen.userData.arms[1],hand=arm.children[arm.children.length-1];c.tool=group(hand,0,0,0);c.tool.rotation.set(0,0,Math.PI/2);cylinder(0,0,0,.064,.28,0x77828a,c.tool);box(0,.24,0,.17,.25,.16,0x90999c,c.tool);box(0,.35,0,.08,.12,.18,0x4c5962,c.tool);c.tool.visible=false;c.toolWorld=new T.Vector3()}
  }
  function tickCutSparks(c,at,age){const live=age>=0&&age<.64;if(!live){c.sparkMesh.count=0;return}
    const o=c.sparkPivot;c.sparkMesh.count=22;for(let i=0;i<22;i++){let a=i*2.399,v=1.4+i%4*.31;o.position.set(at.x+Math.cos(a)*age*v,at.y+age*(1.5+i%5*.3)-5*age*age,at.z+Math.sin(a)*age*v);o.rotation.set(age*6+i,age*5,i);o.scale.setScalar(Math.max(.08,1-age*1.4));o.updateMatrix();c.sparkMesh.setMatrixAt(i,o.matrix)}c.sparkMesh.instanceMatrix.needsUpdate=true;
@@ -249,12 +255,12 @@ function createStarkIndustries(B){
    $('starkCut').classList.remove('hidden');document.body.classList.add('cinematic');
    $('starkCutTitle').textContent=which==='intro'?'01 · UCIECZKA Z JASKINI':which==='armor'?'01 · NARODZINY MARK I':'01 · POWRÓT DO DOMU';B.release();
    if(which==='intro'){player.position.set(-.65,.1,10.1);if(yinsen){yinsen.position.set(2.0,.1,8.6);yinsen.rotation.y=-.4}}
-   if(which==='armor'){player.position.set(6.4,.10,6.1);select('tony',true);if(yinsen){yinsen.position.set(8.1,.10,6.3);yinsen.rotation.y=-.9}}
+   if(which==='armor'){player.position.set(5.3,.10,5.6);select('tony',true);if(yinsen){yinsen.position.set(7.0,.10,5.2);yinsen.rotation.y=-.9}}
    if(which==='outro'&&yinsen)yinsen.visible=false;
    makeCutProps(c);speak(sequences[which][0],true);
  }
  function disposeCut(c){
-   if(!c.props)return;c.props.removeFromParent();
+   if(c.tool)c.tool.removeFromParent();if(assemblyBench)assemblyBench.visible=true;if(!c.props)return;c.props.removeFromParent();
    c.sparkMesh.geometry.dispose();c.sparkMesh.material.dispose();
    // The suit uses shared texture materials. Never dispose those.
  }
@@ -277,16 +283,16 @@ function createStarkIndustries(B){
    if(c.which==='intro'){
      if(i===0){let walk=cue(t,.3,2.0);tp.set(-.65+walk*.55,.1,10.1-walk*.75);player.rotation.y=1.2-.55*walk;actorPose(tony,t,t<2?'walk':'talk',1-walk*.5);
        if(yinsen){yp.set(2.0-.55*walk,.1,8.6+.35*walk);faceActor(yinsen,yp,tp);actorPose(yinsen,t,t<2?'walk':'react',.6)}shot=t<1.8?'establish':t<3.6?'tony':'reaction';
-     }else if(i===1){tp.set(-.1,.1,9.35);yp?.set(1.45,.1,8.95);faceActor(player,tp,yp);if(yinsen)faceActor(yinsen,yp,tp);actorPose(tony,t,t<3.4?'think':'react');actorPose(yinsen,t,'talk');if(c.tool&&yinsen){c.tool.visible=true;c.tool.position.set(yp.x-.52,1.04+.08*Math.sin(t*3),yp.z+.18);c.tool.rotation.set(.3,.8,.1)}shot=t<2.8?'yinsen':t<4.1?'insert':t<6.2?'reaction':'two';
+     }else if(i===1){tp.set(-.1,.1,9.35);yp?.set(1.45,.1,8.95);faceActor(player,tp,yp);if(yinsen)faceActor(yinsen,yp,tp);actorPose(tony,t,t<3.4?'think':'react');actorPose(yinsen,t,'talk');if(c.tool&&yinsen){c.tool.visible=true;yinsen.userData.arms[1].rotation.set(-.82+.12*Math.sin(t*2),0,.08);c.tool.getWorldPosition(c.toolWorld)}shot=t<2.8?'yinsen':t<4.1?'insert':t<6.2?'reaction':'two';
      }else{if(c.tool)c.tool.visible=false;faceActor(player,tp,yp);actorPose(tony,t,t<1.2?'think':'talk');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}shot=t<1.1?'two':t<3.5?'tony':'wide'}
    }else if(c.which==='armor'){
-     tp.set(6.4,.1,6.1);player.rotation.y=0;
+     tp.set(5.3,.1,5.6);player.rotation.y=0;
      if(i<2){actorPose(tony,t,i===0?'talk':'think');if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,i===1?'talk':'react')}shot=i===0?(t<1.8?'establish':t<3.5?'tony':'bench'):(t<1.6?'yinsen':'reaction')}
      else{
        const progress=cue(t,.12,3.6);c.rig.visible=true;tony.visible=false;
-       c.rig.rotation.y=0;c.rig.position.set(6.4,.10,6.1);
+       c.rig.rotation.y=0;c.rig.position.set(5.3,.10,5.6);
        for(const part of c.parts){const j=part.i,u=cue(t,.15+j*.36,.86+j*.36),left=1-u;part.o.visible=u>.001;part.o.position.copy(part.p);part.o.rotation.copy(part.r);part.o.position.x+=Math.sin(j*2.39)*left*1.65;part.o.position.y+=(.45+j*.075)*left+Math.sin(Math.PI*u)*.22;part.o.position.z+=(.50+Math.cos(j*2.39)*.36)*left;part.o.rotation.z+=Math.sin(j)*left*.85;if(u>.98)fire('part'+j,'metal')}
-       const flashAge=t-2.6;tickCutSparks(c,{x:6.4,y:1.45,z:6.55},flashAge);c.glow.intensity=Math.max(0,1-Math.abs(flashAge-.12)*4)*5+progress*1.4;
+       const flashAge=t-2.6;tickCutSparks(c,{x:5.3,y:1.45,z:6.0},flashAge);c.glow.intensity=Math.max(0,1-Math.abs(flashAge-.12)*4)*5+progress*1.4;
        if(t>3.6){actorPose(c.rig,t,'hero');fire('reactor','power')}
        if(yinsen){faceActor(yinsen,yp,tp);actorPose(yinsen,t,'react')}
        shot=t<.9?'boots':t<2.0?'chest':t<3.15?'helmet':'hero';
@@ -304,20 +310,21 @@ function createStarkIndustries(B){
    if(shot==='tony'){p=tp;y=1.81;dist=2.75;height=2.15;angle=player.rotation.y+.22;fov=35}
    if(shot==='yinsen'&&yp){p=yp;y=1.80;dist=2.65;height=2.20;angle=yinsen.rotation.y-.22;fov=35}
    if(shot==='reaction'){p=isY?tp:(yp||tp);y=1.78;dist=2.9;height=2.22;angle=(isY?player.rotation.y:yinsen?.rotation.y||0)+.24;fov=35}
-   if(shot==='insert'&&c.tool){p=c.tool.position;y=p.y;dist=1.8;height=1.8;angle=.42;fov=37}
+   if(shot==='insert'&&c.tool){c.tool.getWorldPosition(c.toolWorld);p=c.toolWorld;y=p.y;dist=2.4;height=p.y+.30;angle=(yinsen?.rotation.y||0)+.24;fov=40}
    if(shot==='bench'){p={x:7,z:7};y=1.16;dist=2.8;height=2.3;angle=.62;fov=39}
    if(shot==='boots'){y=.48;dist=2.45;height=.65;angle=-.35;fov=35}
    if(shot==='chest'){y=1.40;dist=2.45;height=1.67;angle=.43;fov=35}
    if(shot==='helmet'){y=2.08;dist=2.3;height=2.18;angle=-.23;fov=34}
-   if(shot==='hero'){y=1.35;dist=4.3;height=1.14;angle=.36;fov=40}
+   if(shot==='hero'){y=1.35;dist=4.9;height=2.25;angle=-.44;fov=42}
    if(shot==='exit'){y=1.35;dist=5.2;height=2.8;angle=.65;fov=45;lookZ=-.65}
+   if(assemblyBench)assemblyBench.visible=c.which!=='armor'||shot==='bench';
    const key=i+':'+shot;
    if(c.shotKey!==key){c.shotKey=key;c.shotStart=c.t}
    const dolly=Math.min(1,(c.t-c.shotStart)/3),move=.13*dolly;
    target.set(p.x+lookX,y,p.z+lookZ);cutLook.copy(target);
    camDesired.set(p.x+Math.sin(angle+move)*dist,height+move*.12,p.z+Math.cos(angle+move)*dist);
    if(c.lastCam!==key){c.lastCam=key;B.camera.position.copy(camDesired)}else B.camera.position.lerp(camDesired,1-Math.exp(-dt*10));
-   B.camera.lookAt(target);B.camera.fov=fov+(B.camera.aspect<.85?8:0);B.camera.updateProjectionMatrix();
+   B.camera.lookAt(target);B.camera.fov=fov+(B.camera.aspect<.85?13:0);B.camera.updateProjectionMatrix();
    return true;
  }
  function collect(o){o.live=false;o.g.visible=false;cave.collected.push(o.type+o.id);B.pickup();
@@ -337,7 +344,7 @@ function createStarkIndustries(B){
    const near=robots.filter(r=>r.live&&r.g.position.distanceTo(player.position)<range).sort((a,b)=>a.g.position.distanceTo(player.position)-b.g.position.distanceTo(player.position));if(near.length){hitRobot(near[0],amount);if(current==='war'&&special&&near[1])hitRobot(near[1],1)}B.hud()
  }
  function dodge(){if(dodgeTime>0||storyCut||picker)return;dodgeTime=.32;damageTime=.7;B.sfx('jump');}
- function update(dt){elapsed+=dt;if(area==='workshop')for(const e of extras)if(e.display)e.display.visible=Math.hypot(player.position.x-e.x,player.position.z-e.z)<14;if(elapsed>=voiceUntil)$('caveDialogue').classList.add('hidden');attackTime=Math.max(0,attackTime-dt);dodgeTime=Math.max(0,dodgeTime-dt);damageTime=Math.max(0,damageTime-dt);for(let h of holograms)h.rotation.y+=dt*.6;
+ function update(dt){elapsed+=dt;if(area==='workshop'){refreshArmory();if(meta.prototypeBuilt&&!meta.prototypeTested&&current==='mark2'&&B.isFlying()&&player.position.y>1.8){meta.prototypeTested=true;B.notice('MARK II · TEST ZALICZONY. Wróć do platformy i zbuduj MARK III.');B.sfx('success');save()}}if(elapsed>=voiceUntil)$('caveDialogue').classList.add('hidden');attackTime=Math.max(0,attackTime-dt);dodgeTime=Math.max(0,dodgeTime-dt);damageTime=Math.max(0,damageTime-dt);for(let h of holograms)h.rotation.y+=dt*.6;
    for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.life-=dt;p.v.y-=dt*9;p.m.position.addScaledVector(p.v,dt);p.m.rotation.x+=dt*5;if(p.life<=0){p.m.removeFromParent();particles.splice(i,1)}}
    for(let i=beams.length-1;i>=0;i--){let p=beams[i];p.life-=dt;p.g.position.addScaledVector(p.v,dt);if(p.life<=0){p.g.removeFromParent();beams.splice(i,1)}}
    if(area==='cave'&&cave){let p=player.position;if(waypoint){let dest;if(cave.stage===0){const remaining=items.filter(o=>o.live&&o.type==='part').sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));dest=remaining[0]||{x:7,z:7}}else if(cave.stage===1){dest=!cave.switches.includes('power')?{x:-7,z:6}:cave.killed.length<2?robots.filter(r=>r.live).sort((a,b)=>a.g.position.distanceTo(p)-b.g.position.distanceTo(p))[0]?.g.position:{x:7,z:-1}}else dest={x:0,z:-10};waypoint.visible=!!dest&&!cave.done;if(dest){waypoint.position.set(dest.x,.30+Math.sin(elapsed*4)*.045,dest.z);waypoint.rotation.y=elapsed*.65}}if(!gateMap.power?.open&&Math.hypot(p.x,p.z-3.1)<2.4)hintVoice('tony-06');if(Math.hypot(p.x+4,p.z+8)<2.0)hintVoice('tony-07');if(yinsen?.visible){yinsen.userData.head.rotation.y=.12*Math.sin(elapsed*.8);yinsen.userData.arms[0].rotation.x=.06*Math.sin(elapsed*1.8)}for(let o of items){if(!o.live)continue;o.g.rotation.y+=dt*1.7;o.g.position.y=.40+Math.sin(elapsed*2+o.x)*.09;if(Math.hypot(p.x-o.x,p.z-o.z)<.73&&p.y<1.2){if(o.type!=='gold'||cave.stage>=2||free)collect(o)}}
@@ -347,11 +354,11 @@ function createStarkIndustries(B){
    if(dodgeTime>0){const m=model();m.rotation.z=Math.sin(dodgeTime/.32*Math.PI)*.38}
    hudClock+=dt;if(hudClock>.20){hudClock=0;B.hud()}
  }
- function hud(){if(area==='cave'&&cave){$('counter').textContent=String(cave.score).padStart(5,'0');$('obj').querySelector('small').textContent='MISJA 01 / JASKINIA';$('objective').textContent=cave.done?'ROZDZIAŁ UKOŃCZONY':cave.stage===0?'Części '+cave.parts.length+'/6 · zbuduj Mark I':cave.stage===1?(!cave.switches.includes('power')?'Uruchom zasilanie':cave.killed.length<2?'Roboty strażnicze '+cave.killed.length+'/2':'Otwórz bramę wyjściową'):'Dotrzyj do wyjścia';$('progressFill').style.width=(cave.done?100:cave.stage===0?cave.parts.length/6*45:cave.stage===1?65:85)+'%'}
+ function hud(){if(area==='workshop'){$('obj').querySelector('small').textContent='MISJA 02 / WARSZTAT';if(B.stage()===1&&!meta.workshopDone){$('objective').textContent=!meta.prototypeBuilt?'Zbuduj prototyp Mark II na platformie':!meta.prototypeTested?'Mark II: włącz LOT i wznieś się':'Wróć na platformę · zbuduj Mark III'}}if(area==='cave'&&cave){$('counter').textContent=String(cave.score).padStart(5,'0');$('obj').querySelector('small').textContent='MISJA 01 / JASKINIA';$('objective').textContent=cave.done?'ROZDZIAŁ UKOŃCZONY':cave.stage===0?'Części '+cave.parts.length+'/6 · zbuduj Mark I':cave.stage===1?(!cave.switches.includes('power')?'Uruchom zasilanie':cave.killed.length<2?'Roboty strażnicze '+cave.killed.length+'/2':'Otwórz bramę wyjściową'):'Dotrzyj do wyjścia';$('progressFill').style.width=(cave.done?100:cave.stage===0?cave.parts.length/6*45:cave.stage===1?65:85)+'%'}
    $('hero').textContent=names[current].toUpperCase();$('starkStats').textContent='MINI '+meta.mini.length+'/10 · ZŁOTE '+meta.gold+' · ×'+meta.mult+(area==='cave'?' · HP '+cave.hp:'')+' · '+percent()+'%';$('trueHeroFill').style.width=Math.min(100,(area==='cave'&&cave?cave.score:B.score())/30)+'%';
    if(meta.detector&&area==='cave'){let a=items.filter(o=>o.live&&o.type==='mini').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];$('starkDetect').textContent=a?'MINIZESTAW: '+Math.round(Math.hypot(a.x-player.position.x,a.z-player.position.z))+' m · '+(a.z<player.position.z?'N':'S')+(a.x<player.position.x?'W':'E'):'MINIZESTAWY ZEBRANE'}else $('starkDetect').textContent='';
  }
  function chooseCave(mode,resume=false){if(mode&&!meta.caveDone){B.notice('Najpierw ukończ fabułę');return}makeCave(resume?meta.cave:null,mode)}
  $('caveStory').onclick=()=>chooseCave(false);$('caveFree').disabled=!meta.caveDone;$('caveFree').onclick=()=>chooseCave(true);$('starkChars').onclick=()=>{if(!storyCut)openPicker()};$('starkAttack').onclick=()=>attack(true);$('starkDodge').onclick=dodge;
- return {meta,select,model,syncBase,isArmor,canFly,area:()=>area,has,openPicker,closePicker,blocked:()=>picker||!!storyCut,cutFrame,update,hud,collide,award,saveCave,onWorkshopDone,action:()=>area==='cave'?(useCave()|| (attack(false),true)):useWorkshop(),attack,dodge,dodgeFactor:()=>dodgeTime>0?1.9:1,chooseCave,canResume:()=>meta.last==='cave'&&!!meta.cave,resume:()=>{if(meta.cave?.done&&!meta.cave?.mode){meta.last='workshop';save();B.returnWorkshop()}else chooseCave(!!meta.cave?.mode,true)},markWorkshop:()=>{meta.last='workshop';save()},isCut:()=>!!storyCut,finishStoryCut,occlude,replayVoice:()=>{if(storyCut){storyCut.lineTime=0;speak(sequences[storyCut.which][storyCut.index],true)}}};
+ refreshArmory();return {meta,select,model,syncBase,newCampaign,prototypeStep,current:()=>current,refreshArmory,isArmor,canFly,area:()=>area,has,openPicker,closePicker,blocked:()=>picker||!!storyCut,cutFrame,update,hud,collide,award,saveCave,onWorkshopDone,action:()=>area==='cave'?(useCave()|| (attack(false),true)):useWorkshop(),attack,dodge,dodgeFactor:()=>dodgeTime>0?1.9:1,chooseCave,canResume:()=>meta.last==='cave'&&!!meta.cave,resume:()=>{if(meta.cave?.done&&!meta.cave?.mode){meta.last='workshop';save();B.returnWorkshop()}else chooseCave(!!meta.cave?.mode,true)},markWorkshop:()=>{meta.last='workshop';save()},isCut:()=>!!storyCut,finishStoryCut,occlude,replayVoice:()=>{if(storyCut){storyCut.lineTime=0;speak(sequences[storyCut.which][storyCut.index],true)}}};
 }
