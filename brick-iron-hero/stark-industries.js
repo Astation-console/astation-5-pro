@@ -15,7 +15,7 @@ function createStarkIndustries(B){
  function unlock(id){if(!has(id)){meta.unlocked.push(id);achievement('Postać: '+names[id]);save()}}
  function achievement(name){if(!meta.ach.includes(name)){meta.ach.push(name);B.notice('OSIĄGNIĘCIE: '+name);save()}}
  function award(n){const value=n*meta.mult;meta.wallet+=value;if(area==='cave'&&cave)cave.score+=value;else B.addScore(value);if(meta.wallet>=1000)achievement('Pierwszy tysiąc');save();return value}
- function select(id,force=false){if(!names[id]||(!force&&!has(id)))return false;const next=getModel(id);Object.values(models).forEach(m=>m.visible=false);B.reset(next);next.visible=true;current=id;B.setArmor(isArmor(),false);B.hud();return true}
+ function select(id,force=false){if(!names[id]||(!force&&!has(id)))return false;if(area==='cave'&&!free&&!force&&cave?.stage===0&&id!=='tony'){B.notice('Najpierw zbuduj Mark I');return false}const next=getModel(id);Object.values(models).forEach(m=>m.visible=false);B.reset(next);next.visible=true;current=id;B.setArmor(isArmor(),false);B.hud();return true}
  function isArmor(){return ['mark1','mark2','mark3','war'].includes(current)}
  function canFly(){return ['mark2','mark3','war'].includes(current)}
  function model(){return getModel(current)}
@@ -47,7 +47,7 @@ function createStarkIndustries(B){
  function renderPicker(){
    $('starkWallet').textContent=meta.wallet+' STUDÓW · '+percent()+'%';
    $('characterList').replaceChildren();
-   for(const id of Object.keys(names)){const b=document.createElement('button');b.className='starkChar';let unlocked=has(id);b.textContent=names[id]+' · '+(unlocked?'WYBIERZ':prices[id]?'KUP '+prices[id]:'ZABLOKOWANY');const small=document.createElement('small');small.textContent=skills[id];b.append(small);b.disabled=!unlocked&&(!prices[id]||meta.wallet<prices[id]);b.onclick=()=>{if(!has(id)){meta.wallet-=prices[id];unlock(id)}select(id);closePicker();save()};$('characterList').append(b)}
+   for(const id of Object.keys(names)){const b=document.createElement('button');b.className='starkChar';let unlocked=has(id);b.textContent=names[id]+' · '+(unlocked?'WYBIERZ':prices[id]?'KUP '+prices[id]:'ZABLOKOWANY');const small=document.createElement('small');small.textContent=skills[id];b.append(small);b.disabled=!unlocked&&(!prices[id]||meta.wallet<prices[id]);b.onclick=()=>{if(!has(id)){meta.wallet-=prices[id];unlock(id)}if(select(id))closePicker();save()};$('characterList').append(b)}
    $('bonusList').replaceChildren();for(let m of [2,4,6,8,10]){let b=document.createElement('button');b.className='starkChar';let owned=meta.ownedMult.includes(m),price=m*450;b.textContent='Study ×'+m+' · '+(owned?'AKTYWUJ':price+' STUDÓW');b.disabled=!owned&&(!meta.red||meta.wallet<price);b.onclick=()=>{if(!owned){meta.wallet-=price;meta.ownedMult.push(m)}meta.mult=meta.mult===m?1:m;save();renderPicker();B.hud()};$('bonusList').append(b)}
    $('starkDetector').textContent='Wykrywacz: '+(meta.detector?'WŁ.':'KUP 600');$('starkDetector').disabled=!meta.detector&&meta.wallet<600;
    $('starkAchievements').textContent=meta.ach.length?meta.ach.join(' · '):'Brak osiągnięć';
@@ -58,7 +58,7 @@ function createStarkIndustries(B){
  function useWorkshop(){const p=player.position;if(Math.hypot(p.x-7,p.z+6)<2.8&&B.stage()>=2){if(current==='tony')openPicker();else select('tony',true);return true}
    const o=extras.find(e=>e.g.visible&&Math.hypot(p.x-e.x,p.z-e.z)<e.range);if(!o)return false;
    if(o.type==='suit'){if(has(o.id)){select(o.id);B.notice(names[o.id])}else openPicker()}
-   if(o.type==='terminal'){if(current==='pepper'){award(100);achievement('Dostęp administracyjny')}openPicker()}
+   if(o.type==='terminal'){if(current==='pepper'&&!meta.ach.includes('Dostęp administracyjny')){award(100);achievement('Dostęp administracyjny')}openPicker()}
    if(o.type==='build'){meta.workBuilt=true;build.visible=false;buildFinished.visible=true;award(250);achievement('Mistrz budowania');B.sfx('success')}
    if(o.type==='break'){o.g.visible=false;meta.workBroken.push(o.id);scatter(o.x,.7,o.z,0xe9b955);for(let i=0;i<4;i++)B.stud(o.x+Math.cos(i*1.57)*.7,o.z+Math.sin(i*1.57)*.7);save()}
    return true;
@@ -86,7 +86,7 @@ function createStarkIndustries(B){
    for(let i=0;i<12;i++){let z=-11+i*2;rock(caveRoot,-11.7,z,.9,4.5,1.3);rock(caveRoot,11.7,z,.9,4.5,1.3)}
    wall(-6.6,3.1,9,.7);wall(6.6,3.1,9,.7);gate('power',0,3.1,4.0);
    wall(-6.8,-3.6,8.6,.7);wall(6.8,-3.6,8.6,.7);gate('exit',0,-3.6,4.2);
-   wall(-6,-7.2,.65,5.4);wall(-8.7,-4.7,5.8,.65);gate('secret',-6,-10,1.6);
+   wall(-6,-7.2,.65,5.4);wall(-8.7,-4.7,5.8,.65);wall(-9.65,-10,3.1,.65);gate('secret',-7.15,-10,1.8);
    for(let i=0;i<10;i++){const x=-10+(i%5)*5,z=8-Math.floor(i/5)*12;const lamp=group(caveRoot,x,0,z);box(0,1.1,0,.12,2.2,.12,0x4b4947,lamp);glow(0,2.16,0,.28,.28,.28,0xe9a34f,lamp)}
    const table=group(caveRoot,7,0,7);brick(0,.44,0,2.2,.86,1.5,0x525660,table);label(table,'MARK I · MONTAŻ',0,1.75,0,2.25);addHolo(table,0,2.1,0);
    terminal('power',-7,6);terminal('exit',7,-1);terminal('secret',-4,-8);
@@ -97,11 +97,11 @@ function createStarkIndustries(B){
    for(const o of items){if(cave.collected.includes(o.type+o.id)||o.type==='mini'&&meta.mini.includes(o.id)||o.type==='red'&&meta.red){o.live=false;o.g.visible=false}}
    for(const id of cave.switches)openGate(id);for(const r of robots)if(cave.killed.includes(r.id)){r.live=false;r.g.visible=false}
    if(free){openGate('power');openGate('exit');cave.stage=2;unlock('mark1')}
-   B.enterCave();select(cave.stage>=1?'mark1':'tony',true);player.position.set(...cave.pos);player.position.y=0;B.hud();if(!saved&&!free)playCut('intro');saveCave();
+   B.enterCave();select(saved&&names[cave.character]&&has(cave.character)?cave.character:cave.stage>=1?'mark1':'tony',true);player.position.set(...cave.pos);player.position.y=0;B.hud();if(!saved&&!free)playCut('intro');saveCave();
  }
- function saveCave(){if(area!=='cave'||!cave)return save();cave.pos=player.position.toArray();meta.cave=cave;meta.last='cave';return save()}
+ function saveCave(){if(area!=='cave'||!cave)return save();cave.character=current;cave.pos=player.position.toArray();meta.cave=cave;meta.last='cave';return save()}
  function collide(oldX,oldZ){if(area!=='cave')return;const p=player.position;for(const o of solids)if(o.active&&Math.abs(p.x-o.x)<o.w/2+.36&&Math.abs(p.z-o.z)<o.d/2+.36){p.x=oldX;p.z=oldZ;break}}
- function playCut(which){storyCut={which,t:0};$('starkCut').classList.remove('hidden');$('starkCutTitle').textContent=which==='intro'?'02 · UCIECZKA Z JASKINI':'02 · WOLNOŚĆ';$('starkCutLine').textContent=which==='intro'?'Tony: Muszę zbudować pancerz i znaleźć wyjście.':'Tony: Udało się. To dopiero początek.';B.release();if(which==='intro')B.voice('intro',1,'TONY STARK','Świetnie. Tylko gdzie podziały się moje części?');else B.voice('outro',1,'TONY STARK','Nieźle. Następnym razem ustawmy poprzeczkę wyżej.')}
+ function playCut(which){storyCut={which,t:0};$('starkCut').classList.remove('hidden');$('starkCutTitle').textContent=which==='intro'?'02 · UCIECZKA Z JASKINI':'02 · WOLNOŚĆ';$('starkCutLine').textContent=which==='intro'?'Tony: Świetnie. Tylko gdzie podziały się moje części?':'Tony: Nieźle. Następnym razem ustawmy poprzeczkę wyżej.';B.release();if(which==='intro')B.voice('intro',1,'TONY STARK','Świetnie. Tylko gdzie podziały się moje części?');else B.voice('outro',1,'TONY STARK','Nieźle. Następnym razem ustawmy poprzeczkę wyżej.')}
  function finishStoryCut(){storyCut=null;$('starkCut').classList.add('hidden');B.stopVoice();B.hud();saveCave()}
  $('starkCutSkip').onclick=finishStoryCut;
  function cutFrame(dt){if(!storyCut)return false;storyCut.t+=dt;let t=storyCut.t,p=player.position;const a=.45+Math.sin(t*.45)*.25;B.camera.position.set(p.x+Math.sin(a)*4.4,2.5+Math.sin(t*.5)*.25,p.z+Math.cos(a)*4.4);B.camera.lookAt(p.x,1.1,p.z);if(t>7)finishStoryCut();return true}
