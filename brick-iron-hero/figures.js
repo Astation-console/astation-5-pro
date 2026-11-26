@@ -428,5 +428,63 @@ function buildMinifigureFactory(T, renderer, mat) {
     }
     root.userData={arms,legs,jets,head,torso,hips,visor};return root;
   }
+  // Character-specific sculpted accessories on a shared animation skeleton.
+  // All the pieces remain rigid and attach to the existing moving joints.
+  const variantFace=makeInk((q,p,o,m)=>{
+    m([[.15,.31],[.25,.27],[.40,.31]],null,'#78523c',.026);
+    o(.29,.43,.053,.075,'#302528',null);o(.71,.43,.053,.075,'#302528',null);
+    o(.275,.415,.014,.019,'#fff6e7',null);o(.695,.415,.014,.019,'#fff6e7',null);
+    p([[.38,.69],[.50,.73],[.62,.69]],null,'#aa504b',.029);
+    m([[.14,.54],[.20,.55],[.25,.57]],null,'#ce997c',.012);
+  },'#edc19b');
+  const pepperShirt=makeInk((q,p,o,m)=>{
+    p([[.30,.01],[.50,.28],[.70,.01]],'#e6d8cb','#a8a39f',.012);
+    m([[.04,0],[.28,.035],[.45,.34],[.27,.63],[.14,.82],[.06,.89]],'#304b61','#172939',.018);
+    m([[.08,.76],[.27,.76],[.28,.82]],null,'#6b8492',.015);p([[.50,.32],[.50,.98]],null,'#9ba9b2',.012);
+    for(let i=0;i<3;i++)o(.50,.44+i*.15,.017,.019,'#d6b49d',null);
+  },'#263e52');
+  function flattenMaterial(m,material){m.traverse(o=>{if(o.isMesh)o.material=material;});}
+  function plate(parent,x,y,z,w,h,d,r,material){return softBox(parent,w,h,d,r,material,x,y,z)}
+  function variant(name){
+    if(name==='pepper'){
+      const root=sculptTony(),u=root.userData,skin=abs(0xe9bc98,.42,0,.25),navy=abs(0x263e52,.41),hairMat=abs(0xc28b51,.40,0,.28);
+      u.head.clear();tonyPart(u.head,[[-.24,.21,.22,.03],[-.22,.28,.27,.03],[-.17,.325,.30,.03],[.16,.325,.30,.03],[.23,.26,.24,.03]],skin,variantFace,true,40);
+      const cap=piece(u.head,new T.SphereGeometry(.36,24,16,0,Math.PI*2,0,Math.PI*.62),hairMat,0,.10,-.035);cap.scale.set(1,.97,.94);
+      for(const side of [-1,1]){const lock=piece(u.head,new T.CapsuleGeometry(.102,.31,4,12),hairMat,side*.265,-.08,-.10);lock.rotation.z=side*.08}
+      const bun=piece(u.head,new T.SphereGeometry(.19,18,12),hairMat,0,.11,-.35);bun.scale.set(.90,1.1,.72);
+      u.torso.clear();tonyPart(u.torso,[[.01,.43,.24,.035],[.04,.445,.26,.035],[.70,.35,.23,.035],[.76,.32,.21,.03]],navy,pepperShirt);
+      u.arms.forEach(a=>{if(a.children[1]?.isMesh)a.children[1].material=navy});return root;
+    }
+    const root=figure(true),u=root.userData,steel=abs(0x77828b,.34,.35,.4),dark=abs(0x303842,.43,.22,.27),ironGray=abs(0x50555a,.48,.25,.2),silver=abs(0xa3aab0,.3,.35,.3),glowBlue=new T.MeshBasicMaterial({color:0xa4e7ff});
+    if(name==='mark1'){
+      // A bulky improvised suit: slotted face grille, overlapping steel plates,
+      // asymmetrical shoulder shields and external rivets.
+      flattenMaterial(root,ironGray);u.head.clear();u.visor=null;
+      plate(u.head,0,.09,0,.77,.73,.69,.085,dark);
+      plate(u.head,0,.13,.345,.60,.49,.055,.025,steel);
+      for(let i=0;i<5;i++)plate(u.head,0,-.035+i*.052,.376,.38,.019,.02,.005,dark);
+      for(let side of [-1,1]){plate(u.head,side*.16,.22,.380,.22,.075,.02,.008,dark);plate(u.head,side*.16,.22,.396,.16,.032,.012,.004,glowBlue)}
+      plate(u.torso,0,.38,.27,.75,.64,.12,.04,steel);
+      const ring=piece(u.torso,new T.TorusGeometry(.10,.025,8,24),dark,0,.49,.352);piece(u.torso,new T.CircleGeometry(.076,24),glowBlue,0,.49,.365);
+      for(const side of [-1,1]){const a=u.arms[side<0?0:1],l=u.legs[side<0?0:1];plate(a,side*.13,-.08,.01,.30,.28,.37,.035,steel);plate(a,side*.14,-.36,.11,.25,.30,.16,.024,dark);plate(l,0,-.35,.22,.33,.45,.13,.022,steel);for(let y of [.16,.60]){let r=drum(u.torso,side*.29,y,.344,.029,.022,dark);r.rotation.x=Math.PI/2}}
+    } else if(name==='mark2'){
+      flattenMaterial(root,silver);u.head.clear();u.visor=null;
+      molded(u.head,helmetRows,.53,silver,null);faceplate(u.head);
+      // Replace gold face paint by silver without altering shared Mark III materials.
+      u.head.traverse(o=>{if(o.isMesh){if(o.material===goldMask||o.material===goldEdge)o.material=silver;else if(o.material===darkGold)o.material=steel}});
+      for(const side of [-1,1]){const a=u.arms[side<0?0:1],l=u.legs[side<0?0:1];plate(a,side*.14,-.34,.13,.21,.26,.07,.022,steel);plate(l,0,-.38,.235,.26,.42,.05,.015,steel)}
+      piece(u.torso,new T.TorusGeometry(.09,.018,8,32),dark,0,.47,.28);piece(u.torso,new T.CircleGeometry(.072,32),glowBlue,0,.47,.30);
+    } else if(name==='war'){
+      flattenMaterial(root,dark);u.head.clear();u.visor=null;
+      molded(u.head,helmetRows,.53,dark,null);faceplate(u.head);
+      u.head.traverse(o=>{if(o.isMesh){if(o.material===goldMask||o.material===goldEdge)o.material=steel;else if(o.material===darkGold)o.material=dark}});
+      plate(u.torso,0,.40,.27,.66,.54,.08,.04,steel);piece(u.torso,new T.CircleGeometry(.085,24),glowBlue,0,.47,.325);
+      for(const side of [-1,1]){let a=u.arms[side<0?0:1],l=u.legs[side<0?0:1];plate(a,side*.10,-.04,.01,.36,.29,.39,.035,steel);plate(l,0,-.46,.24,.31,.30,.10,.02,steel);}
+      // Toy-style shoulder energy module, distinct silhouette without real weapon detail.
+      const module=group(u.torso,-.39,.81,-.17);plate(module,0,0,0,.28,.30,.48,.045,dark);plate(module,0,0,.25,.18,.17,.08,.02,steel);piece(module,new T.CircleGeometry(.059,20),glowBlue,0,0,.30);
+    }
+    u.jets.forEach(j=>{j.traverse(o=>{if(o.isMesh)o.material=glowBlue});j.visible=false});return root;
+  }
+  figure.variant=variant;
   return figure;
 }
