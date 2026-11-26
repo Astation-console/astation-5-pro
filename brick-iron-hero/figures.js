@@ -102,7 +102,13 @@ function buildMinifigureFactory(T, renderer, mat) {
     p([[.37,.76],[.43,.82],[.50,.85],[.57,.82],[.63,.76],[.59,.88],[.50,.92],[.41,.88]],'#462b22',null);
     p([[.46,.82],[.54,.82],[.53,.86],[.47,.86]],'#b77a58',null);
   },'#eabe96');
-  const tonyPrint=face, ironPrint=armorTorso;
+  // Use the original reference image for Tony's recognizable printed expression.
+  // Geometry and the skin-colored back remain separate from the front print.
+  const tonyMaterial=new T.MeshPhysicalMaterial({map:null,roughness:.42,metalness:0,clearcoat:.4,clearcoatRoughness:.32});
+  const tonyAtlas=loader.load('./textures/tony-print.jpg',tex=>{tex.colorSpace=T.SRGBColorSpace;tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());tonyMaterial.map=tex;tonyMaterial.needsUpdate=true;});
+  tonyAtlas.colorSpace=T.SRGBColorSpace;
+  const tonyPrint={width:245,height:400,material:tonyMaterial};
+  const ironPrint=armorTorso;
   function group(parent,x=0,y=0,z=0) {
     const g = new T.Group(); g.position.set(x,y,z); parent.add(g); return g;
   }
@@ -207,14 +213,14 @@ function buildMinifigureFactory(T, renderer, mat) {
       const u=j/levels,v=u*Math.PI/2;
       for(let i=0;i<=columns;i++){
         const a=(i/columns*2-1)*Math.PI,si=Math.sin(a),co=Math.cos(a);
-        const frontWeight=Math.max(0,co),fringe=.215+.032*Math.cos(10*si)-.039*Math.exp(-Math.pow((si-.34)/.17,2));
-        const edge=-.073+.30*frontWeight**.70+(fringe-.227)*frontWeight;
+        const frontWeight=Math.max(0,co),fringe=.195+.024*Math.cos(10*si)-.055*Math.exp(-Math.pow((si-.34)/.18,2))-.027*Math.exp(-Math.pow((si+.55)/.20,2));
+        const edge=-.115+.322*frontWeight**.70+(fringe-.207)*frontWeight;
         const height=edge+(.52-edge)*Math.sin(v);
-        const ridge=(.010*Math.cos(15*a+u*4.7)+.005*Math.cos(29*a+u*6.3))*Math.sin(v*1.85);
-        const radius=(.408+ridge)*Math.cos(v)**.80*(1+.09*Math.sin(u*Math.PI*1.5));
+        const ridge=(.013*Math.cos(13*a+u*5.5)+.004*Math.cos(26*a+u*9))*Math.sin(v*1.75+.15);
+        const radius=(.418+ridge)*Math.cos(v)**.79*(1+.065*Math.sin(u*Math.PI*1.5));
         const x=radius*si-.041*u, z=(radius+.004*(1-u))*co-.035+.028*frontWeight*(1-u);
         pos.push(x,height,z);
-        uv.push((121.5+x*119)/tonyPrint.width,1-(78-height*135)/tonyPrint.height);
+        uv.push((121.5+x*132)/245,1-(84-height*150)/400);
         if(j&&i<columns){
           const b=(j-1)*(columns+1)+i,t=b+columns+1;
           const target=Math.abs(a+Math.PI/columns)<1.5?front:back;
@@ -224,7 +230,7 @@ function buildMinifigureFactory(T, renderer, mat) {
     }
     const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
     g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(back.concat(front));g.addGroup(0,back.length,0);g.addGroup(back.length,front.length,1);g.computeVertexNormals();
-    const dark=abs(0x34201c,.29,0,.67), cap=piece(head,g,[dark,dark]);cap.castShadow=true;
+    const dark=abs(0x34201c,.29,0,.67), cap=piece(head,g,[dark,tonyMaterial]);cap.castShadow=true;
   }
   function figure(armor) {
     const root=new T.Group(), skin=abs(0xeabe96,.34,0,.48), maroon=abs(0x981b29,.25,.08,.74), black=abs(0x171722,.29,0,.62);
@@ -232,7 +238,7 @@ function buildMinifigureFactory(T, renderer, mat) {
     const torso=group(root,0,.97), head=group(root,0,2.035);
     const arms=[],legs=[],jets=[];let visor=null;
     const tx=armor?[[.006,.444,.268,323,75,234],[.045,.451,.278,316,76,234],[.70,.364,.244,188,93,216],[.76,.330,.232,178,97,211]]:[[.006,.444,.268,240,57,188],[.045,.451,.278,232,58,187],[.70,.364,.244,133,76,169],[.76,.330,.232,128,80,165]];
-    molded(torso,tx,.30,body,armor?armorTorso:shirt);backSurface(torso,tx,armor);if(armor){const reactor=group(torso,0,.471,.265);const rim=piece(reactor,new T.TorusGeometry(.086,.012,8,40),abs(0xbac8d0,.31,.30));rim.castShadow=false;const lens=piece(reactor,new T.CircleGeometry(.070,40),eyeMaterial,0,0,.011);lens.castShadow=false;const lensRim=piece(reactor,new T.TorusGeometry(.052,.0035,5,32),abs(0x78b5ce,.28,.15),0,0,.013);lensRim.castShadow=false;}
+    molded(torso,tx,.30,body,armor?armorTorso:tonyPrint);backSurface(torso,tx,armor);if(armor){const reactor=group(torso,0,.471,.265);const rim=piece(reactor,new T.TorusGeometry(.086,.012,8,40),abs(0xbac8d0,.31,.30));rim.castShadow=false;const lens=piece(reactor,new T.CircleGeometry(.070,40),eyeMaterial,0,0,.011);lens.castShadow=false;const lensRim=piece(reactor,new T.TorusGeometry(.052,.0035,5,32),abs(0x78b5ce,.28,.15),0,0,.013);lensRim.castShadow=false;}
     drum(root,0,1.765,0,.15,.12,armor?maroon:skin);
     const hips=group(root,0,.87); molded(hips,[[0,.420,.242],[.018,.434,.254],[.075,.45,.26],[.09,.437,.251]],.26,body,armor?armorHip:jeans);
     if(armor){
@@ -243,14 +249,14 @@ function buildMinifigureFactory(T, renderer, mat) {
       shell.geometry.setDrawRange(0,rear.count);plateGeometry.setDrawRange(front.start,front.count);
       visor=group(head,0,.352,-.034);
       const maskBase=piece(visor,plateGeometry,[maroon,maroon],0,-.352,.034);const maskDetail=group(visor,0,-.352,.034);faceplate(maskDetail);
-      molded(head,[[-.21,.22,.19,110,88,157],[-.15,.28,.215,101,81,161],[.18,.28,.224,58,81,161],[.24,.22,.19,53,89,156]],.90,skin,tonyPrint);
+      molded(head,[[-.21,.22,.19,110,88,157],[-.15,.28,.215,101,81,161],[.18,.28,.224,58,81,161],[.24,.22,.19,53,89,156]],.90,skin,tonyPrint,Math.PI*.43);
       // Stepped rear shell, side pivots and recessed ear rings read in profile.
       for(const side of [-1,1]){
         const hinge=drum(head,side*.36,.05,-.042,.143,.042,abs(0x6b1420,.31,.15));hinge.rotation.z=Math.PI/2;
         const cap=drum(head,side*.386,.05,-.042,.092,.023,maroon);cap.rotation.z=Math.PI/2;const lip=piece(head,new T.TorusGeometry(.095,.012,8,24),abs(0xb94842,.29,.12),side*.402,.05,-.042);lip.rotation.y=Math.PI/2;
       }
     }else{
-      molded(head,[[-.247,.242,.24,111,84,159],[-.215,.344,.304,106,80,163],[-.148,.363,.321,100,77,165],[.156,.364,.321,59,78,166],[.213,.338,.299,52,81,163],[.246,.263,.25,49,91,155]],.86,skin,face,Math.PI*.45);
+      molded(head,[[-.247,.242,.24,111,84,159],[-.215,.344,.304,106,80,163],[-.148,.363,.321,100,77,165],[.156,.364,.321,59,78,166],[.213,.338,.299,52,81,163],[.246,.263,.25,49,91,155]],.92,skin,tonyPrint,Math.PI*.43);
       hair(head);
     }
     for(const side of [-1,1]){
