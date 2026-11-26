@@ -136,6 +136,8 @@ function createStarkIndustries(B){
   for(let i=0;i<6;i++){let x=-2.5+i;rock(caveRoot,x,-11.4,.75,1.5,.85,0xb2926b,2.15)}
   const shelf=group(caveRoot,10.4,0,1.2);for(let k=0;k<3;k++){box(0,.28+k*.64,0,.92,.12,2.4,0x65594d,shelf);for(let n=0;n<3;n++)brick(0,.51+k*.64,-.75+n*.75,.58,.28,.55,[0x6c7a77,0xa49a80,0x987452][n],shelf)}for(let z of [-1.11,1.11])for(let x of [-.4,.4])box(x,1.0,z,.09,2.1,.09,0x333c40,shelf);
   const cart=group(caveRoot,-8.8,0,-1.8);brick(0,.46,0,1.36,.27,.93,0x766452,cart);for(let s of [-1,1])for(let z of [-.33,.33]){let w=cylinder(s*.64,.22,z,.17,.16,0x383536,cart);w.rotation.z=Math.PI/2}for(let i=0;i<4;i++)brick(-.46+i*.31,.70,0,.26,.19,.47,0x8c9793,cart);batchRigid(shelf);batchRigid(cart);
+  for(let i=0;i<6;i++){const x=-9.8+i*3.8;brick(x,.29,-3.65,1.02,.30,.64,0x746452,caveRoot);brick(x,.57,-3.65,.85,.25,.62,0x9a8263,caveRoot)}
+  for(let i=0;i<5;i++){const z=8.8-i*3.7;box(-10.1,.40,z,.075,.72,.09,0x68625c,caveRoot);glow(-10.1,.78,z,.23,.10,.23,0xffd59b,caveRoot)}
   const exitSign=group(caveRoot,0,0,-10.8);label(exitSign,'WYJŚCIE',0,2.3,.1,2.0);glow(0,2.65,0,1.7,.08,.12,0xe7d4a8,exitSign);
  
  }
@@ -194,14 +196,23 @@ function createStarkIndustries(B){
  function finishStoryCut(){if(!storyCut)return;const c=storyCut;if(c.which==='armor'){select('mark1',true);player.position.set(6.4,.10,5.7)}else player.position.copy(c.origin);if(yinsen)yinsen.visible=c.which!=='outro';storyCut=null;$('starkCut').classList.add('hidden');document.body.classList.remove('cinematic');B.stopVoice();B.hud();saveCave();if(c.which==='outro'&&!free)leaveCave()}
  $('starkCutSkip').onclick=finishStoryCut;
  const target=new T.Vector3(),camDesired=new T.Vector3();
- function cutFrame(dt){if(!storyCut)return false;let c=storyCut;c.t+=dt;c.lineTime+=dt;const seq=sequences[c.which];if(c.lineTime>dialogue[seq[c.index]][2]+.55){c.index++;c.lineTime=0;if(c.index>=seq.length){finishStoryCut();return true}speak(seq[c.index],true)}
+ function cutFrame(dt){if(!storyCut)return false;let c=storyCut;c.t+=dt;c.lineTime+=dt;const seq=sequences[c.which];if(c.lineTime>dialogue[seq[c.index]][2]+.45&&(!B.voiceBusy()||c.lineTime>dialogue[seq[c.index]][2]+7)){c.index++;c.lineTime=0;if(c.index>=seq.length){finishStoryCut();return true}speak(seq[c.index],true)}
   if(c.which==='armor'&&c.index===2&&!c.assembled){c.assembled=true;select('mark1',true);scatter(6.4,1,6.1,0x8e989e);B.sfx('power')}
   if(waypoint)waypoint.visible=false;const d=dialogue[seq[c.index]],speaker=d[0]==='YINSEN'&&yinsen?yinsen:model(),other=speaker===yinsen?model():yinsen;
   if(yinsen&&c.which==='intro'){yinsen.position.set(1.4,.10,9.7);player.position.set(0,.10,10.1);yinsen.rotation.y=-.35}
-  let p=speaker===yinsen?yinsen.position:player.position;let t=c.lineTime,a=.18+.12*Math.sin(t*.55);let dist=c.which==='outro'?4.8:3.1;
-  target.set(p.x,1.42,p.z);cutLook.copy(target);camDesired.set(p.x+Math.sin(a)*dist,3.65+.12*Math.sin(t*.7),p.z+Math.cos(a)*dist);B.camera.position.lerp(camDesired,1-Math.exp(-dt*4.5));B.camera.lookAt(target);
-  const u=speaker.userData;u.head.rotation.y=.10*Math.sin(t*2);u.head.rotation.x=.035*Math.sin(t*3.2);u.arms[1].rotation.x=-.22-.25*Math.sin(t*1.75);u.arms[1].rotation.z=.12;
-  if(other?.userData?.head){other.userData.head.rotation.y=.17*Math.sin(c.t*.8);other.userData.arms[1].rotation.x=-.10}
+  const p=speaker===yinsen?yinsen.position:player.position,t=c.lineTime;
+  const wide=c.index===0&&t<1.65,building=c.which==='armor'&&c.index===2,ending=c.which==='outro';
+  const angle=wide?.52:speaker===yinsen?-.28:.34;
+  const dist=wide?5.7:building?3.8:ending?4.4:2.85;
+  target.set(p.x+(wide?.58:0),wide?1.28:building?1.29:1.77,p.z);
+  cutLook.copy(target);camDesired.set(p.x+Math.sin(angle)*dist,wide?3.35:building?2.20:2.48+Math.sin(t*.45)*.07,p.z+Math.cos(angle)*dist);
+  const shotKey=c.index+':'+wide+':'+building;
+  if(c.shotKey!==shotKey){c.shotKey=shotKey;B.camera.position.copy(camDesired)}else B.camera.position.lerp(camDesired,1-Math.exp(-dt*8));
+  B.camera.lookAt(target);B.camera.fov=wide?47:building?43:37;B.camera.updateProjectionMatrix();
+  const u=speaker.userData,gesture=Math.sin(t*2.1),beat=Math.sin(t*3.7)*.5+.5;
+  u.head.rotation.set(.045*Math.sin(t*3.2),.11*Math.sin(t*1.8),.027*gesture);
+  u.arms[1].rotation.set(-.32-.20*gesture,0,.12+.05*beat);u.arms[0].rotation.x=-.10-.12*Math.sin(t*1.4);
+  if(other?.userData?.head){other.userData.head.rotation.set(.045*Math.sin(c.t*2),speaker===yinsen?.28:-.28,0);other.userData.arms[1].rotation.x=-.08}
   return true;
  }
  function collect(o){o.live=false;o.g.visible=false;cave.collected.push(o.type+o.id);B.pickup();
@@ -237,5 +248,5 @@ function createStarkIndustries(B){
  }
  function chooseCave(mode,resume=false){if(mode&&!meta.caveDone){B.notice('Najpierw ukończ fabułę');return}makeCave(resume?meta.cave:null,mode)}
  $('caveStory').onclick=()=>chooseCave(false);$('caveFree').disabled=!meta.caveDone;$('caveFree').onclick=()=>chooseCave(true);$('starkChars').onclick=()=>{if(!storyCut)openPicker()};$('starkAttack').onclick=()=>attack(true);$('starkDodge').onclick=dodge;
- return {meta,select,model,syncBase,isArmor,canFly,area:()=>area,has,openPicker,closePicker,blocked:()=>picker||!!storyCut,cutFrame,update,hud,collide,award,saveCave,onWorkshopDone,action:()=>area==='cave'?(useCave()|| (attack(false),true)):useWorkshop(),attack,dodge,dodgeFactor:()=>dodgeTime>0?1.9:1,chooseCave,canResume:()=>meta.last==='cave'&&!!meta.cave,resume:()=>{if(meta.cave?.done&&!meta.cave?.mode){meta.last='workshop';save();B.returnWorkshop()}else chooseCave(!!meta.cave?.mode,true)},markWorkshop:()=>{meta.last='workshop';save()},isCut:()=>!!storyCut,finishStoryCut,occlude};
+ return {meta,select,model,syncBase,isArmor,canFly,area:()=>area,has,openPicker,closePicker,blocked:()=>picker||!!storyCut,cutFrame,update,hud,collide,award,saveCave,onWorkshopDone,action:()=>area==='cave'?(useCave()|| (attack(false),true)):useWorkshop(),attack,dodge,dodgeFactor:()=>dodgeTime>0?1.9:1,chooseCave,canResume:()=>meta.last==='cave'&&!!meta.cave,resume:()=>{if(meta.cave?.done&&!meta.cave?.mode){meta.last='workshop';save();B.returnWorkshop()}else chooseCave(!!meta.cave?.mode,true)},markWorkshop:()=>{meta.last='workshop';save()},isCut:()=>!!storyCut,finishStoryCut,occlude,replayVoice:()=>{if(storyCut){storyCut.lineTime=0;speak(sequences[storyCut.which][storyCut.index],true)}}};
 }

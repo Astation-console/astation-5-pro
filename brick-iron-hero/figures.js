@@ -1,6 +1,6 @@
 // Molded parts have their own pivots; only the surfaces facing the camera carry a print.
 function buildMinifigureFactory(T, renderer, mat) {
-  window.BRICK_ARMOR_BUILD='097';
+  window.BRICK_ARMOR_BUILD='101';
   const loader = new T.TextureLoader();
   const mobileGPU=matchMedia('(pointer:coarse)').matches||/iPhone|iPad|Android/i.test(navigator.userAgent);
   // Individual molded ABS materials, rather than one material shared with scenery.
@@ -387,7 +387,7 @@ function buildMinifigureFactory(T, renderer, mat) {
       head:[[-.265,.280,.280],[-.242,.343,.318],[-.18,.369,.342],[.05,.381,.351],[.29,.376,.345],[.365,.354,.329],[.425,.314,.288],[.461,.241,.221],[.476,.145,.136]],power:.35},
     mark2:{base:0xb7c1c8,face:'#c8d0d3',shade:'#81929f',edge:'#e6ecef',accent:'#9aadb9',line:'#35434d',body:'#b5c1ca',rough:.29,metal:.32,
       head:[[-.245,.235,.231],[-.215,.302,.280],[-.13,.354,.315],[.095,.374,.344],[.29,.363,.337],[.425,.329,.309],[.485,.265,.253],[.51,.152,.146]],power:.60},
-    mark3:{base:0xa41e2c,face:'#e1b75f',shade:'#a47838',edge:'#f6d78c',accent:'#e4ba5f',line:'#46252b',body:'#b22b39',rough:.29,metal:.20,
+    mark3:{base:0xa51b25,face:'#f0c45e',shade:'#9a641e',edge:'#ffdc83',accent:'#e4ba5f',line:'#46252b',body:'#b22b39',rough:.29,metal:.20,
       head:[[-.256,.255,.25],[-.228,.318,.300],[-.12,.363,.328],[.07,.379,.348],[.27,.377,.35],[.416,.339,.315],[.484,.278,.259],[.516,.151,.142]],power:.54},
     war:{base:0x444b53,face:'#9fa9b1',shade:'#596671',edge:'#d3dade',accent:'#737f88',line:'#202730',body:'#454c56',rough:.42,metal:.20,
       head:[[-.265,.263,.250],[-.230,.329,.298],[-.115,.374,.327],[.12,.393,.348],[.30,.388,.34],[.405,.353,.31],[.461,.270,.25],[.488,.16,.15]],power:.40}
@@ -587,7 +587,7 @@ function buildMinifigureFactory(T, renderer, mat) {
     }
     // War Machine has a distinct non-weapon toy sensor backpack silhouette.
     if(war){softBox(torso,.49,.44,.18,.05,dark,0,.50,-.24);softBox(torso,.24,.23,.22,.035,trim,-.23,.81,-.19)}
-    root.userData={arms,legs,jets,head,torso,hips,visor};return root;
+    head.scale.set(1.08,1.05,1.04);root.userData={arms,legs,jets,head,torso,hips,visor};return root;
   }
   function figure(armor) {
     return armor?newArmor('mark3'):sculptTony();

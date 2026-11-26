@@ -11,7 +11,9 @@ function dressWorkshop(T, scene, renderer, parts) {
     const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshStandardMaterial({map:texture,roughness:.44,emissive:0xffffff,emissiveMap:texture,emissiveIntensity:.19}));
     m.position.set(x,y,z);parent.add(m);return m;
   }
-  const steel=0x334856,yellow=0xe0992d,blue=0x193c51,orange=0xda5c24;
+  const steel=0x334856,yellow=0xe8ad3b,blue=0x193c51,orange=0xda5c24;
+  for(const x of [-8.8,8.8])for(let j=0;j<7;j++){let z=-8+j*2.55;box(x,.15,z,.52,.045,2.22,0x476173);box(x,.178,z,.40,.018,1.88,0x718e9d);for(let k=0;k<3;k++)cylinder(x,.21,z-.64+k*.64,.10,.055,0x90a8b2);}
+  for(let j=0;j<5;j++){const z=-7+j*3.3;box(-11.1,1.36,z,.18,1.12,1.85,0x335668);glow(-10.99,1.63,z,.035,.095,1.32,0x76cae9,scene);}
   // Workshop gantry with bolted frames, a glazed clerestory and light bars.
   box(0,5.72,-11.45,25,.36,.72,steel);box(0,3.57,-11.12,24.8,.15,.38,0xb87626);
   for(const x of [-11.5,-7.7,-3.85,0,3.85,7.7,11.5]){
