@@ -9,7 +9,7 @@ function createStarkIndustries(B){
  let meta=defaults();try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.v===1)meta={...meta,...d}}catch(e){}
  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(meta));return true}catch(e){return false}};
  const models={tony:B.tony,mark3:B.iron};let current='tony',area='workshop',free=false,cave=null,storyCut=null,picker=false,combo=0,attackTime=0,dodgeTime=0,damageTime=0,elapsed=0,hudClock=0;
- const workshop=new T.Group();scene.add(workshop);let caveRoot=null,hidden=[],extras=[],holograms=[],particles=[],beams=[];
+ const workshop=new T.Group();scene.add(workshop);let caveRoot=null,yinsen=null,caveLights=[],spoken=new Set(),voiceUntil=0,hidden=[],extras=[],holograms=[],particles=[],beams=[];
  function getModel(id){if(!models[id]){models[id]=figure.variant(id);models[id].visible=false;player.add(models[id])}return models[id]}
  function has(id){return meta.unlocked.includes(id)}
  function unlock(id){if(!has(id)){meta.unlocked.push(id);achievement('Postać: '+names[id]);save()}}
@@ -65,8 +65,39 @@ function createStarkIndustries(B){
  }
  // Cave: authored chamber layout, interactive gates, ten collectible kits.
  const solids=[],items=[],robots=[],switches=[],gateMap={};
- function rock(parent,x,z,w,h,d,color=0x665f5c){const m=new T.Mesh(new T.DodecahedronGeometry(1,0),mat(color));m.position.set(x,h*.46,z);m.scale.set(w,h*.56,d);m.rotation.y=(x+z)*.71;parent.add(m);return m}
- function wall(x,z,w,d,h=2.9){box(x,h/2,z,w,h,d,0x4b4446,caveRoot);solids.push({x,z,w,d,active:true});for(let i=0;i<Math.ceil(Math.max(w,d)/2);i++){let f=(i+.5)/Math.ceil(Math.max(w,d)/2)-.5;rock(caveRoot,x+f*w,z+f*d,.85,1.4,.75,0x62585a)}}
+ const rockGeo=new T.IcosahedronGeometry(1,1),rockMat=new T.MeshStandardMaterial({color:0xffffff,roughness:.93,flatShading:true});
+ const rockData=[];let rockSeed=831;
+ function rand(){rockSeed=(rockSeed*1664525+1013904223)>>>0;return rockSeed/4294967296}
+ function rock(parent,x,z,w,h,d,color=0x665f5c,y=0){rockData.push({x,y:y+h*.46,z,w,h,d,color,rx:(rand()-.5)*.33,ry:rand()*Math.PI*2,rz:(rand()-.5)*.27})}
+ function flushRocks(){const mesh=new T.InstancedMesh(rockGeo,rockMat,rockData.length),o=new T.Object3D();rockData.forEach((p,i)=>{o.position.set(p.x,p.y,p.z);o.scale.set(p.w,p.h*.56,p.d);o.rotation.set(p.rx,p.ry,p.rz);o.updateMatrix();mesh.setMatrixAt(i,o.matrix);mesh.setColorAt(i,new T.Color(p.color))});mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();caveRoot.add(mesh)}
+ function wall(x,z,w,d,h=3.6){solids.push({x,z,w,d,active:true});const n=Math.ceil(Math.max(w,d)/1.15);for(let i=0;i<n;i++){const f=(i+.5)/n-.5;const xx=x+f*w,zz=z+f*d;
+    rock(caveRoot,xx,zz,.78+rand()*.34,h*(.82+rand()*.22),.72+rand()*.24,0x5c514a);
+    rock(caveRoot,xx+.21*(rand()-.5),zz+.35,.64,1.10+rand()*1.15,.58,0x786454);
+    rock(caveRoot,xx,zz-.15,.95,1.55,.85,0x4b4340,2.1);
+ }}
+ function groundSurface(){const geo=new T.PlaneGeometry(25,25,25,25);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position,colors=[];
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,.10+Math.sin(x*1.9+z*.5)*.025+Math.cos(z*1.7)*.022);const v=.84+rand()*.16;colors.push(v*.43,v*.34,v*.28)}
+  geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.computeVertexNormals();let floor=new T.Mesh(geo,new T.MeshStandardMaterial({vertexColors:true,roughness:.96,flatShading:true}));floor.receiveShadow=true;caveRoot.add(floor);
+ }
+ function lampPool(x,z,color=0xeab36f){const c=document.createElement('canvas');c.width=c.height=64;let q=c.getContext('2d'),g=q.createRadialGradient(32,32,2,32,32,32);g.addColorStop(0,'rgba(255,185,100,.28)');g.addColorStop(1,'rgba(255,185,100,0)');q.fillStyle=g;q.fillRect(0,0,64,64);const map=new T.CanvasTexture(c),m=new T.Mesh(new T.PlaneGeometry(5.8,5.8),new T.MeshBasicMaterial({map,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));m.rotation.x=-Math.PI/2;m.position.set(x,.145,z);caveRoot.add(m)}
+ function caveDressing(){
+  groundSurface();
+  // Irregular rock formations, rubble, ceiling fragments away from camera path.
+  for(let i=0;i<32;i++){let p=(i+.5)/32*24-12;for(const side of [-1,1]){rock(caveRoot,side*12,p,1.1+rand()*.8,3.1+rand()*2,.9+rand()*.45,0x65564b);rock(caveRoot,p,side*12,.9+rand()*.65,3.2+rand()*1.9,1.1+rand()*.6,0x574944)}}
+  for(let i=0;i<45;i++){let x=-11+rand()*22,z=-11+rand()*22;if(Math.abs(x)>9.5){rock(caveRoot,x,z,.20+rand()*.45,.35+rand()*.55,.22+rand()*.45,0x8a735e)}}
+  for(let i=0;i<13;i++){let z=11-i*1.7;box(-10.5,.15,z,.07,.10,1.4,0x363236,caveRoot);box(-10.27,.15,z,.06,.11,1.4,0x2b292c,caveRoot)}
+  for(let i=0;i<4;i++){let x=-8.5+i*1.55;const g=group(caveRoot,x,0,10.85);brick(0,.25,0,1.3,.47,.72,0x62513b,g);brick(0,.64,0,1.25,.26,.69,0x91704b,g);for(let side of [-1,1])box(side*.43,.48,.39,.08,.81,.055,0x4c3d32,g)}
+  const bed=group(caveRoot,-3.6,0,10.1);box(0,.35,0,1.4,.25,2.05,0x343e41,bed);box(0,.53,0,1.22,.18,1.86,0x887c68,bed);box(0,.66,-.60,1.0,.15,.53,0xc4b29b,bed);
+  for(const x of [-.60,.60])for(const z of [-.85,.85])box(x,.19,z,.13,.39,.13,0x34383b,bed);
+  const work=group(caveRoot,7,0,7);for(const x of [-.94,.94])for(const z of [-.62,.62])box(x,.46,z,.14,.92,.14,0x393d41,work);box(0,.96,0,2.5,.19,1.65,0x675749,work);box(0,1.36,-.72,2.36,.66,.15,0x393e41,work);
+  for(let i=0;i<5;i++){let x=-.92+i*.43;box(x,1.34,-.60,.06,.38,.06,0x9b9b94,work);let bolt=cylinder(x,1.55,-.57,.085,.04,0x8f9390,work);bolt.rotation.x=Math.PI/2}
+  const plans=group(work,-.65,1.09,.22);box(0,0,0,.62,.015,.42,0xaaa18c,plans);for(let i=0;i<4;i++)box(0,.012,-.14+i*.075,.42,.006,.015,0x4c5558,plans);
+  for(let i=0;i<4;i++)brick(.35+i*.19,1.14,.21,.16,.15,.20,0x7c8384,work);
+  label(work,'MARK I · MONTAŻ',0,1.96,0,2.25);
+  for(let i=0;i<5;i++){let x=-9+i*4.5,z=-6;const g=group(caveRoot,x,0,z);brick(0,.30,0,.86,.58,.75,0x70614e,g);brick(0,.67,0,.78,.15,.68,0x867a64,g);box(0,.40,.40,.14,.18,.06,0x3b4143,g)}
+  for(let i=0;i<5;i++){let z=9-i*4.5;lampPool(i%2?7:-7,z)}
+  for(const [x,z] of [[-7,6],[7,7],[7,-1],[-4,-8],[0,-10]])lampPool(x,z);
+ }
  function gate(id,x,z,w){const g=group(caveRoot,x,0,z);box(0,1.25,0,w,2.5,.32,0x5e6268,g);for(let i=0;i<5;i++)box(0,.25+i*.43,.18,w-.12,.055,.08,0x242b36,g);glow(0,1.3,.21,.19,.19,.045,0xeac447,g);const collider={x,z,w,d:.6,active:true};solids.push(collider);gateMap[id]={g,collider,open:false}}
  function openGate(id){let o=gateMap[id];if(o){o.open=true;o.collider.active=false;o.g.visible=false}}
  function pickup(type,id,x,z){const g=group(caveRoot,x,.38,z);if(type==='part'){brick(0,0,0,.34,.20,.34,0x44bdd6,g);glow(0,.15,0,.14,.06,.14,0xc5faff,g)}
@@ -79,16 +110,16 @@ function createStarkIndustries(B){
  function makeCave(saved=null,mode=false){
    area='cave';free=mode;meta.last='cave';caveRoot=new T.Group();
    hidden=scene.children.filter(o=>!o.isLight&&o!==player&&!B.persistent(o)).map(o=>[o,o.visible]);for(const [o] of hidden)o.visible=false;scene.add(caveRoot);
-   scene.background=new T.Color(0x282531);scene.fog=new T.Fog(0x282531,16,43);
+   scene.background=new T.Color(0x302824);scene.fog=new T.Fog(0x302824,12,34);for(const light of scene.children.filter(o=>o.isLight)){if(light.isDirectionalLight){light.intensity*=.42;light.color.setHex(0xffcda0)}else if(light.isHemisphereLight){light.intensity=.95;light.color.setHex(0xc5b8a8);light.groundColor.setHex(0x76604f)}}const lamp=new T.PointLight(0xffc18a,9,11,2);lamp.position.set(7,3.4,7);caveRoot.add(lamp);const blue=new T.PointLight(0x89c5ff,5,10,2);blue.position.set(0,3.1,-9);caveRoot.add(blue);
    cave={stage:0,parts:[],switches:[],killed:[],collected:[],score:0,hp:5,done:false,pos:[0,0,10],mode:free};if(saved)cave={...cave,...saved,mode:free};
-   box(0,-.27,0,25,.72,25,0x655b56,caveRoot);
+   caveDressing();
    for(let i=0;i<12;i++){let x=-11+i*2;rock(caveRoot,x,-11.7,1.3,4.8,.9);rock(caveRoot,x,11.7,1.3,3.8,.9)}
    for(let i=0;i<12;i++){let z=-11+i*2;rock(caveRoot,-11.7,z,.9,4.5,1.3);rock(caveRoot,11.7,z,.9,4.5,1.3)}
    wall(-6.6,3.1,9,.7);wall(6.6,3.1,9,.7);gate('power',0,3.1,4.0);
    wall(-6.8,-3.6,8.6,.7);wall(6.8,-3.6,8.6,.7);gate('exit',0,-3.6,4.2);
    wall(-6,-7.2,.65,5.4);wall(-8.7,-4.7,5.8,.65);wall(-9.65,-10,3.1,.65);gate('secret',-7.15,-10,1.8);
    for(let i=0;i<10;i++){const x=-10+(i%5)*5,z=8-Math.floor(i/5)*12;const lamp=group(caveRoot,x,0,z);box(0,1.1,0,.12,2.2,.12,0x4b4947,lamp);glow(0,2.16,0,.28,.28,.28,0xe9a34f,lamp)}
-   const table=group(caveRoot,7,0,7);brick(0,.44,0,2.2,.86,1.5,0x525660,table);label(table,'MARK I · MONTAŻ',0,1.75,0,2.25);addHolo(table,0,2.1,0);
+   yinsen=figure.variant('yinsen');yinsen.position.set(2.0,.10,9.2);yinsen.rotation.y=-.38;caveRoot.add(yinsen);flushRocks();
    terminal('power',-7,6);terminal('exit',7,-1);terminal('secret',-4,-8);
    [[-8,9],[-4,5],[1,7],[4,9],[8,5],[9,10]].forEach((p,i)=>pickup('part',i,...p));
    [[-9,10],[-1,9],[9,8],[-9,5],[3,5],[-8,0],[8,0],[0,-1],[9,-9],[-9,-9]].forEach((p,i)=>pickup('mini',i,...p));
@@ -101,10 +132,35 @@ function createStarkIndustries(B){
  }
  function saveCave(){if(area!=='cave'||!cave)return save();cave.character=current;cave.pos=player.position.toArray();meta.cave=cave;meta.last='cave';return save()}
  function collide(oldX,oldZ){if(area!=='cave')return;const p=player.position;for(const o of solids)if(o.active&&Math.abs(p.x-o.x)<o.w/2+.36&&Math.abs(p.z-o.z)<o.d/2+.36){p.x=oldX;p.z=oldZ;break}}
- function playCut(which){storyCut={which,t:0};$('starkCut').classList.remove('hidden');$('starkCutTitle').textContent=which==='intro'?'02 · UCIECZKA Z JASKINI':'02 · WOLNOŚĆ';$('starkCutLine').textContent=which==='intro'?'Tony: Świetnie. Tylko gdzie podziały się moje części?':'Tony: Nieźle. Następnym razem ustawmy poprzeczkę wyżej.';B.release();if(which==='intro')B.voice('intro',1,'TONY STARK','Świetnie. Tylko gdzie podziały się moje części?');else B.voice('outro',1,'TONY STARK','Nieźle. Następnym razem ustawmy poprzeczkę wyżej.')}
- function finishStoryCut(){storyCut=null;$('starkCut').classList.add('hidden');B.stopVoice();B.hud();saveCave()}
+ const dialogue={
+ 'tony-01':['TONY STARK','Fantastycznie. Z luksusowego apartamentu do jaskini bez klimatyzacji.',5.303],
+ 'yinsen-01':['YINSEN','Tony, znalazłem kilka części. Może uda nam się zbudować coś, co pomoże nam stąd wyjść.',8.046],
+ 'tony-02':['TONY STARK','Daj mi trochę czasu. Stark Industries właśnie otwiera nowy oddział.',4.937],
+ 'tony-03':['TONY STARK','Nie jest elegancki, nie jest lekki i zdecydowanie nie jest gotowy do sprzedaży.',5.773],
+ 'yinsen-02':['YINSEN','Myślisz, że to naprawdę zadziała?',2.795],
+ 'tony-05':['TONY STARK','Mark I. Pierwszy prototyp. Nad wyglądem jeszcze popracujemy.',5.120],
+ 'tony-06':['TONY STARK','Zamknięte. Musi być gdzieś terminal.',4.154],
+ 'tony-07':['TONY STARK','Ciekawe, co ukryli za tą ścianą.',2.769],
+ 'tony-09':['TONY STARK','Koniec wycieczki. Następnym razem wybieram hotel.',4.284],
+ 'tony-10':['TONY STARK','Czas wrócić do warsztatu. Mam pomysł na znacznie lepszy pancerz.',5.355]};
+ const sequences={intro:['tony-01','yinsen-01','tony-02'],armor:['tony-03','yinsen-02','tony-05'],outro:['tony-09','tony-10']};
+ function speak(id,cinematic=false){const d=dialogue[id];if(!d)return;B.voice('cave',id,d[0],d[1]);voiceUntil=elapsed+d[2]+.5;if(cinematic){$('starkCutLine').textContent=d[0]+' — '+d[1]}else{B.notice(d[0]+': '+d[1]);$('caveDialogue').textContent=d[0]+': '+d[1];$('caveDialogue').classList.remove('hidden')}}
+ function hintVoice(id){if(storyCut||spoken.has(id)||elapsed<voiceUntil)return;spoken.add(id);speak(id)}
+ function playCut(which){B.stopVoice();$('caveDialogue').classList.add('hidden');storyCut={which,t:0,index:0,lineTime:0,origin:player.position.clone(),assembled:false};$('starkCut').classList.remove('hidden');document.body.classList.add('cinematic');$('starkCutTitle').textContent=which==='intro'?'02 · UCIECZKA Z JASKINI':which==='armor'?'02 · NARODZINY MARK I':'02 · WOLNOŚĆ';B.release();
+ if(which==='armor'){player.position.set(6.4,.10,6.1);select('tony',true);if(yinsen){yinsen.position.set(8.1,.10,6.3);yinsen.rotation.y=-.45}}speak(sequences[which][0],true)}
+ function finishStoryCut(){if(!storyCut)return;const c=storyCut;if(c.which==='armor'){select('mark1',true);player.position.set(6.4,.10,5.7)}else player.position.copy(c.origin);if(yinsen)yinsen.visible=c.which!=='outro';storyCut=null;$('starkCut').classList.add('hidden');document.body.classList.remove('cinematic');B.stopVoice();B.hud();saveCave()}
  $('starkCutSkip').onclick=finishStoryCut;
- function cutFrame(dt){if(!storyCut)return false;storyCut.t+=dt;let t=storyCut.t,p=player.position;const a=.45+Math.sin(t*.45)*.25;B.camera.position.set(p.x+Math.sin(a)*4.4,2.5+Math.sin(t*.5)*.25,p.z+Math.cos(a)*4.4);B.camera.lookAt(p.x,1.1,p.z);if(t>7)finishStoryCut();return true}
+ const target=new T.Vector3(),camDesired=new T.Vector3();
+ function cutFrame(dt){if(!storyCut)return false;let c=storyCut;c.t+=dt;c.lineTime+=dt;const seq=sequences[c.which];if(c.lineTime>dialogue[seq[c.index]][2]+.55){c.index++;c.lineTime=0;if(c.index>=seq.length){finishStoryCut();return true}speak(seq[c.index],true)}
+  if(c.which==='armor'&&c.index===2&&!c.assembled){c.assembled=true;select('mark1',true);scatter(6.4,1,6.1,0x8e989e);B.sfx('power')}
+  const d=dialogue[seq[c.index]],speaker=d[0]==='YINSEN'&&yinsen?yinsen:model(),other=speaker===yinsen?model():yinsen;
+  if(yinsen&&c.which==='intro'){yinsen.position.set(1.4,.10,9.7);player.position.set(0,.10,10.1);yinsen.rotation.y=-.35}
+  let p=speaker===yinsen?yinsen.position:player.position;let t=c.lineTime,a=.18+.12*Math.sin(t*.55);let dist=c.which==='outro'?5.5:3.6;
+  target.set(p.x,1.42,p.z);camDesired.set(p.x+Math.sin(a)*dist,2.15+.12*Math.sin(t*.7),p.z+Math.cos(a)*dist);B.camera.position.lerp(camDesired,1-Math.exp(-dt*4.5));B.camera.lookAt(target);
+  const u=speaker.userData;u.head.rotation.y=.10*Math.sin(t*2);u.head.rotation.x=.035*Math.sin(t*3.2);u.arms[1].rotation.x=-.22-.25*Math.sin(t*1.75);u.arms[1].rotation.z=.12;
+  if(other?.userData?.head){other.userData.head.rotation.y=.17*Math.sin(c.t*.8);other.userData.arms[1].rotation.x=-.10}
+  return true;
+ }
  function collect(o){o.live=false;o.g.visible=false;cave.collected.push(o.type+o.id);B.pickup();
    if(o.type==='part'){cave.parts.push(o.id);award(100);B.notice('CZĘŚCI '+cave.parts.length+'/6')}
    if(o.type==='mini'&&!meta.mini.includes(o.id)){meta.mini.push(o.id);award(250);B.notice('MINIZESTAW '+meta.mini.length+'/10');if(meta.mini.length===10)achievement('Komplet minizestawów')}
@@ -112,8 +168,8 @@ function createStarkIndustries(B){
    if(o.type==='gold'){if(!meta.caveDone&&!free){meta.gold++;meta.caveDone=true;achievement('Ucieczka z jaskini');award(1000)}cave.done=true;playCut('outro')}
    if(o.type==='stud')award(20);saveCave();B.hud()
  }
- function useCave(){const p=player.position;if(Math.hypot(p.x-7,p.z-7)<2.5&&cave.stage===0){if(cave.parts.length<6){B.notice('Zbierz wszystkie 6 części');return true}cave.stage=1;unlock('mark1');select('mark1',true);scatter(7,1,7,0xaab1b4);B.sfx('success');achievement('Mark I zbudowany');saveCave();return true}
-   const sw=switches.find(o=>Math.hypot(p.x-o.x,p.z-o.z)<1.9);if(sw){if(sw.id==='power'&&cave.stage<1){B.notice('Najpierw zbuduj Mark I');return true}if(sw.id==='exit'&&!free&&cave.killed.length<2){B.notice('Pokonaj dwa roboty strażnicze');return true}if(sw.id==='secret'&&!free&&current!=='pepper'&&cave.stage<1){B.notice('Potrzebny pancerz lub Pepper');return true}if(!cave.switches.includes(sw.id)){cave.switches.push(sw.id);openGate(sw.id);if(sw.id==='exit')cave.stage=2;award(150);B.sfx('power');saveCave()}return true}
+ function useCave(){const p=player.position;if(Math.hypot(p.x-7,p.z-7)<2.5&&cave.stage===0){if(cave.parts.length<6){B.notice('Zbierz wszystkie 6 części');return true}cave.stage=1;unlock('mark1');B.sfx('success');achievement('Mark I zbudowany');playCut('armor');saveCave();return true}
+   const sw=switches.find(o=>Math.hypot(p.x-o.x,p.z-o.z)<1.9);if(sw){if(sw.id==='power'&&cave.stage<1){B.notice('Najpierw zbuduj Mark I');hintVoice('tony-06');return true}if(sw.id==='exit'&&!free&&cave.killed.length<2){B.notice('Pokonaj dwa roboty strażnicze');return true}if(sw.id==='secret'&&!free&&current!=='pepper'&&cave.stage<1){B.notice('Potrzebny pancerz lub Pepper');return true}if(!cave.switches.includes(sw.id)){if(sw.id==='secret')hintVoice('tony-07');cave.switches.push(sw.id);openGate(sw.id);if(sw.id==='exit')cave.stage=2;award(150);B.sfx('power');saveCave()}return true}
    return false
  }
  function scatter(x,y,z,color){for(let i=0;i<7;i++){let m=box(x,y,z,.15,.13,.17,color,caveRoot||workshop),a=i*2.4;particles.push({m,v:new T.Vector3(Math.cos(a)*2.8,2.2+(i%3)*.5,Math.sin(a)*2.8),life:.65})}}
@@ -122,10 +178,10 @@ function createStarkIndustries(B){
    const near=robots.filter(r=>r.live&&r.g.position.distanceTo(player.position)<range).sort((a,b)=>a.g.position.distanceTo(player.position)-b.g.position.distanceTo(player.position));if(near.length){hitRobot(near[0],amount);if(current==='war'&&special&&near[1])hitRobot(near[1],1)}B.hud()
  }
  function dodge(){if(dodgeTime>0||storyCut||picker)return;dodgeTime=.32;damageTime=.7;B.sfx('jump');}
- function update(dt){elapsed+=dt;attackTime=Math.max(0,attackTime-dt);dodgeTime=Math.max(0,dodgeTime-dt);damageTime=Math.max(0,damageTime-dt);for(let h of holograms)h.rotation.y+=dt*.6;
+ function update(dt){elapsed+=dt;if(elapsed>=voiceUntil)$('caveDialogue').classList.add('hidden');attackTime=Math.max(0,attackTime-dt);dodgeTime=Math.max(0,dodgeTime-dt);damageTime=Math.max(0,damageTime-dt);for(let h of holograms)h.rotation.y+=dt*.6;
    for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.life-=dt;p.v.y-=dt*9;p.m.position.addScaledVector(p.v,dt);p.m.rotation.x+=dt*5;if(p.life<=0){p.m.removeFromParent();particles.splice(i,1)}}
    for(let i=beams.length-1;i>=0;i--){let p=beams[i];p.life-=dt;p.g.position.addScaledVector(p.v,dt);if(p.life<=0){p.g.removeFromParent();beams.splice(i,1)}}
-   if(area==='cave'&&cave){let p=player.position;for(let o of items){if(!o.live)continue;o.g.rotation.y+=dt*1.7;o.g.position.y=.40+Math.sin(elapsed*2+o.x)*.09;if(Math.hypot(p.x-o.x,p.z-o.z)<.73&&p.y<1.2){if(o.type!=='gold'||cave.stage>=2||free)collect(o)}}
+   if(area==='cave'&&cave){let p=player.position;if(!gateMap.power?.open&&Math.hypot(p.x,p.z-3.1)<2.4)hintVoice('tony-06');if(Math.hypot(p.x+4,p.z+8)<2.0)hintVoice('tony-07');if(yinsen?.visible){yinsen.userData.head.rotation.y=.12*Math.sin(elapsed*.8);yinsen.userData.arms[0].rotation.x=.06*Math.sin(elapsed*1.8)}for(let o of items){if(!o.live)continue;o.g.rotation.y+=dt*1.7;o.g.position.y=.40+Math.sin(elapsed*2+o.x)*.09;if(Math.hypot(p.x-o.x,p.z-o.z)<.73&&p.y<1.2){if(o.type!=='gold'||cave.stage>=2||free)collect(o)}}
      for(let r of robots){if(!r.live)continue;r.cool=Math.max(0,r.cool-dt);let dx=p.x-r.g.position.x,dz=p.z-r.g.position.z,d=Math.hypot(dx,dz);r.g.rotation.z*=Math.exp(-dt*8);if(d<5&&d>1.15){let x=r.g.position.x,z=r.g.position.z;r.g.position.x+=dx/d*dt*1.18;r.g.position.z+=dz/d*dt*1.18;if(solids.some(o=>o.active&&Math.abs(r.g.position.x-o.x)<o.w/2+.28&&Math.abs(r.g.position.z-o.z)<o.d/2+.28)){r.g.position.x=x;r.g.position.z=z}r.g.rotation.y=Math.atan2(dx,dz);for(let i=0;i<2;i++){r.arms[i].rotation.x=Math.sin(elapsed*7+i*Math.PI)*.45;r.legs[i].rotation.x=-r.arms[i].rotation.x}}
        else if(d<1.25&&r.cool<=0&&!damageTime){r.cool=1.5;damageTime=.85;cave.hp--;B.notice('Utrata serduszka');if(cave.hp<=0){cave.hp=5;player.position.set(0,0,10);cave.score=Math.max(0,cave.score-100);B.notice('Odrodzenie')}B.hud()}}
    }

@@ -446,6 +446,7 @@ function buildMinifigureFactory(T, renderer, mat) {
   function flattenMaterial(m,material){m.traverse(o=>{if(o.isMesh)o.material=material;});}
   function plate(parent,x,y,z,w,h,d,r,material){return softBox(parent,w,h,d,r,material,x,y,z)}
   function variant(name){
+    if(name==='yinsen'){const root=sculptTony(),u=root.userData,skin=abs(0xd8ad86,.45),cloth=abs(0x9b9382,.48),hair=abs(0x423b34,.43);u.head.clear();tonyPart(u.head,[[-.24,.21,.22,.03],[-.22,.28,.27,.03],[-.17,.325,.30,.03],[.16,.325,.30,.03],[.23,.26,.24,.03]],skin,variantFace,true,40);const cap=piece(u.head,new T.SphereGeometry(.328,24,12,0,Math.PI*2,0,Math.PI*.32),hair,0,.105,-.014);cap.scale.set(1,.73,.94);for(const side of [-1,1]){const lens=piece(u.head,new T.TorusGeometry(.087,.014,6,22),abs(0x3b3330,.42),side*.12,.03,.300);plate(u.head,side*.24,.03,.262,.10,.026,.025,.006,hair);}plate(u.head,0,.033,.315,.088,.021,.025,.006,hair);u.torso.clear();tonyPart(u.torso,[[.01,.43,.24,.035],[.04,.445,.26,.035],[.70,.35,.23,.035],[.76,.32,.21,.03]],cloth,null);for(const side of [-1,1]){plate(u.torso,side*.19,.48,.258,.16,.14,.025,.009,abs(0x736c5e,.50));}u.arms.forEach(a=>{if(a.children[1]?.isMesh)a.children[1].material=cloth});return root;}
     if(name==='pepper'){
       const root=sculptTony(),u=root.userData,skin=abs(0xe9bc98,.42,0,.25),navy=abs(0x263e52,.41),hairMat=abs(0xc28b51,.40,0,.28);
       u.head.clear();tonyPart(u.head,[[-.24,.21,.22,.03],[-.22,.28,.27,.03],[-.17,.325,.30,.03],[.16,.325,.30,.03],[.23,.26,.24,.03]],skin,variantFace,true,40);
@@ -460,11 +461,10 @@ function buildMinifigureFactory(T, renderer, mat) {
       // A bulky improvised suit: slotted face grille, overlapping steel plates,
       // asymmetrical shoulder shields and external rivets.
       flattenMaterial(root,ironGray);u.head.clear();u.visor=null;
-      plate(u.head,0,.09,0,.77,.73,.69,.085,dark);
-      plate(u.head,0,.13,.345,.60,.49,.055,.025,steel);
+      molded(u.head,[[-.27,.27,.27],[-.22,.36,.34],[.05,.39,.35],[.31,.36,.34],[.43,.29,.28],[.47,.18,.17]],.46,dark,null);const shellDepth=(x,y)=>.349-Math.abs(x)*.15-Math.max(0,y-.29)*.20;curvedPatch(u.head,[[-.31,.26],[-.23,.40],[.20,.40],[.31,.28],[.30,-.16],[.20,-.23],[-.21,-.23],[-.31,-.14]],steel,.016,shellDepth,2);
       for(let i=0;i<5;i++)plate(u.head,0,-.035+i*.052,.376,.38,.019,.02,.005,dark);
       for(let side of [-1,1]){plate(u.head,side*.16,.22,.380,.22,.075,.02,.008,dark);plate(u.head,side*.16,.22,.396,.16,.032,.012,.004,glowBlue)}
-      plate(u.torso,0,.38,.27,.75,.64,.12,.04,steel);
+      const armorDepth=(x,y)=>.275+Math.max(0,.035-Math.abs(x)*.04);curvedPatch(u.torso,[[-.36,.11],[-.36,.53],[-.28,.69],[.28,.69],[.36,.53],[.36,.11],[.25,.04],[-.25,.04]],steel,.021,armorDepth,2);for(let i=0;i<3;i++)curvedPatch(u.torso,[[-.28,.12+i*.12],[.28,.12+i*.12],[.26,.18+i*.12],[-.26,.18+i*.12]],i%2?dark:ironGray,.036,armorDepth,1);
       const ring=piece(u.torso,new T.TorusGeometry(.10,.025,8,24),dark,0,.49,.352);piece(u.torso,new T.CircleGeometry(.076,24),glowBlue,0,.49,.365);
       for(const side of [-1,1]){const a=u.arms[side<0?0:1],l=u.legs[side<0?0:1];plate(a,side*.13,-.08,.01,.30,.28,.37,.035,steel);plate(a,side*.14,-.36,.11,.25,.30,.16,.024,dark);plate(l,0,-.35,.22,.33,.45,.13,.022,steel);for(let y of [.16,.60]){let r=drum(u.torso,side*.29,y,.344,.029,.022,dark);r.rotation.x=Math.PI/2}}
     } else if(name==='mark2'){
