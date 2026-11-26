@@ -65,21 +65,22 @@ function createStarkIndustries(B){
  }
  // Cave: authored chamber layout, interactive gates, ten collectible kits.
  const solids=[],items=[],robots=[],switches=[],gateMap={};
- const rockGeo=new T.IcosahedronGeometry(1,1),rockMat=new T.MeshStandardMaterial({color:0xffffff,roughness:.93,flatShading:true});
+ const rockGeo=new T.IcosahedronGeometry(1,1),rockMat=new T.MeshStandardMaterial({color:0xffffff,roughness:.76,flatShading:true});
  const rockData=[];let rockSeed=831;
  function rand(){rockSeed=(rockSeed*1664525+1013904223)>>>0;return rockSeed/4294967296}
  function rock(parent,x,z,w,h,d,color=0x665f5c,y=0){rockData.push({x,y:y+h*.46,z,w,h,d,color,rx:(rand()-.5)*.33,ry:rand()*Math.PI*2,rz:(rand()-.5)*.27})}
  function flushRocks(){const mesh=new T.InstancedMesh(rockGeo,rockMat,rockData.length),o=new T.Object3D();rockData.forEach((p,i)=>{o.position.set(p.x,p.y,p.z);o.scale.set(p.w,p.h*.56,p.d);o.rotation.set(p.rx,p.ry,p.rz);o.updateMatrix();mesh.setMatrixAt(i,o.matrix);mesh.setColorAt(i,new T.Color(p.color))});mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;mesh.computeBoundingSphere();caveRoot.add(mesh)}
- function wall(x,z,w,d,h=3.6){solids.push({x,z,w,d,active:true});const n=Math.ceil(Math.max(w,d)/1.15);for(let i=0;i<n;i++){const f=(i+.5)/n-.5;const xx=x+f*w,zz=z+f*d;
+ function wall(x,z,w,d,h=3.6){solids.push({x,z,w,d,active:true});const n=Math.ceil(Math.max(w,d)/1.0);for(let i=0;i<n;i++){const f=(i+.5)/n-.5;const xx=x+f*w,zz=z+f*d;
     rock(caveRoot,xx,zz,.78+rand()*.34,h*(.82+rand()*.22),.72+rand()*.24,0x5c514a);
     rock(caveRoot,xx+.21*(rand()-.5),zz+.35,.64,1.10+rand()*1.15,.58,0x786454);
-    rock(caveRoot,xx,zz-.15,.95,1.55,.85,0x4b4340,2.1);
+    rock(caveRoot,xx,zz-.15,.95,1.55,.85,0x4b4340,2.1);if(i%2===0)rock(caveRoot,xx+.22,zz+.34,.74,.45,.54,0x9b8063,1.25+rand()*.8);
  }}
  function groundSurface(){const geo=new T.PlaneGeometry(25,25,25,25);geo.rotateX(-Math.PI/2);const pos=geo.attributes.position,colors=[];
   for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,.10+Math.sin(x*1.9+z*.5)*.025+Math.cos(z*1.7)*.022);const v=.84+rand()*.16;colors.push(v*.43,v*.34,v*.28)}
   geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.computeVertexNormals();let floor=new T.Mesh(geo,new T.MeshStandardMaterial({vertexColors:true,roughness:.96,flatShading:true}));floor.receiveShadow=true;caveRoot.add(floor);
  }
- function lampPool(x,z,color=0xeab36f){const c=document.createElement('canvas');c.width=c.height=64;let q=c.getContext('2d'),g=q.createRadialGradient(32,32,2,32,32,32);g.addColorStop(0,'rgba(255,185,100,.28)');g.addColorStop(1,'rgba(255,185,100,0)');q.fillStyle=g;q.fillRect(0,0,64,64);const map=new T.CanvasTexture(c),m=new T.Mesh(new T.PlaneGeometry(5.8,5.8),new T.MeshBasicMaterial({map,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));m.rotation.x=-Math.PI/2;m.position.set(x,.145,z);caveRoot.add(m)}
+ let sharedLampMap=null;
+ function lampPool(x,z,color=0xeab36f){const c=document.createElement('canvas');c.width=c.height=64;let q=c.getContext('2d'),g=q.createRadialGradient(32,32,2,32,32,32);g.addColorStop(0,'rgba(255,185,100,.28)');g.addColorStop(1,'rgba(255,185,100,0)');q.fillStyle=g;q.fillRect(0,0,64,64);const map=sharedLampMap||(sharedLampMap=new T.CanvasTexture(c)),m=new T.Mesh(new T.PlaneGeometry(5.8,5.8),new T.MeshBasicMaterial({map,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));m.rotation.x=-Math.PI/2;m.position.set(x,.145,z);caveRoot.add(m)}
  function caveDressing(){
   groundSurface();
   // Irregular rock formations, rubble, ceiling fragments away from camera path.
@@ -97,6 +98,12 @@ function createStarkIndustries(B){
   for(let i=0;i<5;i++){let x=-9+i*4.5,z=-6;const g=group(caveRoot,x,0,z);brick(0,.30,0,.86,.58,.75,0x70614e,g);brick(0,.67,0,.78,.15,.68,0x867a64,g);box(0,.40,.40,.14,.18,.06,0x3b4143,g)}
   for(let i=0;i<5;i++){let z=9-i*4.5;lampPool(i%2?7:-7,z)}
   for(const [x,z] of [[-7,6],[7,7],[7,-1],[-4,-8],[0,-10]])lampPool(x,z);
+  for(let i=0;i<7;i++){let x=-3+i;rock(caveRoot,x,3.35,.58,1.0+rand()*.5,.72,0x6e5b4c,2.55);rock(caveRoot,x,-3.4,.62,1.25+rand()*.6,.70,0x534841,2.45)}
+  for(let i=0;i<6;i++){let x=-2.5+i;rock(caveRoot,x,-11.4,.75,1.5,.85,0xb2926b,2.15)}
+  const shelf=group(caveRoot,10.4,0,1.2);for(let k=0;k<3;k++){box(0,.28+k*.64,0,.92,.12,2.4,0x65594d,shelf);for(let n=0;n<3;n++)brick(0,.51+k*.64,-.75+n*.75,.58,.28,.55,[0x6c7a77,0xa49a80,0x987452][n],shelf)}for(let z of [-1.11,1.11])for(let x of [-.4,.4])box(x,1.0,z,.09,2.1,.09,0x333c40,shelf);
+  const cart=group(caveRoot,-8.8,0,-1.8);brick(0,.46,0,1.36,.27,.93,0x766452,cart);for(let s of [-1,1])for(let z of [-.33,.33]){let w=cylinder(s*.64,.22,z,.17,.16,0x383536,cart);w.rotation.z=Math.PI/2}for(let i=0;i<4;i++)brick(-.46+i*.31,.70,0,.26,.19,.47,0x8c9793,cart);batchRigid(shelf);batchRigid(cart);
+  const exitSign=group(caveRoot,0,0,-10.8);label(exitSign,'WYJŚCIE',0,2.3,.1,2.0);glow(0,2.65,0,1.7,.08,.12,0xe7d4a8,exitSign);
+ 
  }
  function gate(id,x,z,w){const g=group(caveRoot,x,0,z);box(0,1.25,0,w,2.5,.32,0x5e6268,g);for(let i=0;i<5;i++)box(0,.25+i*.43,.18,w-.12,.055,.08,0x242b36,g);glow(0,1.3,.21,.19,.19,.045,0xeac447,g);const collider={x,z,w,d:.6,active:true};solids.push(collider);gateMap[id]={g,collider,open:false}}
  function openGate(id){let o=gateMap[id];if(o){o.open=true;o.collider.active=false;o.g.visible=false}}
@@ -110,7 +117,7 @@ function createStarkIndustries(B){
  function makeCave(saved=null,mode=false){
    area='cave';free=mode;meta.last='cave';caveRoot=new T.Group();
    hidden=scene.children.filter(o=>!o.isLight&&o!==player&&!B.persistent(o)).map(o=>[o,o.visible]);for(const [o] of hidden)o.visible=false;scene.add(caveRoot);
-   scene.background=new T.Color(0x302824);scene.fog=new T.Fog(0x302824,12,34);for(const light of scene.children.filter(o=>o.isLight)){if(light.isDirectionalLight){light.intensity*=.42;light.color.setHex(0xffcda0)}else if(light.isHemisphereLight){light.intensity=.95;light.color.setHex(0xc5b8a8);light.groundColor.setHex(0x76604f)}}const lamp=new T.PointLight(0xffc18a,9,11,2);lamp.position.set(7,3.4,7);caveRoot.add(lamp);const blue=new T.PointLight(0x89c5ff,5,10,2);blue.position.set(0,3.1,-9);caveRoot.add(blue);
+   scene.background=new T.Color(0x342c27);scene.fog=new T.Fog(0x342c27,13,40);for(const light of scene.children.filter(o=>o.isLight)){if(light.isDirectionalLight){light.intensity*=.58;light.color.setHex(0xffcda0)}else if(light.isHemisphereLight){light.intensity=1.15;light.color.setHex(0xc5b8a8);light.groundColor.setHex(0x76604f)}}const lamp=new T.PointLight(0xffc18a,9,11,2);lamp.position.set(7,3.4,7);caveRoot.add(lamp);const blue=new T.PointLight(0x89c5ff,5,10,2);blue.position.set(0,3.1,-9);caveRoot.add(blue);
    cave={stage:0,parts:[],switches:[],killed:[],collected:[],score:0,hp:5,done:false,pos:[0,0,10],mode:free};if(saved)cave={...cave,...saved,mode:free};
    caveDressing();
    for(let i=0;i<12;i++){let x=-11+i*2;rock(caveRoot,x,-11.7,1.3,4.8,.9);rock(caveRoot,x,11.7,1.3,3.8,.9)}
